@@ -346,7 +346,7 @@ function renderDashboard() {
   document.getElementById('d-expense').textContent = fmt(expense);
   const balEl = document.getElementById('d-balance');
   balEl.textContent = fmt(Math.abs(income - expense));
-  balEl.style.color = income >= expense ? '#1d9954' : '#d94040';
+  balEl.style.color = '#1d1d1f';
   document.getElementById('d-income-count').textContent = txs.filter(t => t.type==='income').length + ' giao dịch';
   document.getElementById('d-expense-count').textContent = txs.filter(t => t.type==='expense').length + ' giao dịch';
   document.getElementById('d-balance-note').textContent = income >= expense ? 'dư tháng này' : 'thâm hụt tháng này';
