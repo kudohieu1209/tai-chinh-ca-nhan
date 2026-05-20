@@ -153,9 +153,26 @@ function Empty({ icon = "inbox", title, text }) {
   );
 }
 
-// ====== Money input with thousand-separator formatting ======
+// ====== Money input — raw digits while typing, formatted when blurred ======
 function MoneyInput({ value, onChange, placeholder = "0" }) {
-  const display = value ? new Intl.NumberFormat('vi-VN').format(value) : "";
+  const [focused, setFocused] = useState(false);
+  const [raw, setRaw]         = useState("");
+
+  const handleFocus = () => {
+    setFocused(true);
+    setRaw(value ? String(value) : "");
+  };
+  const handleChange = (e) => {
+    const digits = e.target.value.replace(/[^\d]/g, "");
+    setRaw(digits);
+    onChange(digits ? parseInt(digits, 10) : 0);
+  };
+  const handleBlur = () => setFocused(false);
+
+  const display = focused
+    ? raw
+    : value ? new Intl.NumberFormat('vi-VN').format(value) : "";
+
   return (
     <div className="input-money">
       <input
@@ -164,10 +181,9 @@ function MoneyInput({ value, onChange, placeholder = "0" }) {
         inputMode="numeric"
         value={display}
         placeholder={placeholder}
-        onChange={e => {
-          const raw = e.target.value.replace(/[^\d]/g, "");
-          onChange(raw ? parseInt(raw, 10) : 0);
-        }}
+        onFocus={handleFocus}
+        onChange={handleChange}
+        onBlur={handleBlur}
       />
     </div>
   );
