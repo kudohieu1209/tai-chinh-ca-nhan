@@ -12,7 +12,7 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
   const expenseList = transactions.filter(t => t.type === "expense");
   const list = mode === "income" ? incomeList : expenseList;
 
-  const filtered = useMemoTx(() => {
+  const filtered = useMemo(() => {
     if (!search.trim()) return list;
     const q = search.toLowerCase();
     return list.filter(t =>
@@ -21,7 +21,7 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
     );
   }, [search, list]);
 
-  const grouped = useMemoTx(() => {
+  const grouped = useMemo(() => {
     const g = {};
     filtered.forEach(t => {
       const k = t.date;

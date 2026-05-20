@@ -7,7 +7,7 @@ function Debts({ debts, onAddDebt, onDeleteDebt, onSettleDebt }) {
   const [type, setType] = useState("owe");
   const [note, setNote] = useState("");
 
-  const filtered = useMemoDb(() => {
+  const filtered = useMemo(() => {
     if (filter === "all")    return debts;
     if (filter === "paid")   return debts.filter(d => d.settled);
     if (filter === "owe")    return debts.filter(d => d.type === "owe"  && !d.settled);
