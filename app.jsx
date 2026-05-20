@@ -34,10 +34,16 @@ const firebaseConfig = {
   appId:             "1:742826409088:web:b072bdc22a9acc0ec4fa65",
 };
 
+const DEFAULT_GOALS = [
+  { id: 1, emoji: "💻", color: "#0A84FF", name: "MacBook Air M4",       current: 3200000, target: 28000000, monthly: 500000 },
+  { id: 2, emoji: "🏖️", color: "#FF9500", name: "Đi Đà Lạt cuối năm", current: 1100000, target: 3500000,  monthly: 600000 },
+];
+
 function App() {
   const [allTransactions, setAllTransactions] = useState([]);
   const [debts, setDebts]       = useState([]);
   const [budgets, setBudgets]   = useState([]);
+  const [goals, setGoals]       = useState([]);
   const [loaded, setLoaded]     = useState(false);
   const [page, setPage]         = useState("overview");
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
@@ -66,28 +72,31 @@ function App() {
         const { result, changed } = migrateCats(d.transactions || []);
         const dbts = d.debts   || [];
         const bdgs = d.budgets || [];
+        const gls  = d.goals   || DEFAULT_GOALS;
         setAllTransactions(result);
         setDebts(dbts);
         setBudgets(bdgs);
+        setGoals(gls);
         setLoaded(true);
         if (changed) {
-          window._fsDoc.set({ transactions: result, debts: dbts, budgets: bdgs });
+          window._fsDoc.set({ transactions: result, debts: dbts, budgets: bdgs, goals: gls });
         }
       } else {
         setAllTransactions(_SEED.transactions);
         setDebts(_SEED.debts);
         setBudgets([]);
+        setGoals(DEFAULT_GOALS);
         setLoaded(true);
-        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [] });
+        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS });
       }
     }, err => console.error("Firebase error:", err));
 
     return () => unsub();
   }, []);
 
-  const persist = useCallback((txns, dbts, bdgs) => {
+  const persist = useCallback((txns, dbts, bdgs, gls) => {
     if (window._fsDoc) {
-      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs }).catch(console.error);
+      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }).catch(console.error);
     }
   }, []);
 
@@ -95,33 +104,33 @@ function App() {
   const addTransaction = useCallback((tx) => {
     const next = [{ ...tx, id: Date.now() }, ...allTransactions];
     setAllTransactions(next);
-    persist(next, debts, budgets);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(next, debts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   const deleteTransaction = useCallback((id) => {
     const next = allTransactions.filter(t => t.id !== id);
     setAllTransactions(next);
-    persist(next, debts, budgets);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(next, debts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   // ── Debt CRUD ──
   const addDebt = useCallback((debt) => {
     const next = [...debts, { ...debt, id: Date.now() }];
     setDebts(next);
-    persist(allTransactions, next, budgets);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(allTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   const deleteDebt = useCallback((id) => {
     const next = debts.filter(d => d.id !== id);
     setDebts(next);
-    persist(allTransactions, next, budgets);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(allTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   const settleDebt = useCallback((id) => {
     const next = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: new Date().toISOString() } : d);
     setDebts(next);
-    persist(allTransactions, next, budgets);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(allTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   // ── Budget CRUD ──
   const saveBudget = useCallback((cat, cap) => {
@@ -130,14 +139,30 @@ function App() {
       ? budgets.map(b => b.cat === cat ? { ...b, cap } : b)
       : [...budgets, { cat, cap }];
     setBudgets(next);
-    persist(allTransactions, debts, next);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(allTransactions, debts, next, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   const deleteBudget = useCallback((cat) => {
     const next = budgets.filter(b => b.cat !== cat);
     setBudgets(next);
-    persist(allTransactions, debts, next);
-  }, [allTransactions, debts, budgets, persist]);
+    persist(allTransactions, debts, next, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  // ── Goal CRUD ──
+  const saveGoal = useCallback((goal) => {
+    const exists = goals.some(g => g.id === goal.id);
+    const next = exists
+      ? goals.map(g => g.id === goal.id ? goal : g)
+      : [...goals, goal];
+    setGoals(next);
+    persist(allTransactions, debts, budgets, next);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const deleteGoal = useCallback((id) => {
+    const next = goals.filter(g => g.id !== id);
+    setGoals(next);
+    persist(allTransactions, debts, budgets, next);
+  }, [allTransactions, debts, budgets, goals, persist]);
 
   // Filter transactions for viewed month
   const monthTransactions = useMemo(() => {
@@ -175,6 +200,7 @@ function App() {
     allTransactions,
     debts,
     budgets,
+    goals,
     viewMonth,
     viewYear,
     monthLabel,
@@ -185,6 +211,8 @@ function App() {
     onSettleDebt:        settleDebt,
     onSaveBudget:        saveBudget,
     onDeleteBudget:      deleteBudget,
+    onSaveGoal:          saveGoal,
+    onDeleteGoal:        deleteGoal,
     onNavigate:          setPage,
   };
 

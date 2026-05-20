@@ -475,6 +475,21 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .goal-meta .num { color: var(--text-2); font-weight: 500; }
 .goal-sep   { color: var(--text-4); }
 
+.goal-actions {
+  display: flex; gap: 4px; opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.goal:hover .goal-actions { opacity: 1; }
+.goal-action-btn {
+  width: 26px; height: 26px; border-radius: 7px;
+  display: grid; place-items: center;
+  color: var(--text-3);
+  transition: background 0.15s, color 0.15s;
+}
+.goal-action-btn:hover        { background: var(--surface-2); color: var(--text); }
+.goal-action-btn.danger:hover { background: rgba(255,59,48,0.15); color: var(--c-red); }
+
 /* ==========================================================================
    Transactions
    ========================================================================== */

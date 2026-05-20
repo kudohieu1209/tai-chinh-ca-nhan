@@ -1,11 +1,115 @@
 // Overview — hero stats, category breakdown, flow chart, goals, debts, 6-month
 
-function GoalRow({ emoji, color, name, current, target, etaMonths }) {
-  const pct = Math.min(100, current / target * 100);
+const GOAL_COLORS = ["#0A84FF","#FF9500","#34C759","#FF2D55","#5856D6","#AF52DE","#FF3B30","#00C7BE","#FFCC00","#A2845E"];
+const GOAL_EMOJIS = ["🎯","💻","🏖️","🚗","📚","🏠","✈️","💍","🎓","📱","💪","🏋️","🎸","🌍","🐶"];
+
+function GoalForm({ goal, onSave, onCancel }) {
+  const [name, setName]       = useState(goal?.name    || "");
+  const [emoji, setEmoji]     = useState(goal?.emoji   || "🎯");
+  const [color, setColor]     = useState(goal?.color   || "#0A84FF");
+  const [current, setCurrent] = useState(goal?.current || 0);
+  const [target, setTarget]   = useState(goal?.target  || 0);
+  const [monthly, setMonthly] = useState(goal?.monthly || 0);
+
+  const handleSave = () => {
+    if (!name.trim() || target <= 0) return;
+    onSave({ id: goal?.id || Date.now(), name: name.trim(), emoji, color, current, target, monthly });
+  };
+
+  return (
+    <div style={{
+      marginTop: 14, padding: "14px 16px",
+      background: "var(--surface-2)", borderRadius: "var(--r-lg)",
+      border: "0.5px solid var(--border)",
+      display: "flex", flexDirection: "column", gap: 12,
+    }}>
+      {/* Emoji picker + name */}
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+        <div className="field" style={{ width: 70 }}>
+          <span className="field-label">Icon</span>
+          <input className="input" style={{ textAlign: "center", fontSize: 20, padding: "6px 8px" }}
+            value={emoji} maxLength={2}
+            onChange={e => setEmoji(e.target.value)} />
+        </div>
+        <div className="field" style={{ flex: 1 }}>
+          <span className="field-label">Tên mục tiêu</span>
+          <input className="input" type="text" placeholder="VD: MacBook, Du lịch Nhật..."
+            value={name} onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSave()} />
+        </div>
+      </div>
+
+      {/* Emoji presets */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {GOAL_EMOJIS.map(e => (
+          <button key={e} onClick={() => setEmoji(e)} style={{
+            width: 30, height: 30, borderRadius: 8, fontSize: 16,
+            background: emoji === e ? "var(--accent-tint)" : "var(--surface-2)",
+            border: emoji === e ? "1.5px solid var(--accent)" : "0.5px solid var(--border)",
+          }}>{e}</button>
+        ))}
+      </div>
+
+      {/* Color swatches */}
+      <div>
+        <div className="field-label" style={{ marginBottom: 6 }}>Màu</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {GOAL_COLORS.map(c => (
+            <button key={c} onClick={() => setColor(c)} style={{
+              width: 26, height: 26, borderRadius: "50%", background: c,
+              border: color === c ? "2.5px solid var(--text)" : "2px solid transparent",
+              outline: color === c ? "2px solid var(--surface-solid)" : "none",
+              outlineOffset: 1,
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Amounts */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div className="field">
+          <span className="field-label">Đã có</span>
+          <MoneyInput value={current} onChange={setCurrent} />
+        </div>
+        <div className="field">
+          <span className="field-label">Mục tiêu</span>
+          <MoneyInput value={target} onChange={setTarget} />
+        </div>
+        <div className="field">
+          <span className="field-label">Tiết kiệm/tháng</span>
+          <MoneyInput value={monthly} onChange={setMonthly} />
+        </div>
+      </div>
+
+      {/* ETA preview */}
+      {target > 0 && monthly > 0 && (
+        <div style={{ fontSize: 12, color: "var(--text-3)" }}>
+          Ước tính còn <b style={{ color: "var(--text-2)" }}>
+            ~{Math.ceil(Math.max(0, target - current) / monthly)} tháng
+          </b> nữa để đạt mục tiêu
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn" style={{ flex: 1, height: 38 }} onClick={handleSave}>
+          <Icons.check size={14} /> {goal ? "Lưu thay đổi" : "Thêm mục tiêu"}
+        </button>
+        <button className="btn btn-secondary" style={{ height: 38, padding: "0 14px" }} onClick={onCancel}>
+          <Icons.x size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GoalRow({ goal, onEdit, onDelete }) {
+  const { emoji, color, name, current, target, monthly } = goal;
+  const pct       = Math.min(100, current / target * 100);
   const remaining = Math.max(0, target - current);
+  const etaMonths = monthly > 0 ? Math.ceil(remaining / monthly) : null;
   const R = 22, C = 2 * Math.PI * R;
   return (
-    <div className="goal">
+    <div className="goal" style={{ position: "relative" }}>
       <div className="goal-ring">
         <svg width="56" height="56" viewBox="0 0 56 56">
           <circle cx="28" cy="28" r={R} stroke="var(--surface-2)" strokeWidth="5" fill="none" />
@@ -26,15 +130,29 @@ function GoalRow({ emoji, color, name, current, target, etaMonths }) {
           <span className="num">{fmt(current)}</span>
           <span className="goal-sep">·</span>
           <span>còn <span className="num">{fmt(remaining)}</span></span>
-          <span className="goal-sep">·</span>
-          <span>~{etaMonths} tháng nữa</span>
+          {etaMonths != null && (
+            <>
+              <span className="goal-sep">·</span>
+              <span>~{etaMonths} tháng nữa</span>
+            </>
+          )}
         </div>
+      </div>
+      <div className="goal-actions">
+        <button className="goal-action-btn" onClick={() => onEdit(goal)} title="Sửa">
+          <Icons.pencil size={13} />
+        </button>
+        <button className="goal-action-btn danger" onClick={() => onDelete(goal.id)} title="Xóa">
+          <Icons.trash size={13} />
+        </button>
       </div>
     </div>
   );
 }
 
-function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, monthLabel, onNavigate }) {
+function Overview({ transactions, allTransactions, debts, goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
+  const [editingGoal, setEditingGoal] = useState(null); // null = closed, "new" = add form, goal obj = edit form
+
   const income = useMemo(() =>
     transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
     [transactions]
@@ -55,8 +173,7 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
     });
     return Object.entries(spend)
       .map(([cat, amount]) => ({
-        id: cat,
-        name: cat,
+        id: cat, name: cat,
         emoji: CATEGORIES[cat]?.emoji || "📦",
         color: CATEGORIES[cat]?.color || "#8E8E93",
         amount,
@@ -95,11 +212,16 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
   }, [allTransactions, viewMonth, viewYear]);
 
   const currentLabel = `T${viewMonth + 1}/${String(viewYear).slice(2)}`;
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
 
-  const openOwe  = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
-  const openOwed = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
+  const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
+  const openOwed  = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openDebts = debts.filter(d => !d.settled);
+
+  const handleSaveGoal = (g) => {
+    onSaveGoal(g);
+    setEditingGoal(null);
+  };
 
   return (
     <div className="page fade-in">
@@ -118,10 +240,9 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
           <div className="stat-value num">{fmt(income)}</div>
           <div className="stat-sub">
             <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dịch ·
-            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
+            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
           </div>
         </div>
-
         <div className="stat">
           <div className="stat-label" style={{ color: "var(--c-red)" }}>
             <Icons.arrowUpRight size={13} /> Chi tiêu
@@ -129,27 +250,22 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
           <div className="stat-value num">{fmt(expense)}</div>
           <div className="stat-sub">
             <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dịch ·
-            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
+            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
           </div>
         </div>
-
         <div className="stat">
-          <div className="stat-label">
-            <Icons.wallet size={13} /> Số dư còn lại
-          </div>
+          <div className="stat-label"><Icons.wallet size={13} /> Số dư còn lại</div>
           <div className="stat-value num">{fmt(remaining)}</div>
           <div className="stat-sub">
             Tiết kiệm {savingsRate}% thu nhập
             {savingsRate >= 5 && (
-              <span className="pill">
-                <Icons.check size={11} /> Đạt mục tiêu 5%
-              </span>
+              <span className="pill"><Icons.check size={11} /> Đạt mục tiêu 5%</span>
             )}
           </div>
         </div>
       </div>
 
-      {/* === Breakdown + Flow === */}
+      {/* === Breakdown + Flow + Goals === */}
       <div className="grid-2">
         <div className="card">
           <div className="card-header">
@@ -200,20 +316,46 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
             )}
           </div>
 
-          <div className="card" style={{ height: "290px" }}>
+          {/* === Goals card === */}
+          <div className="card">
             <div className="card-header">
               <div>
                 <div className="card-title">Mục tiêu tiết kiệm</div>
-                <div className="card-subtitle">2 mục tiêu đang chạy</div>
+                <div className="card-subtitle">
+                  {goals.length > 0 ? `${goals.length} mục tiêu đang chạy` : "Chưa có mục tiêu nào"}
+                </div>
               </div>
-              <button className="card-action">+ Thêm</button>
+              <button className="card-action" onClick={() => setEditingGoal(editingGoal === "new" ? null : "new")}>
+                {editingGoal === "new" ? "Hủy" : "+ Thêm"}
+              </button>
             </div>
-            <div className="goals">
-              <GoalRow emoji="💻" color="#0A84FF" name="MacBook Air M4"
-                current={3200000} target={28000000} etaMonths={9} />
-              <GoalRow emoji="🏖️" color="#FF9500" name="Đi Đà Lạt cuối năm"
-                current={1100000} target={3500000} etaMonths={4} />
-            </div>
+
+            {/* Add form */}
+            {editingGoal === "new" && (
+              <GoalForm
+                onSave={handleSaveGoal}
+                onCancel={() => setEditingGoal(null)}
+              />
+            )}
+
+            {/* Goals list */}
+            {goals.length === 0 && editingGoal !== "new" ? (
+              <Empty icon="flag" title="Chưa có mục tiêu" text="Bấm + Thêm để tạo mục tiêu tiết kiệm đầu tiên" />
+            ) : (
+              <div className="goals" style={{ marginTop: editingGoal === "new" ? 14 : 0 }}>
+                {goals.map(g => (
+                  editingGoal?.id === g.id ? (
+                    <GoalForm key={g.id} goal={g}
+                      onSave={handleSaveGoal}
+                      onCancel={() => setEditingGoal(null)} />
+                  ) : (
+                    <GoalRow key={g.id} goal={g}
+                      onEdit={g => setEditingGoal(g)}
+                      onDelete={id => onDeleteGoal(id)} />
+                  )
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -242,22 +384,14 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
           </div>
           <div className="debt-split">
             <div className="debt-card owe">
-              <div className="debt-card-label">
-                <Icons.arrowUpRight size={11} /> Bạn đang nợ
-              </div>
+              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Bạn đang nợ</div>
               <div className="debt-card-value num">{fmt(openOwe)}</div>
-              <div className="debt-card-sub">
-                {debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ
-              </div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</div>
             </div>
             <div className="debt-card owed">
-              <div className="debt-card-label">
-                <Icons.arrowDownLeft size={11} /> Người khác nợ bạn
-              </div>
+              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> Người khác nợ bạn</div>
               <div className="debt-card-value num">{fmt(openOwed)}</div>
-              <div className="debt-card-sub">
-                {debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu
-              </div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</div>
             </div>
           </div>
           <div className="debt-list">
@@ -274,9 +408,7 @@ function Overview({ transactions, allTransactions, debts, viewMonth, viewYear, m
                       <span className="debt-name">{d.name}</span>
                       <span className="debt-note">{d.note}</span>
                     </div>
-                    <span className={"debt-amount num " + (d.type === "owe" ? "owe" : "owed")}>
-                      {fmt(d.amount)}
-                    </span>
+                    <span className={"debt-amount num " + (d.type === "owe" ? "owe" : "owed")}>{fmt(d.amount)}</span>
                   </div>
                 );
               })
