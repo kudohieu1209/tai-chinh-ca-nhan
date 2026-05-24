@@ -1,11 +1,11 @@
-// Overview — hero stats, category breakdown, flow chart, goals, debts, 6-month
+// Overview â€” hero stats, category breakdown, flow chart, goals, debts, 6-month
 
 const GOAL_COLORS = ["#0A84FF","#FF9500","#34C759","#FF2D55","#5856D6","#AF52DE","#FF3B30","#00C7BE","#FFCC00","#A2845E"];
-const GOAL_EMOJIS = ["🎯","💻","🏖️","🚗","📚","🏠","✈️","💍","🎓","📱","💪","🏋️","🎸","🌍","🐶"];
+const GOAL_EMOJIS = ["ðŸŽ¯","ðŸ’»","ðŸ–ï¸","ðŸš—","ðŸ“š","ðŸ ","âœˆï¸","ðŸ’","ðŸŽ“","ðŸ“±","ðŸ’ª","ðŸ‹ï¸","ðŸŽ¸","ðŸŒ","ðŸ¶"];
 
 function GoalForm({ goal, onSave, onCancel }) {
   const [name, setName]       = useState(goal?.name    || "");
-  const [emoji, setEmoji]     = useState(goal?.emoji   || "🎯");
+  const [emoji, setEmoji]     = useState(goal?.emoji   || "ðŸŽ¯");
   const [color, setColor]     = useState(goal?.color   || "#0A84FF");
   const [current, setCurrent] = useState(goal?.current || 0);
   const [target, setTarget]   = useState(goal?.target  || 0);
@@ -32,8 +32,8 @@ function GoalForm({ goal, onSave, onCancel }) {
             onChange={e => setEmoji(e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <span className="field-label">Tên mục tiêu</span>
-          <input className="input" type="text" placeholder="VD: MacBook, Du lịch Nhật..."
+          <span className="field-label">TÃªn má»¥c tiÃªu</span>
+          <input className="input" type="text" placeholder="VD: MacBook, Du lá»‹ch Nháº­t..."
             value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSave()} />
         </div>
@@ -52,7 +52,7 @@ function GoalForm({ goal, onSave, onCancel }) {
 
       {/* Color swatches */}
       <div>
-        <div className="field-label" style={{ marginBottom: 6 }}>Màu</div>
+        <div className="field-label" style={{ marginBottom: 6 }}>MÃ u</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {GOAL_COLORS.map(c => (
             <button key={c} onClick={() => setColor(c)} style={{
@@ -68,15 +68,15 @@ function GoalForm({ goal, onSave, onCancel }) {
       {/* Amounts */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <div className="field">
-          <span className="field-label">Đã có</span>
+          <span className="field-label">ÄÃ£ cÃ³</span>
           <MoneyInput value={current} onChange={setCurrent} />
         </div>
         <div className="field">
-          <span className="field-label">Mục tiêu</span>
+          <span className="field-label">Má»¥c tiÃªu</span>
           <MoneyInput value={target} onChange={setTarget} />
         </div>
         <div className="field">
-          <span className="field-label">Tiết kiệm/tháng</span>
+          <span className="field-label">Tiáº¿t kiá»‡m/thÃ¡ng</span>
           <MoneyInput value={monthly} onChange={setMonthly} />
         </div>
       </div>
@@ -84,15 +84,15 @@ function GoalForm({ goal, onSave, onCancel }) {
       {/* ETA preview */}
       {target > 0 && monthly > 0 && (
         <div style={{ fontSize: 12, color: "var(--text-3)" }}>
-          Ước tính còn <b style={{ color: "var(--text-2)" }}>
-            ~{Math.ceil(Math.max(0, target - current) / monthly)} tháng
-          </b> nữa để đạt mục tiêu
+          Æ¯á»›c tÃ­nh cÃ²n <b style={{ color: "var(--text-2)" }}>
+            ~{Math.ceil(Math.max(0, target - current) / monthly)} thÃ¡ng
+          </b> ná»¯a Ä‘á»ƒ Ä‘áº¡t má»¥c tiÃªu
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
         <button className="btn" style={{ flex: 1, height: 38 }} onClick={handleSave}>
-          <Icons.check size={14} /> {goal ? "Lưu thay đổi" : "Thêm mục tiêu"}
+          <Icons.check size={14} /> {goal ? "LÆ°u thay Ä‘á»•i" : "ThÃªm má»¥c tiÃªu"}
         </button>
         <button className="btn btn-secondary" style={{ height: 38, padding: "0 14px" }} onClick={onCancel}>
           <Icons.x size={14} />
@@ -128,21 +128,21 @@ function GoalRow({ goal, onEdit, onDelete }) {
         </div>
         <div className="goal-meta">
           <span className="num">{fmt(current)}</span>
-          <span className="goal-sep">·</span>
-          <span>còn <span className="num">{fmt(remaining)}</span></span>
+          <span className="goal-sep">Â·</span>
+          <span>cÃ²n <span className="num">{fmt(remaining)}</span></span>
           {etaMonths != null && (
             <>
-              <span className="goal-sep">·</span>
-              <span>~{etaMonths} tháng nữa</span>
+              <span className="goal-sep">Â·</span>
+              <span>~{etaMonths} thÃ¡ng ná»¯a</span>
             </>
           )}
         </div>
       </div>
       <div className="goal-actions">
-        <button className="goal-action-btn" onClick={() => onEdit(goal)} title="Sửa">
+        <button className="goal-action-btn" onClick={() => onEdit(goal)} title="Sá»­a">
           <Icons.pencil size={13} />
         </button>
-        <button className="goal-action-btn danger" onClick={() => onDelete(goal.id)} title="Xóa">
+        <button className="goal-action-btn danger" onClick={() => onDelete(goal.id)} title="XÃ³a">
           <Icons.trash size={13} />
         </button>
       </div>
@@ -166,6 +166,10 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
   const incomeCount = transactions.filter(t => t.type === "income").length;
   const expenseCount = transactions.filter(t => t.type === "expense").length;
 
+  const incomeAnim    = useCountup(income);
+  const expenseAnim   = useCountup(expense);
+  const remainingAnim = useCountup(remaining);
+
   const catRows = useMemo(() => {
     const spend = {};
     transactions.filter(t => t.type === "expense").forEach(t => {
@@ -174,7 +178,6 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
     return Object.entries(spend)
       .map(([cat, amount]) => ({
         id: cat, name: cat,
-        emoji: CATEGORIES[cat]?.emoji || "📦",
         color: CATEGORIES[cat]?.color || "#8E8E93",
         amount,
         pct: expense > 0 ? (amount / expense) * 100 : 0,
@@ -212,6 +215,20 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
   }, [allTransactions, viewMonth, viewYear]);
 
   const currentLabel = `T${viewMonth + 1}/${String(viewYear).slice(2)}`;
+  const currentMonthIndex = sixMonths.findIndex(m => m.label === currentLabel);
+  const currentMonthSummary = sixMonths.find(m => m.label === currentLabel) || { inc: 0, exp: 0 };
+  const previousMonthSummary = currentMonthIndex > 0 ? sixMonths[currentMonthIndex - 1] : null;
+  const spendingRatio = currentMonthSummary.inc > 0
+    ? (currentMonthSummary.exp / currentMonthSummary.inc) * 100
+    : (currentMonthSummary.exp > 0 ? 101 : 0);
+  const spendingRatioLabel = currentMonthSummary.inc > 0
+    ? formatPercent(spendingRatio)
+    : (currentMonthSummary.exp > 0 ? ">100%" : "0,0%");
+  const spendingProgress = Math.min(100, Math.max(0, spendingRatio));
+  const spendingRatioTone = getSpendingRatioTone(spendingRatio);
+  const spendingRatioMessage = getSpendingRatioMessage(spendingRatio, currentMonthSummary.inc, currentMonthSummary.exp);
+  const incomeChangeText = previousMonthSummary ? formatChangeText("Thu", currentMonthSummary.inc, previousMonthSummary.inc) : null;
+  const expenseChangeText = previousMonthSummary ? formatChangeText("Chi", currentMonthSummary.exp, previousMonthSummary.exp) : null;
   const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
 
   const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
@@ -225,180 +242,152 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
 
   return (
     <div className="page fade-in">
-      <PageHeader greet="Xin chào, Hiếu 👋" title={monthLabel}>
+      <PageHeader greet="Xin chÃ o, Hiáº¿u ðŸ‘‹" title={monthLabel}>
         <button className="btn" onClick={() => onNavigate && onNavigate("transactions")}>
-          <Icons.plus size={15} /> Thêm giao dịch
+          <Icons.plus size={15} /> ThÃªm giao dá»‹ch
         </button>
       </PageHeader>
 
       {/* === Hero stats === */}
       <div className="stat-grid">
-        <div className="stat">
+        <div className="stat stagger stagger-1">
           <div className="stat-label" style={{ color: "var(--c-green)" }}>
-            <Icons.arrowDownLeft size={13} /> Thu nhập
+            <Icons.arrowDownLeft size={13} /> Thu nháº­p
           </div>
-          <div className="stat-value num">{fmt(income)}</div>
+          <div className="stat-value num">{fmt(incomeAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dịch ·
-            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
+            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dá»‹ch Â·
+            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/láº§n
           </div>
         </div>
-        <div className="stat">
+        <div className="stat stagger stagger-2">
           <div className="stat-label" style={{ color: "var(--c-red)" }}>
-            <Icons.arrowUpRight size={13} /> Chi tiêu
+            <Icons.arrowUpRight size={13} /> Chi tiÃªu
           </div>
-          <div className="stat-value num">{fmt(expense)}</div>
+          <div className="stat-value num">{fmt(expenseAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dịch ·
-            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
+            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dá»‹ch Â·
+            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/láº§n
           </div>
         </div>
-        <div className="stat">
-          <div className="stat-label"><Icons.wallet size={13} /> Số dư còn lại</div>
-          <div className="stat-value num">{fmt(remaining)}</div>
+        <div className="stat stagger stagger-3">
+          <div className="stat-label"><Icons.wallet size={13} /> Sá»‘ dÆ° cÃ²n láº¡i</div>
+          <div className="stat-value num">{fmt(remainingAnim)}</div>
           <div className="stat-sub">
-            Tiết kiệm {savingsRate}% thu nhập
+            Tiáº¿t kiá»‡m {savingsRate}% thu nháº­p
             {savingsRate >= 5 && (
-              <span className="pill"><Icons.check size={11} /> Đạt mục tiêu 5%</span>
+              <span className="pill"><Icons.check size={11} /> Äáº¡t má»¥c tiÃªu 5%</span>
             )}
           </div>
         </div>
       </div>
 
       {/* === Breakdown + Flow + Goals === */}
-      <div className="grid-2">
-        <div className="card">
+      <div className="grid-2 category-flow-row">
+        <div className="card category-card stagger stagger-4">
           <div className="card-header">
             <div>
-              <div className="card-title">Chi tiêu theo danh mục</div>
-              <div className="card-subtitle">{fmt(expense)} · {expenseCount} giao dịch</div>
+              <div className="card-title">Chi tiÃªu theo danh má»¥c</div>
+              <div className="card-subtitle">{fmt(expense)} Â· {expenseCount} giao dá»‹ch</div>
             </div>
-            <button className="card-action" onClick={() => onNavigate && onNavigate("transactions")}>Xem tất cả</button>
+            <button className="card-action" onClick={() => onNavigate && onNavigate("transactions")}>Xem táº¥t cáº£</button>
           </div>
           {catRows.length === 0 ? (
-            <Empty icon="pieChart" title="Chưa có chi tiêu" text="Thêm giao dịch để xem phân tích" />
+            <Empty icon="inbox" title="ChÆ°a cÃ³ chi tiÃªu" text="ThÃªm giao dá»‹ch Ä‘á»ƒ xem phÃ¢n tÃ­ch" />
           ) : (
-            <>
-              <div className="cat-stack">
-                {catRows.map(c => (
-                  <div key={c.id} style={{ width: c.pct + "%", background: c.color }}
-                    title={`${c.name}: ${c.pct.toFixed(0)}%`} />
-                ))}
-              </div>
+            <div className="cat-layout">
               <div className="cat-list">
                 {catRows.map(c => (
-                  <div className="cat-row" key={c.id}>
-                    <span className="cat-dot" style={{ background: c.color }} />
-                    <div className="cat-name">
-                      <span>{c.emoji} {c.name}</span>
-                      <span className="cat-pct">{c.pct.toFixed(0)}% tổng chi</span>
+                  <div className="cat-row" key={c.id} style={{ "--cat-color": c.color, "--cat-pct": c.pct + "%" }}>
+                    <div className="cat-row-main">
+                      <span className="cat-dot" style={{ background: c.color }} />
+                      <div className="cat-name-text">{c.name}</div>
+                      <div className="cat-pct">{c.pct.toFixed(0)}%</div>
+                      <div className="cat-amount num">{fmt(c.amount)}</div>
                     </div>
-                    <span className="cat-amount num">{fmt(c.amount)}</span>
+                    <div className="cat-bar" aria-hidden="true">
+                      <span />
+                    </div>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 
         <div className="col">
-          <div className="card">
+          <div className="card flow-card stagger stagger-5">
             <div className="card-header">
               <div>
-                <div className="card-title">Dòng tiền theo ngày</div>
-                <div className="card-subtitle">{monthLabel} · {incomeCount + expenseCount} giao dịch</div>
+                <div className="card-title">DÃ²ng tiá»n theo ngÃ y</div>
+                <div className="card-subtitle">{monthLabel} Â· {incomeCount + expenseCount} giao dá»‹ch</div>
               </div>
             </div>
             {dailyFlow.length === 0 ? (
-              <Empty icon="trendUp" title="Chưa có dữ liệu" text="Thêm giao dịch để xem dòng tiền" />
+              <Empty icon="trendUp" title="ChÆ°a cÃ³ dá»¯ liá»‡u" text="ThÃªm giao dá»‹ch Ä‘á»ƒ xem dÃ²ng tiá»n" />
             ) : (
               <FlowChart data={dailyFlow} daysInMonth={daysInMonth} />
             )}
           </div>
 
-          {/* === Goals card === */}
-          <div className="card">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Mục tiêu tiết kiệm</div>
-                <div className="card-subtitle">
-                  {goals.length > 0 ? `${goals.length} mục tiêu đang chạy` : "Chưa có mục tiêu nào"}
-                </div>
-              </div>
-              <button className="card-action" onClick={() => setEditingGoal(editingGoal === "new" ? null : "new")}>
-                {editingGoal === "new" ? "Hủy" : "+ Thêm"}
-              </button>
-            </div>
-
-            {/* Add form */}
-            {editingGoal === "new" && (
-              <GoalForm
-                onSave={handleSaveGoal}
-                onCancel={() => setEditingGoal(null)}
-              />
-            )}
-
-            {/* Goals list */}
-            {goals.length === 0 && editingGoal !== "new" ? (
-              <Empty icon="flag" title="Chưa có mục tiêu" text="Bấm + Thêm để tạo mục tiêu tiết kiệm đầu tiên" />
-            ) : (
-              <div className="goals" style={{ marginTop: editingGoal === "new" ? 14 : 0 }}>
-                {goals.map(g => (
-                  editingGoal?.id === g.id ? (
-                    <GoalForm key={g.id} goal={g}
-                      onSave={handleSaveGoal}
-                      onCancel={() => setEditingGoal(null)} />
-                  ) : (
-                    <GoalRow key={g.id} goal={g}
-                      onEdit={g => setEditingGoal(g)}
-                      onDelete={id => onDeleteGoal(id)} />
-                  )
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
       {/* === Six months + Debts === */}
-      <div className="grid-2">
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">So sánh 6 tháng gần nhất</div>
-            <div style={{ display: "flex", gap: 14, fontSize: 12, color: "var(--text-3)" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: "var(--c-green)" }} /> Thu
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: "#8E8E93" }} /> Chi
-              </span>
+      <div className="grid-2 trend-debt-row">
+        <div className="card trend-card">
+          <div className="card-header trend-header">
+            <div className="card-title">So sánh thu chi 6 tháng gần nhất</div>
+            <div className="trend-legend">
+              <span><i className="income" /> Thu</span>
+              <span><i className="expense" /> Chi</span>
             </div>
           </div>
-          <SixMonthBars data={sixMonths} currentLabel={currentLabel} />
+          <div className="trend-body">
+            <div className="trend-chart-panel">
+              <SixMonthBars data={sixMonths} currentLabel={currentLabel} />
+            </div>
+            <aside className="trend-insight">
+              <div className="trend-insight-label">Tỷ lệ chi tiêu</div>
+              <div className="trend-ratio num">{spendingRatioLabel}</div>
+              <div className="trend-ratio-caption">Chi / Thu tháng này</div>
+              <div className={"trend-progress " + spendingRatioTone} aria-hidden="true">
+                <span style={{ width: spendingProgress + "%" }} />
+              </div>
+              <div className="trend-message">{spendingRatioMessage}</div>
+              {(incomeChangeText || expenseChangeText) && (
+                <div className="trend-compare">
+                  <div className="trend-compare-title">So với tháng trước</div>
+                  {incomeChangeText && <div>{incomeChangeText}</div>}
+                  {expenseChangeText && <div>{expenseChangeText}</div>}
+                </div>
+              )}
+            </aside>
+          </div>
         </div>
 
-        <div className="card">
+        <div className="card overview-debt-card">
           <div className="card-header">
-            <div className="card-title">Nợ vay</div>
-            <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quản lý</button>
+            <div className="card-title">Nợ &amp; Cho Vay</div>
+            <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quáº£n lÃ½</button>
           </div>
           <div className="debt-split">
             <div className="debt-card owe">
-              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Bạn đang nợ</div>
+              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Báº¡n Ä‘ang ná»£</div>
               <div className="debt-card-value num">{fmt(openOwe)}</div>
-              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoáº£n Ä‘ang ná»£</div>
             </div>
             <div className="debt-card owed">
-              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> Người khác nợ bạn</div>
+              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> NgÆ°á»i khÃ¡c ná»£ báº¡n</div>
               <div className="debt-card-value num">{fmt(openOwed)}</div>
-              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoáº£n chÆ°a thu</div>
             </div>
           </div>
-          <div className="debt-list">
+          <div className="debt-list overview-debt-list">
             {openDebts.length === 0 ? (
-              <Empty icon="check" title="Sạch nợ!" text="Không có khoản nợ nào đang mở" />
+              <Empty icon="check" title="Sáº¡ch ná»£!" text="KhÃ´ng cÃ³ khoáº£n ná»£ nÃ o Ä‘ang má»Ÿ" />
             ) : (
-              openDebts.slice(0, 4).map(d => {
+              openDebts.map(d => {
                 const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
                 const color = debtColor(d.id);
                 return (

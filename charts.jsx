@@ -42,45 +42,52 @@ function FlowChart({ data, daysInMonth = 31 }) {
 
   return (
     <>
-      <svg viewBox={`0 0 ${W} ${H}`} className="flow-chart" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--c-green)" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="var(--c-green)" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--c-red)" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="var(--c-red)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <g className="flow-grid">
+      <div className="flow-chart-wrap">
+        <div className="flow-y-labels" aria-hidden="true">
           {Array.from({ length: 5 }, (_, i) => {
             const y = PAD_T + innerH * i / 4;
             const v = niceMax * (1 - i / 4);
-            return (
-              <g key={i}>
-                <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} />
-                <text x={PAD_L - 8} y={y + 3} textAnchor="end">{fmtShort(v)}</text>
-              </g>
-            );
+            return <span key={i} style={{ top: `${y / H * 100}%` }}>{formatAxisValue(v)}</span>;
           })}
-        </g>
-        <path d={expArea} className="flow-area-expense" />
-        <path d={incArea} className="flow-area-income" />
-        <path d={smooth(expPts)} className="flow-line-expense" />
-        <path d={smooth(incPts)} className="flow-line-income" />
-        {series.map((s, i) => s.inc > 0 && (
-          <circle key={"i" + i} cx={xOf(i)} cy={yOf(s.inc)} r="3" className="flow-dot-income" />
-        ))}
-        {series.map((s, i) => s.exp > 0 && (
-          <circle key={"e" + i} cx={xOf(i)} cy={yOf(s.exp)} r="3" className="flow-dot-expense" />
-        ))}
-        <g>
-          {xTicks.map(d => (
-            <text key={d} x={xOf(d - 1)} y={H - 10} textAnchor="middle">{d}</text>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="flow-chart" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--c-green)" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="var(--c-green)" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--c-red)" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="var(--c-red)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <g className="flow-grid">
+            {Array.from({ length: 5 }, (_, i) => {
+              const y = PAD_T + innerH * i / 4;
+              return (
+                <g key={i}>
+                  <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} />
+                </g>
+              );
+            })}
+          </g>
+          <path d={expArea} className="flow-area-expense" />
+          <path d={incArea} className="flow-area-income" />
+          <path d={smooth(expPts)} className="flow-line-expense" />
+          <path d={smooth(incPts)} className="flow-line-income" />
+          {series.map((s, i) => s.inc > 0 && (
+            <circle key={"i" + i} cx={xOf(i)} cy={yOf(s.inc)} r="3" className="flow-dot-income" />
           ))}
-        </g>
-      </svg>
+          {series.map((s, i) => s.exp > 0 && (
+            <circle key={"e" + i} cx={xOf(i)} cy={yOf(s.exp)} r="3" className="flow-dot-expense" />
+          ))}
+        </svg>
+        <div className="flow-x-labels" aria-hidden="true">
+          {xTicks.map(d => (
+            <span key={d} style={{ left: `${xOf(d - 1) / W * 100}%` }}>{d}</span>
+          ))}
+        </div>
+      </div>
       <div className="legend">
         <div className="legend-item">
           <span className="legend-dot" style={{ background: "var(--c-green)" }} /> Thu nhập
@@ -93,44 +100,152 @@ function FlowChart({ data, daysInMonth = 31 }) {
   );
 }
 
-// ====== Six-month bar comparison ======
-function SixMonthBars({ data, currentLabel }) {
-  const maxV = Math.max(...data.flatMap(m => [m.inc, m.exp]), 100);
+// ====== Category spend donut ======
+function DonutChart({ segments, total }) {
+  const R   = 86;
+  const SW  = 24;
+  const C   = 2 * Math.PI * R;
+  const GAP = 2.5;
+
+  let accumulated = 0;
+  const arcs = segments.map(s => {
+    const len    = total > 0 ? (s.amount / total) * C - GAP : 0;
+    const offset = C * 0.25 - accumulated;
+    accumulated += len + GAP;
+    return { ...s, len: Math.max(len, 0), offset };
+  });
+
+  const cx = R + SW / 2 + 4;
+  const size = cx * 2;
+
   return (
-    <div className="month-bars" style={{ height: "250px" }}>
-      {data.map(m => {
-        const isCurrent = m.label === currentLabel;
-        const incH = m.inc / maxV * 100;
-        const expH = m.exp / maxV * 100;
-        const hasData = m.inc > 0 || m.exp > 0;
-        return (
-          <div className="mb-col" key={m.label}>
-            <div className="mb-bars">
-              {hasData ? (
-                <>
-                  <div className={"mb-bar income" + (isCurrent ? " current" : "")}
-                    style={{ height: incH + "%" }} title={"Thu: " + fmt(m.inc)} />
-                  <div className={"mb-bar expense" + (isCurrent ? " current" : "")}
-                    style={{ height: expH + "%" }} title={"Chi: " + fmt(m.exp)} />
-                </>
-              ) : (
-                <div style={{
-                  flex: 1, alignSelf: "stretch", borderRadius: 6,
-                  background: "repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, transparent 4px, transparent 8px)",
-                  opacity: 0.7, display: "grid", placeItems: "center",
-                  fontSize: 10, color: "var(--text-4)"
-                }}>—</div>
-              )}
-            </div>
-            <span className={"mb-label" + (isCurrent ? " current" : "")}>{m.label}</span>
-          </div>
-        );
-      })}
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cx} r={R} fill="none"
+        stroke="var(--surface-2)" strokeWidth={SW} />
+      {arcs.map((s, i) => (
+        <circle key={s.id}
+          cx={cx} cy={cx} r={R}
+          fill="none"
+          stroke={s.color}
+          strokeWidth={SW}
+          strokeLinecap="butt"
+          strokeDasharray={`${s.len} ${C - s.len}`}
+          strokeDashoffset={s.offset}
+          style={{
+            transition: `stroke-dasharray var(--dur-reveal) var(--spring-snappy), stroke-dashoffset var(--dur-reveal) var(--spring-snappy)`,
+            animationDelay: `${i * 40}ms`,
+          }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ====== Six-month bar comparison ======
+function formatCurrency(value) {
+  const n = Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ';
+}
+
+function formatPercent(value) {
+  const n = Number.isFinite(value) ? value : 0;
+  return n.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+}
+
+function formatAxisValue(value) {
+  const n = Number.isFinite(value) ? value : 0;
+  if (n === 0) return '0';
+  if (n >= 1e6) {
+    const m = n / 1e6;
+    return (Number.isInteger(m) ? String(m) : m.toFixed(1).replace(/\.0$/, '')) + 'M';
+  }
+  if (n >= 1e3) return Math.round(n / 1e3) + 'K';
+  return String(Math.round(n));
+}
+
+function calculateChangePercent(current, previous) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
+function formatChangeText(label, current, previous) {
+  const change = calculateChangePercent(current, previous);
+  if (change == null) return null;
+  if (Math.abs(change) < 0.05) return `${label} không đổi so với tháng trước`;
+  return `${label} ${change > 0 ? 'tăng' : 'giảm'} ${formatPercent(Math.abs(change))} so với tháng trước`;
+}
+
+function getSpendingRatioMessage(ratio, income, expense) {
+  if (income <= 0 && expense > 0) return 'Chi tiêu đã vượt thu nhập tháng này.';
+  if (ratio <= 50) return 'Bạn đang sử dụng dưới một nửa thu nhập trong tháng này.';
+  if (ratio <= 70) return 'Chi tiêu đang ở mức ổn so với thu nhập tháng này.';
+  if (ratio <= 90) return 'Chi tiêu chiếm phần lớn thu nhập tháng này.';
+  if (ratio <= 100) return 'Chi tiêu gần bằng thu nhập tháng này.';
+  return 'Chi tiêu đã vượt thu nhập tháng này.';
+}
+
+function getSpendingRatioTone(ratio) {
+  if (ratio <= 50) return "low";
+  if (ratio <= 70) return "medium";
+  if (ratio <= 90) return "high";
+  if (ratio <= 100) return "near";
+  return "over";
+}
+
+function SixMonthBars({ data, currentLabel }) {
+  const values = data.flatMap(m => [m.inc || 0, m.exp || 0]);
+  const maxV = Math.max(...values, 0);
+  const step = maxV > 0 ? Math.max(1000000, Math.ceil(maxV / 4 / 1000000) * 1000000) : 1000000;
+  const niceMax = step * 4;
+  const ticks = Array.from({ length: 5 }, (_, i) => niceMax - step * i);
+
+  return (
+    <div className="month-chart">
+      <div className="month-y-axis" aria-hidden="true">
+        {ticks.map((tick, i) => (
+          <span key={tick} style={{ top: `${i / (ticks.length - 1) * 100}%` }}>{formatAxisValue(tick)}</span>
+        ))}
+      </div>
+      <div className="month-plot">
+        <div className="month-grid" aria-hidden="true">
+          {ticks.map((tick, i) => (
+            <span key={tick} style={{ top: `${i / (ticks.length - 1) * 100}%` }} />
+          ))}
+        </div>
+        <div className="month-bars">
+          {data.map(m => {
+            const isCurrent = m.label === currentLabel;
+            const inc = m.inc || 0;
+            const exp = m.exp || 0;
+            const incH = niceMax > 0 ? inc / niceMax * 100 : 0;
+            const expH = niceMax > 0 ? exp / niceMax * 100 : 0;
+            const hasData = inc > 0 || exp > 0;
+            return (
+              <div
+                className={"mb-col" + (hasData ? " has-data" : " is-empty")}
+                key={m.label}
+                data-tooltip={`${m.label} · Thu ${formatCurrency(inc)} · Chi ${formatCurrency(exp)}`}
+              >
+                <div className="mb-bars-inner">
+                  {inc > 0 && (
+                    <div className={"mb-bar income" + (isCurrent ? " current" : "")}
+                      style={{ height: incH + "%" }} title={`${m.label} · Thu ${formatCurrency(inc)} · Chi ${formatCurrency(exp)}`} />
+                  )}
+                  {exp > 0 && (
+                    <div className={"mb-bar expense" + (isCurrent ? " current" : "")}
+                      style={{ height: expH + "%" }} title={`${m.label} · Thu ${formatCurrency(inc)} · Chi ${formatCurrency(exp)}`} />
+                  )}
+                </div>
+                <span className={"mb-label" + (isCurrent ? " current" : "")}>{m.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ====== Benchmark mini bar ======
 function BenchmarkBar({ value, benchmark, max }) {
   const mePct = Math.min(100, value / max * 100);
   const avgPct = Math.min(100, benchmark / max * 100);
@@ -143,4 +258,14 @@ function BenchmarkBar({ value, benchmark, max }) {
   );
 }
 
-Object.assign(window, { FlowChart, SixMonthBars, BenchmarkBar });
+Object.assign(window, {
+  FlowChart,
+  SixMonthBars,
+  BenchmarkBar,
+  formatCurrency,
+  formatPercent,
+  calculateChangePercent,
+  formatChangeText,
+  getSpendingRatioMessage,
+  getSpendingRatioTone,
+});

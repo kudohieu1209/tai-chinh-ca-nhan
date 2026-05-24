@@ -19,14 +19,1994 @@
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
+  <!-- Data layer (plain JS — no CORS issue) -->
   <script src="data.js"></script>
-  <script type="text/babel" data-presets="react" src="icons.jsx"></script>
-  <script type="text/babel" data-presets="react" src="charts.jsx"></script>
-  <script type="text/babel" data-presets="react" src="components.jsx"></script>
-  <script type="text/babel" data-presets="react" src="overview.jsx"></script>
-  <script type="text/babel" data-presets="react" src="transactions.jsx"></script>
-  <script type="text/babel" data-presets="react" src="debts.jsx"></script>
-  <script type="text/babel" data-presets="react" src="budget.jsx"></script>
-  <script type="text/babel" data-presets="react" src="app.jsx"></script>
+
+  <!-- All JSX inlined — avoids file:// CORS block on Babel XHR -->
+  <script type="text/babel" data-presets="react">
+
+// ============================================================
+// icons.jsx — Apple SF Symbols-inspired SVG icon set
+// ============================================================
+
+const I = ({ d, size = 18, className = "", style, viewBox = "0 0 24 24", strokeWidth = 1.7, fill = "none", children }) => (
+  <svg
+    width={size} height={size} viewBox={viewBox}
+    fill={fill} stroke="currentColor" strokeWidth={strokeWidth}
+    strokeLinecap="round" strokeLinejoin="round"
+    className={className} style={style} aria-hidden="true"
+  >
+    {d ? <path d={d} /> : children}
+  </svg>
+);
+
+const Icons = {
+  squareGrid: (p) => (
+    <I {...p}>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </I>
+  ),
+  arrowLeftRight: (p) => (
+    <I {...p}>
+      <path d="M7 7h13" /><path d="M16 3l4 4-4 4" />
+      <path d="M17 17H4" /><path d="M8 21l-4-4 4-4" />
+    </I>
+  ),
+  creditCard: (p) => (
+    <I {...p}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M3 10h18" /><path d="M7 15h4" />
+    </I>
+  ),
+  wallet: (p) => (
+    <I {...p}>
+      <path d="M20 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1Z" />
+      <path d="M16 14h.01" /><path d="M17 7V5a1 1 0 0 0-1.4-.9L4.6 8" />
+    </I>
+  ),
+  chevLeft:  (p) => <I {...p} d="M15 18l-6-6 6-6" />,
+  chevRight: (p) => <I {...p} d="M9 18l6-6-6-6" />,
+  chevDown:  (p) => <I {...p} d="M6 9l6 6 6-6" />,
+  search: (p) => (
+    <I {...p}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></I>
+  ),
+  plus: (p) => <I {...p} d="M12 5v14M5 12h14" />,
+  trash: (p) => (
+    <I {...p}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
+    </I>
+  ),
+  arrowUp:        (p) => <I {...p} d="M12 19V5M5 12l7-7 7 7" />,
+  arrowDown:      (p) => <I {...p} d="M12 5v14M5 12l7 7 7-7" />,
+  arrowUpRight:   (p) => <I {...p} d="M7 17L17 7M7 7h10v10" />,
+  arrowDownRight: (p) => <I {...p} d="M7 7l10 10M17 7v10H7" />,
+  arrowDownLeft:  (p) => <I {...p} d="M17 7L7 17M17 17H7V7" />,
+  trendUp: (p) => (
+    <I {...p}><path d="M3 17l6-6 4 4 8-8" /><path d="M14 7h7v7" /></I>
+  ),
+  trendDown: (p) => (
+    <I {...p}><path d="M3 7l6 6 4-4 8 8" /><path d="M14 17h7v-7" /></I>
+  ),
+  flag: (p) => (
+    <I {...p}><path d="M4 22V4" /><path d="M4 4h12l-2 4 2 4H4" /></I>
+  ),
+  sparkle: (p) => (
+    <I {...p}>
+      <path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3Z" />
+      <path d="M19 17l.6 1.8L21 19.4l-1.4.6L19 21.6l-.6-1.6L17 19.4l1.4-.6L19 17Z" />
+    </I>
+  ),
+  bell: (p) => (
+    <I {...p}>
+      <path d="M6 8a6 6 0 0 1 12 0c0 6.3 2 8 2 8H4s2-1.7 2-8" />
+      <path d="M10 21a2 2 0 0 0 4 0" />
+    </I>
+  ),
+  sun: (p) => (
+    <I {...p}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </I>
+  ),
+  moon: (p) => <I {...p} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />,
+  user: (p) => (
+    <I {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></I>
+  ),
+  users: (p) => (
+    <I {...p}>
+      <circle cx="9" cy="8" r="4" /><path d="M2 21a7 7 0 0 1 14 0" />
+      <path d="M16 3.5a4 4 0 0 1 0 7.7" /><path d="M22 21a7 7 0 0 0-6-6.9" />
+    </I>
+  ),
+  pieChart: (p) => (
+    <I {...p}>
+      <path d="M12 3v9l8 4A9 9 0 1 1 12 3Z" />
+      <path d="M21 12A9 9 0 0 0 12 3v9h9Z" />
+    </I>
+  ),
+  calendar: (p) => (
+    <I {...p}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 10h18" />
+    </I>
+  ),
+  alertTri: (p) => (
+    <I {...p}>
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9v4M12 17h.01" />
+    </I>
+  ),
+  lightbulb: (p) => (
+    <I {...p}>
+      <path d="M9 21h6" /><path d="M10 17h4" />
+      <path d="M15 14a5 5 0 1 0-6 0c1 1 1 2 1 3h4c0-1 0-2 1-3Z" />
+    </I>
+  ),
+  inbox: (p) => (
+    <I {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 14h5l2 3h4l2-3h5" />
+    </I>
+  ),
+  check:  (p) => <I {...p} d="M5 12l5 5L20 7" />,
+  x:      (p) => <I {...p} d="M6 6l12 12M18 6L6 18" />,
+  filter: (p) => <I {...p} d="M3 5h18l-7 9v6l-4-2v-4L3 5Z" />,
+  pencil: (p) => (
+    <I {...p}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </I>
+  ),
+};
+
+// ============================================================
+// charts.jsx — Custom SVG charts
+// ============================================================
+
+const { useMemo: useMemoC } = React;
+
+function FlowChart({ data, daysInMonth = 31 }) {
+  const W = 600, H = 220, PAD_L = 40, PAD_R = 12, PAD_T = 14, PAD_B = 28;
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_T - PAD_B;
+
+  const series = useMemoC(() => {
+    const arr = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const m = data.find(x => x.d === d);
+      arr.push({ d, inc: m?.inc || 0, exp: m?.exp || 0 });
+    }
+    return arr;
+  }, [data, daysInMonth]);
+
+  const maxV = Math.max(...series.flatMap(s => [s.inc, s.exp]), 100);
+  const niceMax = Math.ceil(maxV / 500000) * 500000;
+
+  const xOf = (i) => PAD_L + innerW * i / (daysInMonth - 1);
+  const yOf = (v) => PAD_T + innerH - innerH * v / niceMax;
+
+  const smooth = (pts) => {
+    if (!pts.length) return '';
+    let path = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      const cx = (p0.x + p1.x) / 2;
+      path += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+    }
+    return path;
+  };
+
+  const incPts = series.map((s, i) => ({ x: xOf(i), y: yOf(s.inc) }));
+  const expPts = series.map((s, i) => ({ x: xOf(i), y: yOf(s.exp) }));
+  const incArea = smooth(incPts) + ` L ${xOf(daysInMonth - 1)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
+  const expArea = smooth(expPts) + ` L ${xOf(daysInMonth - 1)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
+  const xTicks = [1, 7, 14, 21, 28, daysInMonth];
+
+  return (
+    <>
+      <div className="flow-chart-wrap">
+        <div className="flow-y-labels" aria-hidden="true">
+          {Array.from({ length: 5 }, (_, i) => {
+            const y = PAD_T + innerH * i / 4;
+            const v = niceMax * (1 - i / 4);
+            return <span key={i} style={{ top: `${y / H * 100}%` }}>{formatAxisValue(v)}</span>;
+          })}
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="flow-chart" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--c-green)" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="var(--c-green)" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--c-red)" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="var(--c-red)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <g className="flow-grid">
+            {Array.from({ length: 5 }, (_, i) => {
+              const y = PAD_T + innerH * i / 4;
+              return (
+                <g key={i}>
+                  <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} />
+                </g>
+              );
+            })}
+          </g>
+          <path d={expArea} className="flow-area-expense" />
+          <path d={incArea} className="flow-area-income" />
+          <path d={smooth(expPts)} className="flow-line-expense" />
+          <path d={smooth(incPts)} className="flow-line-income" />
+          {series.map((s, i) => s.inc > 0 && (
+            <circle key={"i" + i} cx={xOf(i)} cy={yOf(s.inc)} r="3" className="flow-dot-income" />
+          ))}
+          {series.map((s, i) => s.exp > 0 && (
+            <circle key={"e" + i} cx={xOf(i)} cy={yOf(s.exp)} r="3" className="flow-dot-expense" />
+          ))}
+        </svg>
+        <div className="flow-x-labels" aria-hidden="true">
+          {xTicks.map(d => (
+            <span key={d} style={{ left: `${xOf(d - 1) / W * 100}%` }}>{d}</span>
+          ))}
+        </div>
+      </div>
+      <div className="legend">
+        <div className="legend-item">
+          <span className="legend-dot" style={{ background: "var(--c-green)" }} /> Thu nhập
+        </div>
+        <div className="legend-item">
+          <span className="legend-dot" style={{ background: "var(--c-red)" }} /> Chi tiêu
+        </div>
+      </div>
+    </>
+  );
+}
+
+function formatCurrency(value) {
+  const n = Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ';
+}
+
+function formatPercent(value) {
+  const n = Number.isFinite(value) ? value : 0;
+  return n.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+}
+
+function formatAxisValue(value) {
+  const n = Number.isFinite(value) ? value : 0;
+  if (n === 0) return '0';
+  if (n >= 1e6) {
+    const m = n / 1e6;
+    return (Number.isInteger(m) ? String(m) : m.toFixed(1).replace(/\.0$/, '')) + 'M';
+  }
+  if (n >= 1e3) return Math.round(n / 1e3) + 'K';
+  return String(Math.round(n));
+}
+
+function calculateChangePercent(current, previous) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
+function formatChangeText(label, current, previous) {
+  const change = calculateChangePercent(current, previous);
+  if (change == null) return null;
+  if (Math.abs(change) < 0.05) return `${label} không đổi so với tháng trước`;
+  return `${label} ${change > 0 ? 'tăng' : 'giảm'} ${formatPercent(Math.abs(change))} so với tháng trước`;
+}
+
+function getSpendingRatioMessage(ratio, income, expense) {
+  if (income <= 0 && expense > 0) return 'Chi tiêu đã vượt thu nhập tháng này.';
+  if (ratio <= 50) return 'Bạn đang sử dụng dưới một nửa thu nhập trong tháng này.';
+  if (ratio <= 70) return 'Chi tiêu đang ở mức ổn so với thu nhập tháng này.';
+  if (ratio <= 90) return 'Chi tiêu chiếm phần lớn thu nhập tháng này.';
+  if (ratio <= 100) return 'Chi tiêu gần bằng thu nhập tháng này.';
+  return 'Chi tiêu đã vượt thu nhập tháng này.';
+}
+
+function getSpendingRatioTone(ratio) {
+  if (ratio <= 50) return "low";
+  if (ratio <= 70) return "medium";
+  if (ratio <= 90) return "high";
+  if (ratio <= 100) return "near";
+  return "over";
+}
+
+function SixMonthBars({ data, currentLabel }) {
+  const values = data.flatMap(m => [m.inc || 0, m.exp || 0]);
+  const maxV = Math.max(...values, 0);
+  const step = maxV > 0 ? Math.max(1000000, Math.ceil(maxV / 4 / 1000000) * 1000000) : 1000000;
+  const niceMax = step * 4;
+  const ticks = Array.from({ length: 5 }, (_, i) => niceMax - step * i);
+
+  return (
+    <div className="month-chart">
+      <div className="month-y-axis" aria-hidden="true">
+        {ticks.map((tick, i) => (
+          <span key={tick} style={{ top: `${i / (ticks.length - 1) * 100}%` }}>{formatAxisValue(tick)}</span>
+        ))}
+      </div>
+      <div className="month-plot">
+        <div className="month-grid" aria-hidden="true">
+          {ticks.map((tick, i) => (
+            <span key={tick} style={{ top: `${i / (ticks.length - 1) * 100}%` }} />
+          ))}
+        </div>
+        <div className="month-bars">
+          {data.map(m => {
+            const isCurrent = m.label === currentLabel;
+            const inc = m.inc || 0;
+            const exp = m.exp || 0;
+            const incH = niceMax > 0 ? inc / niceMax * 100 : 0;
+            const expH = niceMax > 0 ? exp / niceMax * 100 : 0;
+            const hasData = inc > 0 || exp > 0;
+            return (
+              <div
+                className={"mb-col" + (hasData ? " has-data" : " is-empty")}
+                key={m.label}
+                data-tooltip={`${m.label} · Thu ${formatCurrency(inc)} · Chi ${formatCurrency(exp)}`}
+              >
+                <div className="mb-bars-inner">
+                  {inc > 0 && (
+                    <div className={"mb-bar income" + (isCurrent ? " current" : "")}
+                      style={{ height: incH + "%" }} title={`${m.label} · Thu ${formatCurrency(inc)} · Chi ${formatCurrency(exp)}`} />
+                  )}
+                  {exp > 0 && (
+                    <div className={"mb-bar expense" + (isCurrent ? " current" : "")}
+                      style={{ height: expH + "%" }} title={`${m.label} · Thu ${formatCurrency(inc)} · Chi ${formatCurrency(exp)}`} />
+                  )}
+                </div>
+                <span className={"mb-label" + (isCurrent ? " current" : "")}>{m.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BenchmarkBar({ value, benchmark, max }) {
+  const mePct = Math.min(100, value / max * 100);
+  const avgPct = Math.min(100, benchmark / max * 100);
+  return (
+    <div className="benchmark-bar">
+      <div className="me" style={{ width: mePct + "%" }} />
+      <div className="avg" style={{ left: `calc(${avgPct}% - 1px)` }}
+        title={"TB sinh viên: " + fmt(benchmark)} />
+    </div>
+  );
+}
+
+// ============================================================
+// components.jsx — Shared building blocks
+// ============================================================
+
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+function useCountup(target, duration = 850) {
+  const [value, setValue] = useState(0);
+  const rafRef  = useRef(null);
+  const fromRef = useRef(0);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const from  = fromRef.current;
+    const start = performance.now();
+    const tick  = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const cur = Math.round(from + (target - from) * eased);
+      setValue(cur);
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = target;
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+
+  return value;
+}
+
+function AppSkeleton() {
+  return (
+    <div className="app">
+      <aside className="sidebar" style={{ paddingTop: 24 }}>
+        <div style={{ padding: "0 10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton" style={{ height: 11, width: "65%", marginBottom: 6 }} />
+            <div className="skeleton" style={{ height: 9,  width: "40%" }} />
+          </div>
+        </div>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", marginBottom: 3 }}>
+            <div className="skeleton" style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0 }} />
+            <div className="skeleton" style={{ flex: 1, height: 11 }} />
+          </div>
+        ))}
+      </aside>
+      <main className="main">
+        <div className="toolbar">
+          <div className="skeleton" style={{ width: 80, height: 14, borderRadius: 6 }} />
+          <div className="skeleton" style={{ width: 164, height: 30, borderRadius: 999 }} />
+        </div>
+        <div className="page">
+          <div style={{ marginBottom: 26 }}>
+            <div className="skeleton" style={{ height: 11, width: 180, marginBottom: 10, borderRadius: 6 }} />
+            <div className="skeleton" style={{ height: 28, width: 260, borderRadius: 8 }} />
+          </div>
+          <div className="stat-grid" style={{ marginBottom: 14 }}>
+            {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 116, borderRadius: 22 }} />)}
+          </div>
+          <div className="grid-2">
+            <div className="skeleton" style={{ height: 290, borderRadius: 22 }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="skeleton" style={{ height: 180, borderRadius: 22 }} />
+              <div className="skeleton" style={{ height: 100, borderRadius: 22 }} />
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
+  const openDebtCount = debts.filter(d => !d.settled).length;
+  const pillRef    = useRef(null);
+  const navListRef = useRef(null);
+
+  const navItems = [
+    { id: "overview",     label: "Tổng quan",  icon: "squareGrid",    badge: null },
+    { id: "transactions", label: "Giao dịch",  icon: "arrowLeftRight", badge: null },
+    { id: "debts",        label: "Nợ vay",     icon: "creditCard",     badge: openDebtCount > 0 ? openDebtCount : null },
+    { id: "budget",       label: "Ngân sách",  icon: "wallet",         badge: null },
+  ];
+
+  useEffect(() => {
+    const pill = pillRef.current;
+    const list = navListRef.current;
+    if (!pill || !list) return;
+    const el = list.querySelector(`[data-id="${active}"]`);
+    if (!el) return;
+    pill.style.top    = el.offsetTop + 'px';
+    pill.style.height = el.offsetHeight + 'px';
+  }, [active]);
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-mark">
+          <svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
+            <defs>
+              <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#0A84FF" />
+                <stop offset="100%" stopColor="#5E5CE6" />
+              </linearGradient>
+            </defs>
+            <rect width="28" height="28" rx="7" fill="url(#brandGrad)" />
+            <rect x="6.5" y="15" width="3.2" height="7" rx="1.2" fill="white" opacity="0.7" />
+            <rect x="12.4" y="11" width="3.2" height="11" rx="1.2" fill="white" opacity="0.85" />
+            <rect x="18.3" y="6" width="3.2" height="16" rx="1.2" fill="white" />
+          </svg>
+        </div>
+        <div className="sidebar-brand-text">
+          <span className="sidebar-brand-name">Hiewu</span>
+          <span className="sidebar-brand-sub">Finance</span>
+        </div>
+      </div>
+
+      <div className="sidebar-section-label">Quản lý</div>
+      <div className="nav-list" ref={navListRef}>
+        <div className="nav-pill" ref={pillRef} />
+        {navItems.map(item => {
+          const Icon = Icons[item.icon];
+          return (
+            <div
+              key={item.id}
+              data-id={item.id}
+              className={"nav-item" + (active === item.id ? " active" : "")}
+              onClick={() => onChange(item.id)}
+            >
+              <Icon size={17} className="nav-icon" />
+              <span className="nav-label">{item.label}</span>
+              {item.badge != null && <span className="nav-badge">{item.badge}</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="sidebar-section-label">Khám phá</div>
+      <div className="nav-item">
+        <Icons.sparkle size={17} className="nav-icon" />
+        <span className="nav-label">Gợi ý AI</span>
+        <span className="nav-badge" style={{ background: "rgba(94,92,230,0.15)", color: "#5E5CE6" }}>3</span>
+      </div>
+      <div className="nav-item">
+        <Icons.users size={17} className="nav-icon" />
+        <span className="nav-label">Cộng đồng SV</span>
+      </div>
+
+      <div className="sidebar-footer">
+        <div className="theme-toggle">
+          <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")} title="Light mode">
+            <Icons.sun size={12} /> Sáng
+          </button>
+          <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")} title="Dark mode">
+            <Icons.moon size={12} /> Tối
+          </button>
+        </div>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar"><img src="avatar.jpg" alt="Kudo Hiếu" /></div>
+          <div className="sidebar-user-meta">
+            <span className="sidebar-user-name">Kudo Hiếu</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Toolbar({ activePage, month, onMonthChange }) {
+  const pageTitle = {
+    overview: "Tổng quan",
+    transactions: "Giao dịch",
+    debts: "Nợ vay",
+    budget: "Ngân sách",
+  }[activePage];
+
+  return (
+    <div className="toolbar">
+      <div className="toolbar-title">{pageTitle}</div>
+      <div className="toolbar-right">
+        <div className="month-picker">
+          <button onClick={() => onMonthChange(1)}><Icons.chevLeft size={14} /></button>
+          <span className="label">{month}</span>
+          <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageHeader({ greet, title, children }) {
+  if (!greet && !title && !children) return null;
+  return (
+    <div className={"page-header" + (title ? "" : " page-header-slim")}>
+      <div>
+        {greet && <div className="page-greet">{greet}</div>}
+        {title && <h1 className="page-title">{title}</h1>}
+      </div>
+      {children && <div>{children}</div>}
+    </div>
+  );
+}
+
+function Insight({ tone = "blue", icon = "lightbulb", title, children }) {
+  const colorMap = {
+    blue: "#0A84FF", green: "#34C759", orange: "#FF9500",
+    red: "#FF3B30", purple: "#AF52DE", indigo: "#5856D6",
+  };
+  const Icon = Icons[icon];
+  return (
+    <div className="insight fade-in">
+      <div className="insight-icon" style={{ background: colorMap[tone] }}>
+        <Icon size={16} />
+      </div>
+      <div className="insight-body">
+        <div className="insight-title">{title}</div>
+        <div className="insight-text">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Empty({ icon = "inbox", title, text }) {
+  const Icon = Icons[icon];
+  return (
+    <div className="empty fade-in">
+      <div className="empty-icon"><Icon size={26} /></div>
+      <div className="empty-title">{title}</div>
+      {text && <div className="empty-text">{text}</div>}
+    </div>
+  );
+}
+
+function MoneyInput({ value, onChange, placeholder = "0" }) {
+  const [focused, setFocused] = useState(false);
+  const [raw, setRaw]         = useState("");
+
+  const handleFocus = () => {
+    setFocused(true);
+    setRaw(value ? String(value) : "");
+  };
+  const handleChange = (e) => {
+    const digits = e.target.value.replace(/[^\d]/g, "");
+    setRaw(digits);
+    onChange(digits ? parseInt(digits, 10) : 0);
+  };
+  const handleBlur = () => setFocused(false);
+
+  const display = focused
+    ? raw
+    : value ? new Intl.NumberFormat('vi-VN').format(value) : "";
+
+  return (
+    <div className="input-money">
+      <input
+        className="input"
+        type="text"
+        inputMode="numeric"
+        value={display}
+        placeholder={placeholder}
+        onFocus={handleFocus}
+        onChange={handleChange}
+        onBlur={handleBlur}
+      />
+    </div>
+  );
+}
+
+// ====== TabBar — segmented control with sliding indicator ======
+function TabBar({ tabs, active, onChange, style, className }) {
+  const indicRef = useRef(null);
+  const barRef   = useRef(null);
+
+  useEffect(() => {
+    const indic = indicRef.current;
+    const bar   = barRef.current;
+    if (!indic || !bar) return;
+    const el = bar.querySelector(`[data-tab="${active}"]`);
+    if (!el) return;
+    indic.style.left    = el.offsetLeft + 'px';
+    indic.style.width   = el.offsetWidth + 'px';
+    indic.style.opacity = '1';
+  }, [active]);
+
+  return (
+    <div className={"tx-tabs " + (className || "")} ref={barRef} style={style}>
+      <div className="tab-indicator" ref={indicRef} style={{ opacity: 0 }} />
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          data-tab={t.id}
+          className={"tx-tab" + (active === t.id ? " active" : "") + (t.cls ? " " + t.cls : "")}
+          onClick={() => onChange(t.id)}
+          style={t.btnStyle}
+        >
+          {t.icon && <t.icon size={13} />}
+          {t.label}
+          {t.count != null && <span className="tx-tab-count">{t.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ====== DonutChart — SVG donut with animated segments ======
+function DonutChart({ segments, total }) {
+  const R   = 86;
+  const SW  = 24;
+  const C   = 2 * Math.PI * R;
+  const GAP = 2.5;
+
+  let accumulated = 0;
+  const arcs = segments.map(s => {
+    const len    = total > 0 ? (s.amount / total) * C - GAP : 0;
+    const offset = C * 0.25 - accumulated;
+    accumulated += len + GAP;
+    return { ...s, len: Math.max(len, 0), offset };
+  });
+
+  const cx = R + SW / 2 + 4;
+  const size = cx * 2;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cx} r={R} fill="none"
+        stroke="var(--surface-2)" strokeWidth={SW} />
+      {arcs.map((s, i) => (
+        <circle key={s.id}
+          cx={cx} cy={cx} r={R}
+          fill="none"
+          stroke={s.color}
+          strokeWidth={SW}
+          strokeLinecap="butt"
+          strokeDasharray={`${s.len} ${C - s.len}`}
+          strokeDashoffset={s.offset}
+          style={{
+            transition: `stroke-dasharray var(--dur-reveal) var(--spring-snappy), stroke-dashoffset var(--dur-reveal) var(--spring-snappy)`,
+            animationDelay: `${i * 40}ms`,
+          }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ============================================================
+// overview.jsx
+// ============================================================
+
+const GOAL_COLORS = ["#0A84FF","#FF9500","#34C759","#FF2D55","#5856D6","#AF52DE","#FF3B30","#00C7BE","#FFCC00","#A2845E"];
+const GOAL_EMOJIS = ["🎯","💻","🏖️","🚗","📚","🏠","✈️","💍","🎓","📱","💪","🏋️","🎸","🌍","🐶"];
+
+function GoalForm({ goal, onSave, onCancel }) {
+  const [name, setName]       = useState(goal?.name    || "");
+  const [emoji, setEmoji]     = useState(goal?.emoji   || "🎯");
+  const [color, setColor]     = useState(goal?.color   || "#0A84FF");
+  const [current, setCurrent] = useState(goal?.current || 0);
+  const [target, setTarget]   = useState(goal?.target  || 0);
+  const [monthly, setMonthly] = useState(goal?.monthly || 0);
+
+  const handleSave = () => {
+    if (!name.trim() || target <= 0) return;
+    onSave({ id: goal?.id || Date.now(), name: name.trim(), emoji, color, current, target, monthly });
+  };
+
+  return (
+    <div style={{
+      marginTop: 14, padding: "14px 16px",
+      background: "var(--surface-2)", borderRadius: "var(--r-lg)",
+      border: "0.5px solid var(--border)",
+      display: "flex", flexDirection: "column", gap: 12,
+    }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+        <div className="field" style={{ width: 70 }}>
+          <span className="field-label">Icon</span>
+          <input className="input" style={{ textAlign: "center", fontSize: 20, padding: "6px 8px" }}
+            value={emoji} maxLength={2}
+            onChange={e => setEmoji(e.target.value)} />
+        </div>
+        <div className="field" style={{ flex: 1 }}>
+          <span className="field-label">Tên mục tiêu</span>
+          <input className="input" type="text" placeholder="VD: MacBook, Du lịch Nhật..."
+            value={name} onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSave()} />
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {GOAL_EMOJIS.map(e => (
+          <button key={e} onClick={() => setEmoji(e)} style={{
+            width: 30, height: 30, borderRadius: 8, fontSize: 16,
+            background: emoji === e ? "var(--accent-tint)" : "var(--surface-2)",
+            border: emoji === e ? "1.5px solid var(--accent)" : "0.5px solid var(--border)",
+          }}>{e}</button>
+        ))}
+      </div>
+
+      <div>
+        <div className="field-label" style={{ marginBottom: 6 }}>Màu</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {GOAL_COLORS.map(c => (
+            <button key={c} onClick={() => setColor(c)} style={{
+              width: 26, height: 26, borderRadius: "50%", background: c,
+              border: color === c ? "2.5px solid var(--text)" : "2px solid transparent",
+              outline: color === c ? "2px solid var(--surface-solid)" : "none",
+              outlineOffset: 1,
+            }} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div className="field">
+          <span className="field-label">Đã có</span>
+          <MoneyInput value={current} onChange={setCurrent} />
+        </div>
+        <div className="field">
+          <span className="field-label">Mục tiêu</span>
+          <MoneyInput value={target} onChange={setTarget} />
+        </div>
+        <div className="field">
+          <span className="field-label">Tiết kiệm/tháng</span>
+          <MoneyInput value={monthly} onChange={setMonthly} />
+        </div>
+      </div>
+
+      {target > 0 && monthly > 0 && (
+        <div style={{ fontSize: 12, color: "var(--text-3)" }}>
+          Ước tính còn <b style={{ color: "var(--text-2)" }}>
+            ~{Math.ceil(Math.max(0, target - current) / monthly)} tháng
+          </b> nữa để đạt mục tiêu
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn" style={{ flex: 1, height: 38 }} onClick={handleSave}>
+          <Icons.check size={14} /> {goal ? "Lưu thay đổi" : "Thêm mục tiêu"}
+        </button>
+        <button className="btn btn-secondary" style={{ height: 38, padding: "0 14px" }} onClick={onCancel}>
+          <Icons.x size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GoalRow({ goal, onEdit, onDelete }) {
+  const { emoji, color, name, current, target, monthly } = goal;
+  const pct       = Math.min(100, current / target * 100);
+  const remaining = Math.max(0, target - current);
+  const etaMonths = monthly > 0 ? Math.ceil(remaining / monthly) : null;
+  const R = 22, C = 2 * Math.PI * R;
+  return (
+    <div className="goal" style={{ position: "relative" }}>
+      <div className="goal-ring">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r={R} stroke="var(--surface-2)" strokeWidth="5" fill="none" />
+          <circle cx="28" cy="28" r={R} stroke={color} strokeWidth="5" fill="none"
+            strokeLinecap="round" strokeDasharray={C}
+            strokeDashoffset={C * (1 - pct / 100)}
+            transform="rotate(-90 28 28)"
+            style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+        </svg>
+        <div className="goal-emoji">{emoji}</div>
+      </div>
+      <div className="goal-body">
+        <div className="goal-head">
+          <span className="goal-name">{name}</span>
+          <span className="goal-pct num" style={{ color }}>{pct.toFixed(0)}%</span>
+        </div>
+        <div className="goal-meta">
+          <span className="num">{fmt(current)}</span>
+          <span className="goal-sep">·</span>
+          <span>còn <span className="num">{fmt(remaining)}</span></span>
+          {etaMonths != null && (
+            <>
+              <span className="goal-sep">·</span>
+              <span>~{etaMonths} tháng nữa</span>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="goal-actions">
+        <button className="goal-action-btn" onClick={() => onEdit(goal)} title="Sửa">
+          <Icons.pencil size={13} />
+        </button>
+        <button className="goal-action-btn danger" onClick={() => onDelete(goal.id)} title="Xóa">
+          <Icons.trash size={13} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Overview({ transactions, allTransactions, debts, goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
+  const [editingGoal, setEditingGoal] = useState(null);
+
+  const income = useMemo(() =>
+    transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
+    [transactions]
+  );
+  const expense = useMemo(() =>
+    transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+    [transactions]
+  );
+  const remaining = income - expense;
+  const savingsRate = income > 0 ? Math.round((remaining / income) * 100) : 0;
+  const incomeCount = transactions.filter(t => t.type === "income").length;
+  const expenseCount = transactions.filter(t => t.type === "expense").length;
+
+  const incomeAnim    = useCountup(income);
+  const expenseAnim   = useCountup(expense);
+  const remainingAnim = useCountup(remaining);
+
+  const catRows = useMemo(() => {
+    const spend = {};
+    transactions.filter(t => t.type === "expense").forEach(t => {
+      spend[t.cat] = (spend[t.cat] || 0) + t.amount;
+    });
+    return Object.entries(spend)
+      .map(([cat, amount]) => ({
+        id: cat, name: cat,
+        color: CATEGORIES[cat]?.color || "#8E8E93",
+        amount,
+        pct: expense > 0 ? (amount / expense) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [transactions, expense]);
+
+  const dailyFlow = useMemo(() => {
+    const flow = {};
+    transactions.forEach(t => {
+      const day = new Date(t.date + 'T00:00:00').getDate();
+      if (!flow[day]) flow[day] = { d: day, inc: 0, exp: 0 };
+      if (t.type === "income") flow[day].inc += t.amount;
+      else flow[day].exp += t.amount;
+    });
+    return Object.values(flow).sort((a, b) => a.d - b.d);
+  }, [transactions]);
+
+  const sixMonths = useMemo(() => {
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(viewYear, viewMonth - (5 - i), 1);
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      const label = `T${m + 1}/${String(y).slice(2)}`;
+      const txns = allTransactions.filter(t => {
+        const td = new Date(t.date + 'T00:00:00');
+        return td.getMonth() === m && td.getFullYear() === y;
+      });
+      return {
+        label,
+        inc: txns.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
+        exp: txns.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+      };
+    });
+  }, [allTransactions, viewMonth, viewYear]);
+
+  const currentLabel = `T${viewMonth + 1}/${String(viewYear).slice(2)}`;
+  const currentMonthIndex = sixMonths.findIndex(m => m.label === currentLabel);
+  const currentMonthSummary = sixMonths.find(m => m.label === currentLabel) || { inc: 0, exp: 0 };
+  const previousMonthSummary = currentMonthIndex > 0 ? sixMonths[currentMonthIndex - 1] : null;
+  const spendingRatio = currentMonthSummary.inc > 0
+    ? (currentMonthSummary.exp / currentMonthSummary.inc) * 100
+    : (currentMonthSummary.exp > 0 ? 101 : 0);
+  const spendingRatioLabel = currentMonthSummary.inc > 0
+    ? formatPercent(spendingRatio)
+    : (currentMonthSummary.exp > 0 ? ">100%" : "0,0%");
+  const spendingProgress = Math.min(100, Math.max(0, spendingRatio));
+  const spendingRatioTone = getSpendingRatioTone(spendingRatio);
+  const spendingRatioMessage = getSpendingRatioMessage(spendingRatio, currentMonthSummary.inc, currentMonthSummary.exp);
+  const incomeChangeText = previousMonthSummary ? formatChangeText("Thu", currentMonthSummary.inc, previousMonthSummary.inc) : null;
+  const expenseChangeText = previousMonthSummary ? formatChangeText("Chi", currentMonthSummary.exp, previousMonthSummary.exp) : null;
+  const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
+  const openOwed  = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
+  const openDebts = debts.filter(d => !d.settled);
+
+  const handleSaveGoal = (g) => {
+    onSaveGoal(g);
+    setEditingGoal(null);
+  };
+
+  return (
+    <div className="page">
+      <PageHeader greet="Xin chào, Hiếu 👋" title={monthLabel}>
+        <button className="btn" onClick={() => onNavigate && onNavigate("transactions")}>
+          <Icons.plus size={15} /> Thêm giao dịch
+        </button>
+      </PageHeader>
+
+      <div className="stat-grid">
+        <div className="stat stagger stagger-1">
+          <div className="stat-label" style={{ color: "var(--c-green)" }}>
+            <Icons.arrowDownLeft size={13} /> Thu nhập
+          </div>
+          <div className="stat-value num">{fmt(incomeAnim)}</div>
+          <div className="stat-sub">
+            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dịch ·
+            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
+          </div>
+        </div>
+        <div className="stat stagger stagger-2">
+          <div className="stat-label" style={{ color: "var(--c-red)" }}>
+            <Icons.arrowUpRight size={13} /> Chi tiêu
+          </div>
+          <div className="stat-value num">{fmt(expenseAnim)}</div>
+          <div className="stat-sub">
+            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dịch ·
+            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
+          </div>
+        </div>
+        <div className="stat stagger stagger-3">
+          <div className="stat-label"><Icons.wallet size={13} /> Số dư còn lại</div>
+          <div className="stat-value num">{fmt(remainingAnim)}</div>
+          <div className="stat-sub">
+            Tiết kiệm {savingsRate}% thu nhập
+            {savingsRate >= 5 && (
+              <span className="pill"><Icons.check size={11} /> Đạt mục tiêu 5%</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2 category-flow-row">
+        <div className="card category-card stagger stagger-4">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Chi tiêu theo danh mục</div>
+              <div className="card-subtitle">{fmt(expense)} · {expenseCount} giao dịch</div>
+            </div>
+            <button className="card-action" onClick={() => onNavigate && onNavigate("transactions")}>Xem tất cả</button>
+          </div>
+          {catRows.length === 0 ? (
+            <Empty icon="inbox" title="Chưa có chi tiêu" text="Thêm giao dịch để xem phân tích" />
+          ) : (
+            <div className="cat-layout">
+              <div className="cat-list">
+                {catRows.map(c => (
+                  <div className="cat-row" key={c.id} style={{ "--cat-color": c.color, "--cat-pct": c.pct + "%" }}>
+                    <div className="cat-row-main">
+                      <div className="cat-dot" style={{ background: c.color }} />
+                      <div className="cat-name-text">{c.name}</div>
+                      <div className="cat-pct">{c.pct.toFixed(0)}%</div>
+                      <div className="cat-amount num">{fmt(c.amount)}</div>
+                    </div>
+                    <div className="cat-bar" aria-hidden="true">
+                      <span />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="col">
+          <div className="card flow-card stagger stagger-5">
+            <div className="card-header">
+              <div>
+                <div className="card-title">Dòng tiền theo ngày</div>
+                <div className="card-subtitle">{monthLabel} · {incomeCount + expenseCount} giao dịch</div>
+              </div>
+            </div>
+            {dailyFlow.length === 0 ? (
+              <Empty icon="trendUp" title="Chưa có dữ liệu" text="Thêm giao dịch để xem dòng tiền" />
+            ) : (
+              <FlowChart data={dailyFlow} daysInMonth={daysInMonth} />
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      <div className="grid-2 trend-debt-row">
+        <div className="card trend-card">
+          <div className="card-header trend-header">
+            <div className="card-title">So sánh thu chi 6 tháng gần nhất</div>
+            <div className="trend-legend">
+              <span><i className="income" /> Thu</span>
+              <span><i className="expense" /> Chi</span>
+            </div>
+          </div>
+          <div className="trend-body">
+            <div className="trend-chart-panel">
+              <SixMonthBars data={sixMonths} currentLabel={currentLabel} />
+            </div>
+            <aside className="trend-insight">
+              <div className="trend-insight-label">Tỷ lệ chi tiêu</div>
+              <div className="trend-ratio num">{spendingRatioLabel}</div>
+              <div className="trend-ratio-caption">Chi / Thu tháng này</div>
+              <div className={"trend-progress " + spendingRatioTone} aria-hidden="true">
+                <span style={{ width: spendingProgress + "%" }} />
+              </div>
+              <div className="trend-message">{spendingRatioMessage}</div>
+              {(incomeChangeText || expenseChangeText) && (
+                <div className="trend-compare">
+                  <div className="trend-compare-title">So với tháng trước</div>
+                  {incomeChangeText && <div>{incomeChangeText}</div>}
+                  {expenseChangeText && <div>{expenseChangeText}</div>}
+                </div>
+              )}
+            </aside>
+          </div>
+        </div>
+
+        <div className="card overview-debt-card">
+          <div className="card-header">
+            <div className="card-title">Nợ &amp; Cho Vay</div>
+            <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quản lý</button>
+          </div>
+          <div className="debt-split">
+            <div className="debt-card owe">
+              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Bạn đang nợ</div>
+              <div className="debt-card-value num">{fmt(openOwe)}</div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</div>
+            </div>
+            <div className="debt-card owed">
+              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> Người khác nợ bạn</div>
+              <div className="debt-card-value num">{fmt(openOwed)}</div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</div>
+            </div>
+          </div>
+          <div className="debt-list overview-debt-list">
+            {openDebts.length === 0 ? (
+              <Empty icon="check" title="Sạch nợ!" text="Không có khoản nợ nào đang mở" />
+            ) : (
+              openDebts.map(d => {
+                const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+                const color = debtColor(d.id);
+                return (
+                  <div className="debt-row" key={d.id}>
+                    <div className="debt-avatar" style={{ background: color }}>{initials}</div>
+                    <div className="debt-info">
+                      <span className="debt-name">{d.name}</span>
+                      <span className="debt-note">{d.note}</span>
+                    </div>
+                    <span className={"debt-amount num " + (d.type === "owe" ? "owe" : "owed")}>{fmt(d.amount)}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// transactions.jsx
+// ============================================================
+
+function Transactions({ transactions, onAddTransaction, onDeleteTransaction, monthLabel }) {
+  const [mode, setMode] = useState("expense");
+  const [desc, setDesc] = useState("");
+  const [amount, setAmount] = useState(0);
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [cat, setCat] = useState("Ăn uống");
+  const [search, setSearch] = useState("");
+  const [justAdded, setJustAdded] = useState(false);
+  const [btnSuccess, setBtnSuccess] = useState(false);
+
+  const incomeList = transactions.filter(t => t.type === "income");
+  const expenseList = transactions.filter(t => t.type === "expense");
+  const list = mode === "income" ? incomeList : expenseList;
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return list;
+    const q = search.toLowerCase();
+    return list.filter(t =>
+      t.desc.toLowerCase().includes(q) ||
+      (t.cat && t.cat.toLowerCase().includes(q))
+    );
+  }, [search, list]);
+
+  const grouped = useMemo(() => {
+    const g = {};
+    filtered.forEach(t => {
+      const k = t.date;
+      g[k] = g[k] || [];
+      g[k].push(t);
+    });
+    return Object.entries(g).sort(([a], [b]) => {
+      if (b > a) return 1;
+      if (b < a) return -1;
+      return 0;
+    });
+  }, [filtered]);
+
+  const totalIn  = incomeList.reduce((s, t) => s + t.amount, 0);
+  const totalOut = expenseList.reduce((s, t) => s + t.amount, 0);
+
+  const handleAdd = () => {
+    if (!desc.trim() || amount <= 0) return;
+    onAddTransaction({
+      type: mode,
+      desc: desc.trim(),
+      amount,
+      cat: mode === "expense" ? cat : "Thu nhập",
+      date,
+    });
+    setDesc("");
+    setAmount(0);
+    setJustAdded(true);
+    setBtnSuccess(true);
+    setTimeout(() => setJustAdded(false), 700);
+    setTimeout(() => setBtnSuccess(false), 650);
+  };
+
+  return (
+    <div className="page tx-page">
+      <PageHeader greet={`${monthLabel} · ${transactions.length} giao dịch`} />
+
+      <div className="tx-layout">
+        <aside className="tx-aside">
+          <div className="card" style={{ padding: 18 }}>
+            <div className="card-header" style={{ marginBottom: 14 }}>
+              <div>
+                <div className="card-title">Thêm giao dịch</div>
+                <div className="card-subtitle">Ghi lại ngay để không quên</div>
+              </div>
+            </div>
+
+            <TabBar
+              style={{ marginBottom: 14, width: "100%" }}
+              active={mode}
+              onChange={setMode}
+              tabs={[
+                { id: "income",  label: "Thu nhập", icon: Icons.arrowDownLeft, cls: "income",  btnStyle: { flex: 1, justifyContent: "center" } },
+                { id: "expense", label: "Chi tiêu",  icon: Icons.arrowUpRight,  cls: "expense", btnStyle: { flex: 1, justifyContent: "center" } },
+              ]}
+            />
+
+            <div className="tx-form-vertical">
+              <div className="field">
+                <span className="field-label">Mô tả</span>
+                <input
+                  className="input" type="text"
+                  placeholder={mode === "income" ? "VD: Lương, mẹ chuyển..." : "VD: Cơm tấm, Grab, sách..."}
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAdd()}
+                />
+              </div>
+              <div className="tx-row-fields">
+                <div className="field">
+                  <span className="field-label">Số tiền</span>
+                  <MoneyInput value={amount} onChange={setAmount} />
+                </div>
+                {mode === "expense" && (
+                  <div className="field">
+                    <span className="field-label">Danh mục</span>
+                    <select className="select" value={cat} onChange={e => setCat(e.target.value)}>
+                      {Object.values(CATEGORIES).map(c => (
+                        <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="field">
+                <span className="field-label">Ngày</span>
+                <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
+              </div>
+              <button
+                className={"btn" + (btnSuccess ? " btn-success" : "")}
+                style={{ width: "100%", height: 44 }}
+                onClick={handleAdd}
+              >
+                {btnSuccess ? <Icons.check size={15} /> : <Icons.plus size={15} />}
+                {btnSuccess ? "Đã thêm!" : "Thêm giao dịch"}
+              </button>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column" }}>
+            <div className="card-header" style={{ marginBottom: 14 }}>
+              <div>
+                <div className="card-title">Tóm tắt tháng</div>
+                <div className="card-subtitle">{monthLabel}</div>
+              </div>
+            </div>
+            <div className="mini-summary mini-summary-list" style={{ flex: 1, alignContent: "center" }}>
+              <div>
+                <div className="mini-label">
+                  <Icons.arrowDownLeft size={12} style={{ color: "var(--c-green)" }} /> Thu
+                </div>
+                <div className="mini-value num">{fmt(totalIn)}</div>
+              </div>
+              <div>
+                <div className="mini-label">
+                  <Icons.arrowUpRight size={12} style={{ color: "var(--c-red)" }} /> Chi
+                </div>
+                <div className="mini-value num">{fmt(totalOut)}</div>
+              </div>
+              <div>
+                <div className="mini-label">
+                  <Icons.wallet size={12} /> Dư
+                </div>
+                <div className="mini-value num" style={{ color: "var(--c-green)" }}>
+                  {fmt(totalIn - totalOut)}
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 8, paddingTop: 16, borderTop: "0.5px solid var(--divider)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Tỉ lệ tiết kiệm
+                </span>
+                <span className="num" style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--c-green)" }}>
+                  {totalIn === 0 ? "0" : Math.max(0, Math.round(((totalIn - totalOut) / totalIn) * 100))}%
+                </span>
+              </div>
+              <div style={{ height: 6, background: "var(--surface-2)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%",
+                  width: (totalIn === 0 ? 0 : Math.max(0, Math.min(100, ((totalIn - totalOut) / totalIn) * 100))) + "%",
+                  background: "linear-gradient(90deg, var(--c-green), #2ABF52)",
+                  borderRadius: 3, transformOrigin: "left center",
+                  animation: "barGrow var(--dur-reveal) var(--spring-snappy) both",
+                  transition: "width var(--dur-standard) var(--spring-snappy)",
+                }} />
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="tx-main">
+          <TabBar
+            style={{ marginBottom: 14 }}
+            active={mode}
+            onChange={setMode}
+            tabs={[
+              { id: "income",  label: "Thu nhập", icon: Icons.arrowDownLeft, cls: "income",  count: incomeList.length },
+              { id: "expense", label: "Chi tiêu",  icon: Icons.arrowUpRight,  cls: "expense", count: expenseList.length },
+            ]}
+          />
+
+          <div className="search-bar">
+            <Icons.search size={15} style={{ color: "var(--text-3)" }} />
+            <input
+              placeholder={`Tìm ${mode === "income" ? "thu nhập" : "chi tiêu"}, danh mục...`}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <span className="search-meta">{filtered.length} / {list.length}</span>
+          </div>
+
+          <div className="card" style={{ padding: 18 }}>
+            {list.length === 0 ? (
+              <Empty icon="inbox" title="Chưa có giao dịch"
+                text={`Thêm ${mode === "income" ? "thu nhập" : "chi tiêu"} đầu tiên ở panel bên trái`} />
+            ) : filtered.length === 0 ? (
+              <Empty icon="search" title="Không tìm thấy" text="Thử từ khóa khác hoặc xóa bộ lọc" />
+            ) : (
+              grouped.map(([day, items], groupIdx) => {
+                const total = items.reduce((s, t) => s + t.amount, 0);
+                return (
+                  <div key={day}>
+                    <div className="tx-day-label">
+                      <span>Ngày {fmtDate(day)}</span>
+                      <span className="num" style={{ color: mode === "income" ? "var(--c-green)" : "var(--text-3)" }}>
+                        {mode === "income" ? "+" : ""}{fmt(total)}
+                      </span>
+                    </div>
+                    <div className="tx-list">
+                      {items.map((t, itemIdx) => {
+                        const catInfo = t.cat ? CATEGORIES[t.cat] : null;
+                        const bg = catInfo ? catInfo.color + "20" : "rgba(52,199,89,0.15)";
+                        const fg = catInfo ? catInfo.color : "var(--c-green)";
+                        const isNew = justAdded && groupIdx === 0 && itemIdx === 0;
+                        return (
+                          <div className={"tx-row" + (isNew ? " tx-row-new" : "")} key={t.id}>
+                            <div className="tx-icon" style={{ background: bg, color: fg }}>
+                              {catInfo ? catInfo.emoji : "💰"}
+                            </div>
+                            <div className="tx-info">
+                              <span className="tx-desc">{t.desc}</span>
+                              <span className="tx-meta">
+                                {catInfo ? catInfo.name : "Thu nhập"} · {fmtDate(t.date)}
+                              </span>
+                            </div>
+                            <span className={"tx-amount " + (mode === "income" ? "in" : "out")}>
+                              {mode === "income" ? "+" : "−"}{fmt(t.amount)}
+                            </span>
+                            <button className="tx-delete" title="Xóa"
+                              onClick={() => onDeleteTransaction && onDeleteTransaction(t.id)}>
+                              <Icons.trash size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// debts.jsx
+// ============================================================
+
+function Debts({ debts, onAddDebt, onDeleteDebt, onSettleDebt }) {
+  const [filter, setFilter] = useState("all");
+  const [name, setName] = useState("");
+  const [amt, setAmt] = useState(0);
+  const [type, setType] = useState("owe");
+  const [note, setNote] = useState("");
+
+  const filtered = useMemo(() => {
+    if (filter === "all")    return debts;
+    if (filter === "paid")   return debts.filter(d => d.settled);
+    if (filter === "owe")    return debts.filter(d => d.type === "owe"  && !d.settled);
+    if (filter === "owed")   return debts.filter(d => d.type === "lend" && !d.settled);
+    return debts;
+  }, [filter, debts]);
+
+  const openOwe  = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
+  const openOwed = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
+  const paidCount = debts.filter(d => d.settled).length;
+  const oweCount  = debts.filter(d => d.type === "owe"  && !d.settled).length;
+  const owedCount = debts.filter(d => d.type === "lend" && !d.settled).length;
+
+  const handleAdd = () => {
+    if (!name.trim() || amt <= 0) return;
+    onAddDebt({ name: name.trim(), amount: amt, type, note: note.trim(), settled: false });
+    setName(""); setAmt(0); setNote("");
+  };
+
+  return (
+    <div className="page">
+      <PageHeader greet="Sổ nợ vay với bạn bè & dịch vụ" />
+
+      <div className="stat-grid">
+        <div className="stat" style={{ background: "linear-gradient(135deg, #FF3B30, #FF2D55)", color: "#fff", borderColor: "transparent" }}>
+          <div className="hero-bg" />
+          <div className="stat-label" style={{ color: "rgba(255,255,255,0.85)" }}>
+            <Icons.arrowUpRight size={13} /> Bạn đang nợ
+          </div>
+          <div className="stat-value num">{fmt(openOwe)}</div>
+          <div className="stat-sub" style={{ color: "rgba(255,255,255,0.8)" }}>
+            {oweCount} khoản cần trả
+          </div>
+        </div>
+
+        <div className="stat">
+          <div className="stat-label" style={{ color: "var(--c-green)" }}>
+            <Icons.arrowDownLeft size={13} /> Người khác nợ bạn
+          </div>
+          <div className="stat-value num">{fmt(openOwed)}</div>
+          <div className="stat-sub">{owedCount} khoản chờ thu</div>
+        </div>
+
+        <div className="stat">
+          <div className="stat-label">
+            <Icons.check size={13} /> Đã xong
+          </div>
+          <div className="stat-value num">{paidCount}</div>
+          <div className="stat-sub">khoản trong tháng</div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-header">
+          <div>
+            <div className="card-title">Ghi nhận khoản nợ mới</div>
+            <div className="card-subtitle">Theo dõi ai nợ ai để không quên</div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+          <div className="field">
+            <span className="field-label">Tên người</span>
+            <input className="input" type="text" placeholder="VD: Nam, Hân, Shopee..."
+              value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div className="field">
+            <span className="field-label">Số tiền</span>
+            <MoneyInput value={amt} onChange={setAmt} />
+          </div>
+          <div className="field">
+            <span className="field-label">Loại</span>
+            <select className="select" value={type} onChange={e => setType(e.target.value)}>
+              <option value="owe">Mình nợ họ</option>
+              <option value="lend">Họ nợ mình</option>
+            </select>
+          </div>
+          <div className="field">
+            <span className="field-label">Ghi chú</span>
+            <input className="input" type="text" placeholder="VD: Tiền ăn hôm qua"
+              value={note} onChange={e => setNote(e.target.value)} />
+          </div>
+          <button className="btn" style={{ height: 41 }} onClick={handleAdd}>
+            <Icons.plus size={15} /> Thêm
+          </button>
+        </div>
+      </div>
+
+      <TabBar
+        style={{ marginBottom: 14 }}
+        active={filter}
+        onChange={setFilter}
+        tabs={[
+          { id: "all",  label: `Tất cả (${debts.length})` },
+          { id: "owe",  label: `Mình nợ (${oweCount})` },
+          { id: "owed", label: `Họ nợ mình (${owedCount})` },
+          { id: "paid", label: `Đã xong (${paidCount})` },
+        ]}
+      />
+
+      <div className="card" style={{ padding: 14 }}>
+        {filtered.length === 0 ? (
+          <Empty icon="inbox" title="Không có khoản nợ" text="Tuyệt! Bạn đang sạch nợ." />
+        ) : (
+          <div className="debt-list">
+            {filtered.map(d => {
+              const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+              const color = debtColor(d.id);
+              const isPaid = !!d.settled;
+              return (
+                <div className={"debt-row" + (isPaid ? " paid" : "")} key={d.id}>
+                  <div className="debt-avatar" style={{ background: color, opacity: isPaid ? 0.5 : 1 }}>
+                    {initials}
+                  </div>
+                  <div className="debt-info">
+                    <span className="debt-name">{d.name}</span>
+                    <span className="debt-note">{d.note}</span>
+                  </div>
+                  <span className={"debt-amount num " + (d.type === "owe" ? "owe" : "owed")}>
+                    {isPaid ? null : (d.type === "owe" ? "−" : "+")}{fmt(d.amount)}
+                  </span>
+                  {isPaid ? (
+                    <span className="debt-status-pill paid">
+                      <Icons.check size={10} style={{ verticalAlign: "middle" }} /> Xong
+                    </span>
+                  ) : (
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <button className="btn-secondary btn" style={{ padding: "6px 12px", fontSize: 12 }}
+                        onClick={() => onSettleDebt && onSettleDebt(d.id)}>
+                        {d.type === "owe" ? "Trả" : "Thu"}
+                      </button>
+                      <button className="tx-delete" title="Xóa"
+                        onClick={() => onDeleteDebt && onDeleteDebt(d.id)}
+                        style={{ opacity: 1, width: 28, height: 28 }}>
+                        <Icons.trash size={13} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {openOwe > openOwed && openOwe > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <Insight tone="orange" icon="alertTri" title="Bạn đang nợ nhiều hơn người khác nợ bạn">
+            Khoản nợ ròng <b>{fmt(openOwe - openOwed)}</b>. Cân nhắc dành dụm để trả sớm nhé.
+          </Insight>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// budget.jsx
+// ============================================================
+
+function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget }) {
+  const [editingCat, setEditingCat] = useState(null);
+  const [editCat, setEditCat] = useState(Object.keys(CATEGORIES)[0]);
+  const [editAmt, setEditAmt] = useState(800000);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const formRef = useRef(null);
+
+  const rows = budgets.map(b => {
+    const actual = transactions
+      .filter(t => t.type === "expense" && t.cat === b.cat)
+      .reduce((s, t) => s + t.amount, 0);
+    const pct = b.cap > 0 ? (actual / b.cap) * 100 : 0;
+    const benchmark = CAT_BENCHMARKS[b.cat] || Math.round(b.cap * 0.9);
+    const benchPct = b.cap > 0 ? (benchmark / b.cap) * 100 : 0;
+    let level = "ok";
+    if (pct >= 100) level = "danger";
+    else if (pct >= 80) level = "warn";
+    return {
+      ...b,
+      ...(CATEGORIES[b.cat] || { name: b.cat, emoji: "📦", color: "#8E8E93" }),
+      actual,
+      remaining: b.cap - actual,
+      pct,
+      benchPct,
+      level,
+      vsBench: actual - benchmark,
+      benchmark,
+    };
+  });
+
+  const totalCap   = rows.reduce((s, r) => s + r.cap, 0);
+  const totalSpent = rows.reduce((s, r) => s + r.actual, 0);
+
+  const handleStartEdit = (b) => {
+    setEditingCat(b.cat);
+    setEditCat(b.cat);
+    setEditAmt(b.cap);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
+  const handleCancel = () => {
+    setEditingCat(null);
+    setEditCat(Object.keys(CATEGORIES)[0]);
+    setEditAmt(800000);
+  };
+
+  const handleSave = () => {
+    if (editAmt <= 0) return;
+    onSaveBudget(editCat, editAmt);
+    handleCancel();
+  };
+
+  const handleDelete = (cat) => {
+    onDeleteBudget(cat);
+    setConfirmDelete(null);
+    if (editingCat === cat) handleCancel();
+  };
+
+  return (
+    <div className="page">
+      <PageHeader greet="Đặt giới hạn — sống trong khả năng">
+        <button className="btn" onClick={() => { handleCancel(); formRef.current?.scrollIntoView({ behavior: "smooth" }); }}>
+          <Icons.plus size={15} /> Tạo ngân sách
+        </button>
+      </PageHeader>
+
+      <div className="budget-stats">
+        <div className="stat">
+          <div className="stat-label"><Icons.wallet size={13} /> Tổng ngân sách</div>
+          <div className="stat-value num">{fmt(totalCap)}</div>
+          <div className="stat-sub">{rows.length} danh mục</div>
+        </div>
+        <div className="stat">
+          <div className="stat-label" style={{ color: "var(--c-red)" }}>
+            <Icons.arrowUpRight size={13} /> Đã chi
+          </div>
+          <div className="stat-value num">{fmt(totalSpent)}</div>
+          <div className="stat-sub">
+            <span className="num">{totalCap > 0 ? ((totalSpent / totalCap) * 100).toFixed(0) : 0}%</span> ngân sách
+          </div>
+        </div>
+        <div className="stat">
+          <div className="stat-label" style={{ color: totalCap - totalSpent >= 0 ? "var(--c-green)" : "var(--c-red)" }}>
+            <Icons.flag size={13} /> Còn lại
+          </div>
+          <div className="stat-value num" style={{ color: totalCap - totalSpent >= 0 ? "inherit" : "var(--c-red)" }}>
+            {fmt(Math.abs(totalCap - totalSpent))}
+          </div>
+          <div className="stat-sub">{totalCap - totalSpent >= 0 ? "chưa chi" : "vượt mức"}</div>
+        </div>
+      </div>
+
+      <div ref={formRef} className="card" style={{ marginBottom: 18, scrollMarginTop: 80 }}>
+        <div className="card-header">
+          <div>
+            <div className="card-title">
+              {editingCat ? "Sửa hạn mức" : "Thêm / Cập nhật hạn mức"}
+            </div>
+            <div className="card-subtitle">
+              {editingCat
+                ? `Đang sửa: ${CATEGORIES[editingCat]?.emoji} ${editingCat}`
+                : "Đặt mức chi tối đa hàng tháng cho từng danh mục"}
+            </div>
+          </div>
+          {editingCat && (
+            <button className="btn btn-secondary" onClick={handleCancel}>
+              <Icons.x size={14} /> Hủy
+            </button>
+          )}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+          <div className="field">
+            <span className="field-label">Danh mục</span>
+            <select className="select" value={editCat} onChange={e => setEditCat(e.target.value)}>
+              {Object.values(CATEGORIES).map(c => (
+                <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <span className="field-label">Hạn mức / tháng</span>
+            <MoneyInput value={editAmt} onChange={setEditAmt} />
+          </div>
+          <button className="btn" style={{ height: 41 }} onClick={handleSave}>
+            <Icons.check size={15} /> {editingCat ? "Lưu thay đổi" : "Lưu ngân sách"}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 600 }}>Ngân sách tháng này</h2>
+        <span style={{ fontSize: 12, color: "var(--text-3)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <Icons.users size={12} /> Có so sánh với SV cùng nhóm
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="card">
+          <Empty icon="wallet" title="Chưa có ngân sách nào"
+            text="Thêm danh mục đầu tiên ở phía trên để bắt đầu kiểm soát chi tiêu" />
+        </div>
+      ) : (
+        <div className="budget-list">
+          {rows.map(r => (
+            <div className={"budget-row" + (editingCat === r.cat ? " editing" : "")} key={r.cat}>
+              <div className="budget-head">
+                <div className="budget-cat">
+                  <div className="budget-emoji" style={{ background: r.color + "20", color: r.color }}>
+                    {r.emoji}
+                  </div>
+                  <div>
+                    <div className="budget-name">{r.name}</div>
+                    <div className="budget-sub">
+                      {r.level === "danger" ? (
+                        <span style={{ color: "var(--c-red)" }}>
+                          <Icons.alertTri size={11} style={{ verticalAlign: "middle" }} /> Vượt {fmt(r.actual - r.cap)}
+                        </span>
+                      ) : r.level === "warn" ? (
+                        <span style={{ color: "var(--c-orange)" }}>Còn lại {fmt(r.remaining)}</span>
+                      ) : (
+                        <span>Còn lại {fmt(r.remaining)}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="budget-right">
+                  <div className="budget-amount" style={{ textAlign: "right" }}>
+                    <span className="num">{fmt(r.actual)}</span>{" "}
+                    <span className="total num">/ {fmt(r.cap)}</span>
+                  </div>
+                  <div className="budget-actions">
+                    <button className="budget-action-btn" title="Sửa" onClick={() => handleStartEdit(r)}>
+                      <Icons.pencil size={14} />
+                    </button>
+                    <button className="budget-action-btn danger" title="Xóa"
+                      onClick={() => setConfirmDelete(r.cat)}>
+                      <Icons.trash size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="budget-track">
+                <div className={"budget-fill " + r.level} style={{ width: Math.min(100, r.pct) + "%" }} />
+                <div style={{
+                  position: "absolute", top: -4, bottom: -4,
+                  left: `calc(${Math.min(100, r.benchPct)}% - 1px)`,
+                  width: 2, background: "var(--text-2)", borderRadius: 2, pointerEvents: "none",
+                }} title={`Trung bình SV cùng nhóm: ${fmt(r.benchmark)}`} />
+              </div>
+
+              <div className="budget-foot">
+                <span><span className="num">{r.pct.toFixed(0)}%</span> đã dùng</span>
+                <span className={"budget-benchmark " + (r.vsBench > 0 ? "higher" : "lower")}
+                  title={`Sinh viên cùng nhóm chi TB ${fmt(r.benchmark)}/tháng`}>
+                  <Icons.users size={11} />
+                  {r.vsBench > 0 ? "Cao hơn" : "Thấp hơn"} TB nhóm{" "}
+                  <span className="num">{fmt(Math.abs(r.vsBench))}</span>
+                </span>
+              </div>
+
+              {confirmDelete === r.cat && (
+                <div className="budget-confirm">
+                  <span>Xóa ngân sách <b>{r.name}</b>?</span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}
+                      onClick={() => setConfirmDelete(null)}>Hủy</button>
+                    <button className="btn" style={{ padding: "6px 12px", fontSize: 12, background: "var(--c-red)" }}
+                      onClick={() => handleDelete(r.cat)}>Xóa</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// app.jsx — Root app
+// ============================================================
+
+const _SEED = {
+  transactions: [
+    { id: 1778822968346, type: "expense", desc: "tiền trọ, điện, nước, điều hòa, dịch vụ", amount: 2150000, cat: "Thuê trọ",  date: "2026-05-15" },
+    { id: 1778822564137, type: "income",  desc: "tiền tài khoản từ trước đó",               amount: 2126000, cat: "Thu nhập", date: "2026-05-15" },
+    { id: 1778820901654, type: "income",  desc: "đổi từ tài khoản ra tiền mặt",             amount:  300000, cat: "Thu nhập", date: "2026-05-15" },
+    { id: 1778820850607, type: "income",  desc: "anh chị cho",                               amount:  200000, cat: "Thu nhập", date: "2026-05-15" },
+    { id: 1778820461601, type: "income",  desc: "bố chuyển",                                 amount: 3000000, cat: "Thu nhập", date: "2026-05-15" },
+    { id: 1778820411461, type: "expense", desc: "du lịch Hạ Long",                           amount: 2856000, cat: "Du lịch",  date: "2026-05-15" },
+    { id: 1778818830478, type: "expense", desc: "Tiktok",                                     amount:   20000, cat: "Mua sắm",  date: "2026-05-15" },
+    { id: 1778818766842, type: "expense", desc: "Claude AI",                                  amount:  600000, cat: "Học tập",  date: "2026-05-15" },
+    { id: 1778818538887, type: "expense", desc: "bún chả, nước lọc",                         amount:   50000, cat: "Ăn uống",  date: "2026-05-15" },
+    { id: 1778781242777, type: "income",  desc: "tiền còn dư từ tháng trc",                  amount:    3220, cat: "Thu nhập", date: "2026-05-15" },
+    { id: 1778781183955, type: "expense", desc: "mỳ tôm, nước lọc, sữa fami",               amount:   50000, cat: "Ăn uống",  date: "2026-05-15" },
+    { id: 1778781118116, type: "expense", desc: "Bún cá",                                     amount:   25000, cat: "Ăn uống",  date: "2026-05-15" },
+    { id: 1778781069446, type: "income",  desc: "Mama Bank",                                  amount: 1000000, cat: "Thu nhập", date: "2026-05-15" },
+  ],
+  debts: [
+    { id: 1778822737101, name: "Shopee Easy", amount: 370080, type: "owe",  note: "",                                           settled: false },
+    { id: 1778781331331, name: "Ngân Thuân",  amount: 1356000, type: "owe", note: "tiền du lịch Hạ Long còn thiếu",            settled: false },
+    { id: 1778781003635, name: "Phú Sen",     amount: 140000,  type: "owe", note: "Tiền ăn + nước trên Vịnh Hạ Long",         settled: false },
+    { id: 1778780911964, name: "Hân",         amount: 77000,   type: "lend", note: "50k phở hồ Gươm, 12k nước cam, 15k kem",  settled: false },
+  ],
+};
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyATjEaKR5cpIhWTLTzmdKIiMV0ZDPT07xI",
+  authDomain:        "taichinhhiewu.firebaseapp.com",
+  projectId:         "taichinhhiewu",
+  storageBucket:     "taichinhhiewu.firebasestorage.app",
+  messagingSenderId: "742826409088",
+  appId:             "1:742826409088:web:b072bdc22a9acc0ec4fa65",
+};
+
+const DEFAULT_GOALS = [
+  { id: 1, emoji: "💻", color: "#0A84FF", name: "MacBook Air M4",       current: 3200000, target: 28000000, monthly: 500000 },
+  { id: 2, emoji: "🏖️", color: "#FF9500", name: "Đi Đà Lạt cuối năm", current: 1100000, target: 3500000,  monthly: 600000 },
+];
+
+function App() {
+  const [allTransactions, setAllTransactions] = useState([]);
+  const [debts, setDebts]       = useState([]);
+  const [budgets, setBudgets]   = useState([]);
+  const [goals, setGoals]       = useState([]);
+  const [loaded, setLoaded]     = useState(false);
+  const [page, setPage]         = useState("overview");
+  const [slideDir, setSlideDir] = useState("right");
+  const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const PAGE_ORDER = ['overview', 'transactions', 'debts', 'budget'];
+  const navigateTo = useCallback((newPage) => {
+    const pi = PAGE_ORDER.indexOf(page);
+    const ni = PAGE_ORDER.indexOf(newPage);
+    setSlideDir(ni >= pi ? 'right' : 'left');
+    setPage(newPage);
+  }, [page]);
+
+  const now = new Date();
+  const viewDate  = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
+  const viewMonth = viewDate.getMonth();
+  const viewYear  = viewDate.getFullYear();
+  const monthLabel = `Tháng ${viewMonth + 1}, ${viewYear}`;
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("hieu-theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    try { firebase.initializeApp(firebaseConfig); } catch (_) {}
+    const db = firebase.firestore();
+    window._fsDoc = db.collection("fintrack").doc("hiewu");
+
+    const unsub = window._fsDoc.onSnapshot(snap => {
+      if (snap.exists) {
+        const d = snap.data();
+        const { result, changed } = migrateCats(d.transactions || []);
+        const dbts = d.debts   || [];
+        const bdgs = d.budgets || [];
+        const gls  = d.goals   || DEFAULT_GOALS;
+        setAllTransactions(result);
+        setDebts(dbts);
+        setBudgets(bdgs);
+        setGoals(gls);
+        setLoaded(true);
+        if (changed) {
+          window._fsDoc.set({ transactions: result, debts: dbts, budgets: bdgs, goals: gls });
+        }
+      } else {
+        setAllTransactions(_SEED.transactions);
+        setDebts(_SEED.debts);
+        setBudgets([]);
+        setGoals(DEFAULT_GOALS);
+        setLoaded(true);
+        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS });
+      }
+    }, err => console.error("Firebase error:", err));
+
+    return () => unsub();
+  }, []);
+
+  const persist = useCallback((txns, dbts, bdgs, gls) => {
+    if (window._fsDoc) {
+      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }).catch(console.error);
+    }
+  }, []);
+
+  const addTransaction = useCallback((tx) => {
+    const next = [{ ...tx, id: Date.now() }, ...allTransactions];
+    setAllTransactions(next);
+    persist(next, debts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const deleteTransaction = useCallback((id) => {
+    const next = allTransactions.filter(t => t.id !== id);
+    setAllTransactions(next);
+    persist(next, debts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const addDebt = useCallback((debt) => {
+    const next = [...debts, { ...debt, id: Date.now() }];
+    setDebts(next);
+    persist(allTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const deleteDebt = useCallback((id) => {
+    const next = debts.filter(d => d.id !== id);
+    setDebts(next);
+    persist(allTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const settleDebt = useCallback((id) => {
+    const next = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: new Date().toISOString() } : d);
+    setDebts(next);
+    persist(allTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const saveBudget = useCallback((cat, cap) => {
+    const exists = budgets.some(b => b.cat === cat);
+    const next = exists
+      ? budgets.map(b => b.cat === cat ? { ...b, cap } : b)
+      : [...budgets, { cat, cap }];
+    setBudgets(next);
+    persist(allTransactions, debts, next, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const deleteBudget = useCallback((cat) => {
+    const next = budgets.filter(b => b.cat !== cat);
+    setBudgets(next);
+    persist(allTransactions, debts, next, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const saveGoal = useCallback((goal) => {
+    const exists = goals.some(g => g.id === goal.id);
+    const next = exists
+      ? goals.map(g => g.id === goal.id ? goal : g)
+      : [...goals, goal];
+    setGoals(next);
+    persist(allTransactions, debts, budgets, next);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const deleteGoal = useCallback((id) => {
+    const next = goals.filter(g => g.id !== id);
+    setGoals(next);
+    persist(allTransactions, debts, budgets, next);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const monthTransactions = useMemo(() => {
+    return allTransactions.filter(t => {
+      const d = new Date(t.date + "T00:00:00");
+      return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
+    });
+  }, [allTransactions, viewMonth, viewYear]);
+
+  if (!loaded) return <AppSkeleton />;
+
+  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget };
+  const PageEl = PageComponents[page];
+  const pageProps = {
+    transactions:     monthTransactions,
+    allTransactions,
+    debts,
+    budgets,
+    goals,
+    viewMonth,
+    viewYear,
+    monthLabel,
+    onAddTransaction:    addTransaction,
+    onDeleteTransaction: deleteTransaction,
+    onAddDebt:           addDebt,
+    onDeleteDebt:        deleteDebt,
+    onSettleDebt:        settleDebt,
+    onSaveBudget:        saveBudget,
+    onDeleteBudget:      deleteBudget,
+    onSaveGoal:          saveGoal,
+    onDeleteGoal:        deleteGoal,
+    onNavigate:          navigateTo,
+  };
+
+  return (
+    <div className="app">
+      <Sidebar active={page} onChange={navigateTo} theme={theme} onTheme={setTheme} debts={debts} />
+      <main className="main">
+        <Toolbar
+          activePage={page}
+          month={monthLabel}
+          onMonthChange={(d) => setMonthOffset(m => Math.max(0, m + d))}
+        />
+        <div key={page} className={"page-slide-" + slideDir}>
+          <PageEl {...pageProps} />
+        </div>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
 </body>
 </html>

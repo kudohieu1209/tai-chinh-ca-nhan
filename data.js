@@ -36,7 +36,7 @@ const debtColor = (id) => {
   return DEBT_PALETTE[Math.abs(n) % DEBT_PALETTE.length];
 };
 
-const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' ₫';
+const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + '\u0111';
 const fmtShort = (n) => {
   if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'tỷ';
   if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'tr';
