@@ -39,6 +39,24 @@ const DEFAULT_GOALS = [
   { id: 2, emoji: "🏖️", color: "#FF9500", name: "Đi Đà Lạt cuối năm", current: 1100000, target: 3500000,  monthly: 600000 },
 ];
 
+function localDateKey(dateLike = new Date()) {
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return localDateKey(new Date());
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function debtSettlementTransaction(debt, paidDate = new Date(), idPrefix = "settle") {
+  return {
+    id: `${idPrefix}-${debt.id}`,
+    debtId: debt.id,
+    type: debt.type === "owe" ? "expense" : "income",
+    desc: debt.type === "owe" ? `Trả nợ ${debt.name}` : `Thu nợ ${debt.name}`,
+    amount: debt.amount,
+    cat: debt.type === "owe" ? "Trả nợ" : "Thu nhập",
+    date: localDateKey(paidDate),
+  };
+}
+
 function App() {
   const [allTransactions, setAllTransactions] = useState([]);
   const [debts, setDebts]       = useState([]);
@@ -73,13 +91,17 @@ function App() {
         const dbts = d.debts   || [];
         const bdgs = d.budgets || [];
         const gls  = d.goals   || DEFAULT_GOALS;
-        setAllTransactions(result);
+        const missingSettlementTxs = dbts
+          .filter(debt => debt.settled && debt.paidDate && !result.some(t => t.debtId === debt.id))
+          .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
+        const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...result] : result;
+        setAllTransactions(txns);
         setDebts(dbts);
         setBudgets(bdgs);
         setGoals(gls);
         setLoaded(true);
-        if (changed) {
-          window._fsDoc.set({ transactions: result, debts: dbts, budgets: bdgs, goals: gls });
+        if (changed || missingSettlementTxs.length) {
+          window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls });
         }
       } else {
         setAllTransactions(_SEED.transactions);
@@ -107,6 +129,14 @@ function App() {
     persist(next, debts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  const updateTransaction = useCallback((id, patch) => {
+    const next = allTransactions.map(t => (
+      t.id === id ? { ...t, ...patch, amount: Number(patch.amount) || t.amount } : t
+    ));
+    setAllTransactions(next);
+    persist(next, debts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
   const deleteTransaction = useCallback((id) => {
     const next = allTransactions.filter(t => t.id !== id);
     setAllTransactions(next);
@@ -122,14 +152,63 @@ function App() {
 
   const deleteDebt = useCallback((id) => {
     const next = debts.filter(d => d.id !== id);
+    const nextTransactions = allTransactions.filter(t => t.debtId !== id);
     setDebts(next);
-    persist(allTransactions, next, budgets, goals);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const updateDebt = useCallback((id, patch) => {
+    const current = debts.find(d => d.id === id);
+    if (!current) return;
+
+    const updated = { ...current, ...patch, amount: Number(patch.amount) || current.amount };
+    const nextDebts = debts.map(d => d.id === id ? updated : d);
+    const nextTransactions = allTransactions.map(t => (
+      t.debtId === id
+        ? {
+            ...t,
+            type: updated.type === "owe" ? "expense" : "income",
+            desc: updated.type === "owe" ? `Trả nợ ${updated.name}` : `Thu nợ ${updated.name}`,
+            amount: updated.amount,
+            cat: updated.type === "owe" ? "Trả nợ" : "Thu nhập",
+          }
+        : t
+    ));
+
+    setDebts(nextDebts);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, nextDebts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const reopenDebt = useCallback((id) => {
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+
+    const nextDebts = debts.map(d => (
+      d.id === id ? { ...d, settled: false, paidDate: null } : d
+    ));
+    const nextTransactions = allTransactions.filter(t => t.debtId !== id);
+
+    setDebts(nextDebts);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, nextDebts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
   const settleDebt = useCallback((id) => {
-    const next = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: new Date().toISOString() } : d);
-    setDebts(next);
-    persist(allTransactions, next, budgets, goals);
+    const debt = debts.find(d => d.id === id);
+    if (!debt || debt.settled) return;
+
+    const now = new Date();
+    const settlementTx = debtSettlementTransaction(debt, now);
+    const nextDebts = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: now.toISOString() } : d);
+    const nextTransactions = allTransactions.some(t => t.debtId === id)
+      ? allTransactions
+      : [settlementTx, ...allTransactions];
+
+    setDebts(nextDebts);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, nextDebts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
   // ── Budget CRUD ──
@@ -172,26 +251,7 @@ function App() {
     });
   }, [allTransactions, viewMonth, viewYear]);
 
-  if (!loaded) {
-    return (
-      <div style={{
-        display: "grid", placeItems: "center", height: "100vh",
-        background: "var(--bg)", color: "var(--text-3)", fontSize: 14,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-      }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: "linear-gradient(135deg, #0A84FF, #5E5CE6)",
-            display: "grid", placeItems: "center",
-          }}>
-            <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>đ</span>
-          </div>
-          Đang tải dữ liệu...
-        </div>
-      </div>
-    );
-  }
+  if (!loaded) return <AppSkeleton />;
 
   const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget };
   const PageEl = PageComponents[page];
@@ -205,10 +265,13 @@ function App() {
     viewYear,
     monthLabel,
     onAddTransaction:    addTransaction,
+    onUpdateTransaction: updateTransaction,
     onDeleteTransaction: deleteTransaction,
     onAddDebt:           addDebt,
+    onUpdateDebt:        updateDebt,
     onDeleteDebt:        deleteDebt,
     onSettleDebt:        settleDebt,
+    onReopenDebt:        reopenDebt,
     onSaveBudget:        saveBudget,
     onDeleteBudget:      deleteBudget,
     onSaveGoal:          saveGoal,
@@ -225,7 +288,7 @@ function App() {
           month={monthLabel}
           onMonthChange={(d) => setMonthOffset(m => Math.max(0, m + d))}
         />
-        <PageEl {...pageProps} />
+        <PageEl key={page} {...pageProps} />
       </main>
     </div>
   );

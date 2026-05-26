@@ -150,7 +150,7 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
   const [editingGoal, setEditingGoal] = useState(null); // null = closed, "new" = add form, goal obj = edit form
 
   const income = useMemo(() =>
@@ -234,6 +234,23 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
   const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openOwed  = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openDebts = debts.filter(d => !d.settled);
+  const today = new Date();
+  const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+  const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
+  const dailyPace = expense > 0 ? expense / daysElapsed : 0;
+  const projectedExpense = expense > 0 ? dailyPace * daysInMonth : 0;
+  const budgetWatch = budgets
+    .map(b => {
+      const actual = transactions
+        .filter(t => t.type === "expense" && t.cat === b.cat)
+        .reduce((s, t) => s + t.amount, 0);
+      return { ...b, actual, pct: b.cap > 0 ? (actual / b.cap) * 100 : 0 };
+    })
+    .filter(b => b.pct >= 80)
+    .sort((a, b) => b.pct - a.pct)[0];
+  const insightTone = remaining < 0 ? "red" : savingsRate >= 20 ? "green" : savingsRate >= 5 ? "blue" : "orange";
+  const paceTone = projectedExpense > income && income > 0 ? "orange" : "indigo";
+  const budgetTone = budgetWatch?.pct >= 100 ? "red" : budgetWatch ? "orange" : "green";
 
   const handleSaveGoal = (g) => {
     onSaveGoal(g);
@@ -241,50 +258,66 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
   };
 
   return (
-    <div className="page fade-in">
-      <PageHeader greet="Xin chÃ o, Hiáº¿u ðŸ‘‹" title={monthLabel}>
-        <button className="btn" onClick={() => onNavigate && onNavigate("transactions")}>
-          <Icons.plus size={15} /> ThÃªm giao dá»‹ch
-        </button>
-      </PageHeader>
+    <div className="page fade-in overview-page">
 
-      {/* === Hero stats === */}
-      <div className="stat-grid">
+      {/* === Main stats === */}
+      <div className="stat-grid overview-stat-grid">
         <div className="stat stagger stagger-1">
           <div className="stat-label" style={{ color: "var(--c-green)" }}>
-            <Icons.arrowDownLeft size={13} /> Thu nháº­p
+            <Icons.arrowDownLeft size={13} /> Thu
           </div>
           <div className="stat-value num">{fmt(incomeAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dá»‹ch Â·
-            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/láº§n
+            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dịch ·
+            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
           </div>
         </div>
         <div className="stat stagger stagger-2">
           <div className="stat-label" style={{ color: "var(--c-red)" }}>
-            <Icons.arrowUpRight size={13} /> Chi tiÃªu
+            <Icons.arrowUpRight size={13} /> Chi
           </div>
           <div className="stat-value num">{fmt(expenseAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dá»‹ch Â·
-            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/láº§n
+            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dịch ·
+            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
           </div>
         </div>
         <div className="stat stagger stagger-3">
-          <div className="stat-label"><Icons.wallet size={13} /> Sá»‘ dÆ° cÃ²n láº¡i</div>
+          <div className="stat-label"><Icons.wallet size={13} /> Dư tháng này</div>
           <div className="stat-value num">{fmt(remainingAnim)}</div>
           <div className="stat-sub">
-            Tiáº¿t kiá»‡m {savingsRate}% thu nháº­p
-            {savingsRate >= 5 && (
-              <span className="pill"><Icons.check size={11} /> Äáº¡t má»¥c tiÃªu 5%</span>
-            )}
+            {remaining >= 0 ? "Còn lại sau chi tiêu" : "Đang thâm hụt tháng này"}
           </div>
         </div>
       </div>
 
+      <div className="insights overview-insights">
+        <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Tỷ lệ tiết kiệm">
+          {income > 0 ? (
+            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
+          ) : (
+            <>Chưa có thu nhập trong tháng này.</>
+          )}
+        </Insight>
+        <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
+          {expense > 0 ? (
+            <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
+          ) : (
+            <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
+          )}
+        </Insight>
+        <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title="Ngân sách">
+          {budgetWatch ? (
+            <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
+          ) : (
+            <>Chưa có danh mục nào chạm ngưỡng 80%.</>
+          )}
+        </Insight>
+      </div>
+
       {/* === Breakdown + Flow + Goals === */}
-      <div className="grid-2 category-flow-row">
-        <div className="card category-card stagger stagger-4">
+      <div className="overview-dashboard-grid">
+        <div className="card category-card overview-area-category stagger stagger-4">
           <div className="card-header">
             <div>
               <div className="card-title">Chi tiÃªu theo danh má»¥c</div>
@@ -315,8 +348,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
           )}
         </div>
 
-        <div className="col">
-          <div className="card flow-card stagger stagger-5">
+        <div className="card flow-card overview-area-flow stagger stagger-5">
             <div className="card-header">
               <div>
                 <div className="card-title">DÃ²ng tiá»n theo ngÃ y</div>
@@ -330,12 +362,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
             )}
           </div>
 
-        </div>
-      </div>
-
-      {/* === Six months + Debts === */}
-      <div className="grid-2 trend-debt-row">
-        <div className="card trend-card">
+        <div className="card trend-card overview-area-trend stagger stagger-6">
           <div className="card-header trend-header">
             <div className="card-title">So sánh thu chi 6 tháng gần nhất</div>
             <div className="trend-legend">
@@ -366,7 +393,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
           </div>
         </div>
 
-        <div className="card overview-debt-card">
+        <div className="card overview-debt-card overview-area-debt stagger stagger-7">
           <div className="card-header">
             <div className="card-title">Nợ &amp; Cho Vay</div>
             <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quáº£n lÃ½</button>

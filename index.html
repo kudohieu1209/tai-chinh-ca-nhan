@@ -882,7 +882,7 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
   const [editingGoal, setEditingGoal] = useState(null);
 
   const income = useMemo(() =>
@@ -966,6 +966,23 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
   const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openOwed  = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openDebts = debts.filter(d => !d.settled);
+  const today = new Date();
+  const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+  const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
+  const dailyPace = expense > 0 ? expense / daysElapsed : 0;
+  const projectedExpense = expense > 0 ? dailyPace * daysInMonth : 0;
+  const budgetWatch = budgets
+    .map(b => {
+      const actual = transactions
+        .filter(t => t.type === "expense" && t.cat === b.cat)
+        .reduce((s, t) => s + t.amount, 0);
+      return { ...b, actual, pct: b.cap > 0 ? (actual / b.cap) * 100 : 0 };
+    })
+    .filter(b => b.pct >= 80)
+    .sort((a, b) => b.pct - a.pct)[0];
+  const insightTone = remaining < 0 ? "red" : savingsRate >= 20 ? "green" : savingsRate >= 5 ? "blue" : "orange";
+  const paceTone = projectedExpense > income && income > 0 ? "orange" : "indigo";
+  const budgetTone = budgetWatch?.pct >= 100 ? "red" : budgetWatch ? "orange" : "green";
 
   const handleSaveGoal = (g) => {
     onSaveGoal(g);
@@ -973,17 +990,11 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
   };
 
   return (
-    <div className="page">
-      <PageHeader greet="Xin chào, Hiếu 👋" title={monthLabel}>
-        <button className="btn" onClick={() => onNavigate && onNavigate("transactions")}>
-          <Icons.plus size={15} /> Thêm giao dịch
-        </button>
-      </PageHeader>
-
-      <div className="stat-grid">
+    <div className="page overview-page">
+      <div className="stat-grid overview-stat-grid">
         <div className="stat stagger stagger-1">
           <div className="stat-label" style={{ color: "var(--c-green)" }}>
-            <Icons.arrowDownLeft size={13} /> Thu nhập
+            <Icons.arrowDownLeft size={13} /> Thu
           </div>
           <div className="stat-value num">{fmt(incomeAnim)}</div>
           <div className="stat-sub">
@@ -993,7 +1004,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
         </div>
         <div className="stat stagger stagger-2">
           <div className="stat-label" style={{ color: "var(--c-red)" }}>
-            <Icons.arrowUpRight size={13} /> Chi tiêu
+            <Icons.arrowUpRight size={13} /> Chi
           </div>
           <div className="stat-value num">{fmt(expenseAnim)}</div>
           <div className="stat-sub">
@@ -1002,19 +1013,40 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
           </div>
         </div>
         <div className="stat stagger stagger-3">
-          <div className="stat-label"><Icons.wallet size={13} /> Số dư còn lại</div>
+          <div className="stat-label"><Icons.wallet size={13} /> Dư tháng này</div>
           <div className="stat-value num">{fmt(remainingAnim)}</div>
           <div className="stat-sub">
-            Tiết kiệm {savingsRate}% thu nhập
-            {savingsRate >= 5 && (
-              <span className="pill"><Icons.check size={11} /> Đạt mục tiêu 5%</span>
-            )}
+            {remaining >= 0 ? "Còn lại sau chi tiêu" : "Đang thâm hụt tháng này"}
           </div>
         </div>
       </div>
 
-      <div className="grid-2 category-flow-row">
-        <div className="card category-card stagger stagger-4">
+      <div className="insights overview-insights">
+        <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Tỷ lệ tiết kiệm">
+          {income > 0 ? (
+            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
+          ) : (
+            <>Chưa có thu nhập trong tháng này.</>
+          )}
+        </Insight>
+        <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
+          {expense > 0 ? (
+            <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
+          ) : (
+            <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
+          )}
+        </Insight>
+        <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title="Ngân sách">
+          {budgetWatch ? (
+            <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
+          ) : (
+            <>Chưa có danh mục nào chạm ngưỡng 80%.</>
+          )}
+        </Insight>
+      </div>
+
+      <div className="overview-dashboard-grid">
+        <div className="card category-card overview-area-category stagger stagger-4">
           <div className="card-header">
             <div>
               <div className="card-title">Chi tiêu theo danh mục</div>
@@ -1045,8 +1077,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
           )}
         </div>
 
-        <div className="col">
-          <div className="card flow-card stagger stagger-5">
+        <div className="card flow-card overview-area-flow stagger stagger-5">
             <div className="card-header">
               <div>
                 <div className="card-title">Dòng tiền theo ngày</div>
@@ -1060,11 +1091,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
             )}
           </div>
 
-        </div>
-      </div>
-
-      <div className="grid-2 trend-debt-row">
-        <div className="card trend-card">
+        <div className="card trend-card overview-area-trend stagger stagger-6">
           <div className="card-header trend-header">
             <div className="card-title">So sánh thu chi 6 tháng gần nhất</div>
             <div className="trend-legend">
@@ -1095,7 +1122,7 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
           </div>
         </div>
 
-        <div className="card overview-debt-card">
+        <div className="card overview-debt-card overview-area-debt stagger stagger-7">
           <div className="card-header">
             <div className="card-title">Nợ &amp; Cho Vay</div>
             <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quản lý</button>
@@ -1142,28 +1169,58 @@ function Overview({ transactions, allTransactions, debts, goals, viewMonth, view
 // transactions.jsx
 // ============================================================
 
-function Transactions({ transactions, onAddTransaction, onDeleteTransaction, monthLabel }) {
+function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel }) {
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [cat, setCat] = useState("Ăn uống");
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sortMode, setSortMode] = useState("date-desc");
   const [justAdded, setJustAdded] = useState(false);
   const [btnSuccess, setBtnSuccess] = useState(false);
+  const [editingTx, setEditingTx] = useState(null);
+  const formRef = useRef(null);
+  const firstExpenseCat = Object.keys(CATEGORIES)[0] || cat;
+  const incomeCat = "Thu nhập";
 
   const incomeList = transactions.filter(t => t.type === "income");
   const expenseList = transactions.filter(t => t.type === "expense");
   const list = mode === "income" ? incomeList : expenseList;
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    expenseList.forEach(t => {
+      if (!t.cat) return;
+      counts[t.cat] = (counts[t.cat] || 0) + 1;
+    });
+    return counts;
+  }, [transactions]);
+  const categoryOptions = useMemo(() =>
+    Object.values(CATEGORIES).filter(c => categoryCounts[c.name]),
+  [categoryCounts]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return list;
-    const q = search.toLowerCase();
-    return list.filter(t =>
-      t.desc.toLowerCase().includes(q) ||
-      (t.cat && t.cat.toLowerCase().includes(q))
-    );
-  }, [search, list]);
+    const q = search.trim().toLowerCase();
+    const byDateDesc = (a, b) => (b.date || "").localeCompare(a.date || "") || String(b.id).localeCompare(String(a.id));
+    const byDateAsc = (a, b) => (a.date || "").localeCompare(b.date || "") || String(a.id).localeCompare(String(b.id));
+    const next = list.filter(t => {
+      const matchesSearch = !q ||
+        (t.desc || "").toLowerCase().includes(q) ||
+        (t.cat && t.cat.toLowerCase().includes(q));
+      const matchesCategory = mode !== "expense" ||
+        categoryFilter === "all" ||
+        t.cat === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+
+    return [...next].sort((a, b) => {
+      if (sortMode === "date-asc") return byDateAsc(a, b);
+      if (sortMode === "amount-desc") return (b.amount - a.amount) || byDateDesc(a, b);
+      if (sortMode === "amount-asc") return (a.amount - b.amount) || byDateDesc(a, b);
+      return byDateDesc(a, b);
+    });
+  }, [search, list, mode, categoryFilter, sortMode]);
 
   const grouped = useMemo(() => {
     const g = {};
@@ -1173,30 +1230,170 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
       g[k].push(t);
     });
     return Object.entries(g).sort(([a], [b]) => {
+      if (sortMode === "date-asc") {
+        if (a > b) return 1;
+        if (a < b) return -1;
+        return 0;
+      }
       if (b > a) return 1;
       if (b < a) return -1;
       return 0;
     });
-  }, [filtered]);
+  }, [filtered, sortMode]);
 
   const totalIn  = incomeList.reduce((s, t) => s + t.amount, 0);
   const totalOut = expenseList.reduce((s, t) => s + t.amount, 0);
+  const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
+  const hasListFilters = Boolean(search.trim()) ||
+    (mode === "expense" && categoryFilter !== "all") ||
+    sortMode !== "date-desc";
+  const quickTemplateStorageKey = "fintrack-quick-templates-v1";
 
-  const handleAdd = () => {
+  const defaultQuickTemplates = useMemo(() => {
+    const cats = Object.keys(CATEGORIES);
+    return [
+      { id: "lunch", label: "Ăn trưa", type: "expense", desc: "Ăn trưa", amount: 35000, cat: cats[0] || firstExpenseCat },
+      { id: "water", label: "Nước", type: "expense", desc: "Nước uống", amount: 10000, cat: cats[0] || firstExpenseCat },
+      { id: "grab", label: "Grab", type: "expense", desc: "Grab", amount: 25000, cat: cats[1] || firstExpenseCat },
+      { id: "badminton", label: "Cầu lông", type: "expense", desc: "Cầu lông", amount: 80000, cat: cats[8] || firstExpenseCat },
+      { id: "mom-transfer", label: "Mẹ chuyển", type: "income", desc: "Mẹ chuyển", amount: 1000000, cat: incomeCat },
+    ];
+  }, [firstExpenseCat, incomeCat]);
+  const [savedQuickTemplates, setSavedQuickTemplates] = useState(null);
+  const [editingQuickTemplates, setEditingQuickTemplates] = useState(false);
+  const quickTemplates = savedQuickTemplates || defaultQuickTemplates;
+
+  const normalizeQuickTemplate = (tpl, idx = 0) => {
+    const type = tpl.type === "income" ? "income" : "expense";
+    const label = String(tpl.label || tpl.desc || "Mẫu mới").trim() || "Mẫu mới";
+    return {
+      id: tpl.id || `${Date.now()}-${idx}`,
+      label,
+      type,
+      desc: String(tpl.desc || label).trim() || label,
+      amount: Number(tpl.amount) || 0,
+      cat: type === "income" ? incomeCat : (tpl.cat || firstExpenseCat),
+    };
+  };
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(quickTemplateStorageKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed)) {
+        setSavedQuickTemplates(parsed.map(normalizeQuickTemplate));
+      }
+    } catch (_) {
+      setSavedQuickTemplates(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!savedQuickTemplates) return;
+    try {
+      localStorage.setItem(quickTemplateStorageKey, JSON.stringify(savedQuickTemplates));
+    } catch (_) {}
+  }, [savedQuickTemplates]);
+
+  useEffect(() => {
+    if (mode === "income" && categoryFilter !== "all") {
+      setCategoryFilter("all");
+    }
+  }, [mode, categoryFilter]);
+
+  const updateQuickTemplate = (id, patch) => {
+    setSavedQuickTemplates((current) => {
+      const base = current || defaultQuickTemplates;
+      return base.map((tpl, idx) => {
+        if (tpl.id !== id) return normalizeQuickTemplate(tpl, idx);
+        const next = { ...tpl, ...patch };
+        if (patch.label != null && patch.desc == null) next.desc = patch.label;
+        if (patch.type === "income") next.cat = incomeCat;
+        if (patch.type === "expense" && tpl.type === "income") next.cat = firstExpenseCat;
+        return normalizeQuickTemplate(next, idx);
+      });
+    });
+  };
+
+  const addQuickTemplate = () => {
+    setSavedQuickTemplates((current) => [
+      ...(current || defaultQuickTemplates).map(normalizeQuickTemplate),
+      normalizeQuickTemplate({
+        id: `tpl-${Date.now()}`,
+        label: "Mẫu mới",
+        type: mode,
+        desc: "Mẫu mới",
+        amount: 10000,
+        cat: mode === "expense" ? cat : incomeCat,
+      }),
+    ]);
+    setEditingQuickTemplates(true);
+  };
+
+  const deleteQuickTemplate = (id) => {
+    setSavedQuickTemplates((current) => (current || defaultQuickTemplates)
+      .filter(tpl => tpl.id !== id)
+      .map(normalizeQuickTemplate));
+  };
+
+  const clearDraft = () => {
+    setDesc("");
+    setAmount(0);
+    setEditingTx(null);
+  };
+
+  const applyTemplate = (tpl) => {
+    setEditingTx(null);
+    setMode(tpl.type);
+    setDesc(tpl.desc || tpl.label || "");
+    setAmount(Number(tpl.amount) || 0);
+    if (tpl.type === "expense") setCat(tpl.cat || firstExpenseCat);
+    setDate(new Date().toISOString().slice(0, 10));
+  };
+
+  const startEdit = (tx) => {
+    setEditingTx(tx);
+    setMode(tx.type || "expense");
+    setDesc(tx.desc || "");
+    setAmount(tx.amount || 0);
+    setCat(tx.type === "expense" ? (tx.cat || firstExpenseCat) : firstExpenseCat);
+    setDate(tx.date || new Date().toISOString().slice(0, 10));
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
+  const cancelEdit = () => clearDraft();
+
+  const handleSubmit = () => {
     if (!desc.trim() || amount <= 0) return;
+    if (editingTx) {
+      onUpdateTransaction && onUpdateTransaction(editingTx.id, {
+        type: mode,
+        desc: desc.trim(),
+        amount,
+        cat: mode === "expense" ? cat : incomeCat,
+        date,
+      });
+      clearDraft();
+      return;
+    }
     onAddTransaction({
       type: mode,
       desc: desc.trim(),
       amount,
-      cat: mode === "expense" ? cat : "Thu nhập",
+      cat: mode === "expense" ? cat : incomeCat,
       date,
     });
-    setDesc("");
-    setAmount(0);
+    clearDraft();
     setJustAdded(true);
     setBtnSuccess(true);
     setTimeout(() => setJustAdded(false), 700);
     setTimeout(() => setBtnSuccess(false), 650);
+  };
+
+  const clearListFilters = () => {
+    setSearch("");
+    setCategoryFilter("all");
+    setSortMode("date-desc");
   };
 
   return (
@@ -1205,12 +1402,17 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
 
       <div className="tx-layout">
         <aside className="tx-aside">
-          <div className="card" style={{ padding: 18 }}>
+          <div ref={formRef} className="card tx-form-card" style={{ scrollMarginTop: 80 }}>
             <div className="card-header" style={{ marginBottom: 14 }}>
               <div>
-                <div className="card-title">Thêm giao dịch</div>
-                <div className="card-subtitle">Ghi lại ngay để không quên</div>
+                <div className="card-title">{editingTx ? "Sửa giao dịch" : "Thêm giao dịch"}</div>
+                <div className="card-subtitle">{editingTx ? "Cập nhật lại thông tin giao dịch" : "Ghi lại ngay để không quên"}</div>
               </div>
+              {editingTx && (
+                <button className="btn btn-secondary tx-cancel-edit" onClick={cancelEdit}>
+                  <Icons.x size={14} /> Hủy
+                </button>
+              )}
             </div>
 
             <TabBar
@@ -1224,6 +1426,77 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
             />
 
             <div className="tx-form-vertical">
+              <div className="quick-templates">
+                <div className="quick-template-head">
+                  <div className="quick-template-label">Mẫu nhanh</div>
+                  <div className="quick-template-tools">
+                    {editingQuickTemplates && (
+                      <button className="quick-template-tool" onClick={addQuickTemplate}>
+                        <Icons.plus size={13} /> Thêm
+                      </button>
+                    )}
+                    <button
+                      className="quick-template-tool"
+                      onClick={() => setEditingQuickTemplates(v => !v)}
+                    >
+                      {editingQuickTemplates ? <Icons.check size={13} /> : <Icons.pencil size={13} />}
+                      {editingQuickTemplates ? "Xong" : "Sửa"}
+                    </button>
+                  </div>
+                </div>
+                {editingQuickTemplates ? (
+                  <div className="quick-template-editor">
+                    {quickTemplates.map(tpl => (
+                      <div className={"quick-template-edit-row " + tpl.type} key={tpl.id}>
+                        <input
+                          className="input quick-template-name"
+                          value={tpl.label}
+                          onChange={e => updateQuickTemplate(tpl.id, { label: e.target.value })}
+                        />
+                        <select
+                          className="select quick-template-type"
+                          value={tpl.type}
+                          onChange={e => updateQuickTemplate(tpl.id, { type: e.target.value })}
+                        >
+                          <option value="expense">Chi</option>
+                          <option value="income">Thu</option>
+                        </select>
+                        <MoneyInput
+                          value={tpl.amount}
+                          onChange={value => updateQuickTemplate(tpl.id, { amount: value })}
+                        />
+                        {tpl.type === "expense" && (
+                          <select
+                            className="select quick-template-cat"
+                            value={tpl.cat}
+                            onChange={e => updateQuickTemplate(tpl.id, { cat: e.target.value })}
+                          >
+                            {Object.values(CATEGORIES).map(c => (
+                              <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                            ))}
+                          </select>
+                        )}
+                        <button className="quick-template-delete" onClick={() => deleteQuickTemplate(tpl.id)} title="Xóa mẫu">
+                          <Icons.trash size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="quick-template-list">
+                    {quickTemplates.map(tpl => (
+                      <button
+                        key={tpl.id}
+                        className={"quick-template-btn " + tpl.type}
+                        onClick={() => applyTemplate(tpl)}
+                      >
+                        <span>{tpl.label}</span>
+                        <span className="num">{fmtShort(tpl.amount)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="field">
                 <span className="field-label">Mô tả</span>
                 <input
@@ -1231,7 +1504,7 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
                   placeholder={mode === "income" ? "VD: Lương, mẹ chuyển..." : "VD: Cơm tấm, Grab, sách..."}
                   value={desc}
                   onChange={e => setDesc(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAdd()}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
                 />
               </div>
               <div className="tx-row-fields">
@@ -1257,15 +1530,15 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
               <button
                 className={"btn" + (btnSuccess ? " btn-success" : "")}
                 style={{ width: "100%", height: 44 }}
-                onClick={handleAdd}
+                onClick={handleSubmit}
               >
-                {btnSuccess ? <Icons.check size={15} /> : <Icons.plus size={15} />}
-                {btnSuccess ? "Đã thêm!" : "Thêm giao dịch"}
+                {btnSuccess || editingTx ? <Icons.check size={15} /> : <Icons.plus size={15} />}
+                {editingTx ? "Lưu thay đổi" : (btnSuccess ? "Đã thêm!" : "Thêm giao dịch")}
               </button>
             </div>
           </div>
 
-          <div className="card" style={{ padding: 18, flex: 1, display: "flex", flexDirection: "column" }}>
+          <div className="card tx-summary-card">
             <div className="card-header" style={{ marginBottom: 14 }}>
               <div>
                 <div className="card-title">Tóm tắt tháng</div>
@@ -1318,16 +1591,6 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
         </aside>
 
         <div className="tx-main">
-          <TabBar
-            style={{ marginBottom: 14 }}
-            active={mode}
-            onChange={setMode}
-            tabs={[
-              { id: "income",  label: "Thu nhập", icon: Icons.arrowDownLeft, cls: "income",  count: incomeList.length },
-              { id: "expense", label: "Chi tiêu",  icon: Icons.arrowUpRight,  cls: "expense", count: expenseList.length },
-            ]}
-          />
-
           <div className="search-bar">
             <Icons.search size={15} style={{ color: "var(--text-3)" }} />
             <input
@@ -1336,6 +1599,50 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
               onChange={e => setSearch(e.target.value)}
             />
             <span className="search-meta">{filtered.length} / {list.length}</span>
+          </div>
+
+          <div className="tx-filter-panel">
+            <div className="tx-filter-top">
+              <div className="tx-filter-summary">
+                <Icons.filter size={13} />
+                <span>Tổng đang xem</span>
+                <b className="num">{fmt(filteredTotal)}</b>
+              </div>
+              <div className="tx-filter-actions">
+                <select className="select tx-sort-select" value={sortMode} onChange={e => setSortMode(e.target.value)}>
+                  <option value="date-desc">Mới nhất</option>
+                  <option value="date-asc">Cũ nhất</option>
+                  <option value="amount-desc">Tiền cao</option>
+                  <option value="amount-asc">Tiền thấp</option>
+                </select>
+                {hasListFilters && (
+                  <button className="tx-clear-filter" onClick={clearListFilters}>
+                    <Icons.x size={13} /> Xóa lọc
+                  </button>
+                )}
+              </div>
+            </div>
+            {mode === "expense" && categoryOptions.length > 0 && (
+              <div className="tx-category-chips">
+                <button
+                  className={"tx-filter-chip" + (categoryFilter === "all" ? " active" : "")}
+                  onClick={() => setCategoryFilter("all")}
+                >
+                  Tất cả <span>{expenseList.length}</span>
+                </button>
+                {categoryOptions.map(c => (
+                  <button
+                    key={c.name}
+                    className={"tx-filter-chip" + (categoryFilter === c.name ? " active" : "")}
+                    onClick={() => setCategoryFilter(c.name)}
+                  >
+                    <span className="tx-filter-emoji">{c.emoji}</span>
+                    {c.name}
+                    <span>{categoryCounts[c.name]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card" style={{ padding: 18 }}>
@@ -1375,10 +1682,16 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
                             <span className={"tx-amount " + (mode === "income" ? "in" : "out")}>
                               {mode === "income" ? "+" : "−"}{fmt(t.amount)}
                             </span>
-                            <button className="tx-delete" title="Xóa"
-                              onClick={() => onDeleteTransaction && onDeleteTransaction(t.id)}>
-                              <Icons.trash size={14} />
-                            </button>
+                            <div className="tx-actions">
+                              <button className="tx-edit" title="Sửa"
+                                onClick={() => startEdit(t)}>
+                                <Icons.pencil size={14} />
+                              </button>
+                              <button className="tx-delete" title="Xóa"
+                                onClick={() => onDeleteTransaction && onDeleteTransaction(t.id)}>
+                                <Icons.trash size={14} />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -1398,12 +1711,17 @@ function Transactions({ transactions, onAddTransaction, onDeleteTransaction, mon
 // debts.jsx
 // ============================================================
 
-function Debts({ debts, onAddDebt, onDeleteDebt, onSettleDebt }) {
+function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onReopenDebt }) {
   const [filter, setFilter] = useState("all");
   const [name, setName] = useState("");
   const [amt, setAmt] = useState(0);
   const [type, setType] = useState("owe");
   const [note, setNote] = useState("");
+  const [editingDebt, setEditingDebt] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editAmt, setEditAmt] = useState(0);
+  const [editType, setEditType] = useState("owe");
+  const [editNote, setEditNote] = useState("");
 
   const filtered = useMemo(() => {
     if (filter === "all")    return debts;
@@ -1423,6 +1741,33 @@ function Debts({ debts, onAddDebt, onDeleteDebt, onSettleDebt }) {
     if (!name.trim() || amt <= 0) return;
     onAddDebt({ name: name.trim(), amount: amt, type, note: note.trim(), settled: false });
     setName(""); setAmt(0); setNote("");
+  };
+
+  const startEdit = (debt) => {
+    setEditingDebt(debt);
+    setEditName(debt.name || "");
+    setEditAmt(debt.amount || 0);
+    setEditType(debt.type || "owe");
+    setEditNote(debt.note || "");
+  };
+
+  const cancelEdit = () => {
+    setEditingDebt(null);
+    setEditName("");
+    setEditAmt(0);
+    setEditType("owe");
+    setEditNote("");
+  };
+
+  const saveEdit = () => {
+    if (!editingDebt || !editName.trim() || editAmt <= 0) return;
+    onUpdateDebt && onUpdateDebt(editingDebt.id, {
+      name: editName.trim(),
+      amount: editAmt,
+      type: editType,
+      note: editNote.trim(),
+    });
+    cancelEdit();
   };
 
   return (
@@ -1514,6 +1859,26 @@ function Debts({ debts, onAddDebt, onDeleteDebt, onSettleDebt }) {
               const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
               const color = debtColor(d.id);
               const isPaid = !!d.settled;
+              const isEditing = editingDebt?.id === d.id;
+              if (isEditing) {
+                return (
+                  <div className="debt-edit-item" key={d.id}>
+                    <div className="debt-edit-grid">
+                      <input className="input" type="text" value={editName} onChange={e => setEditName(e.target.value)} />
+                      <MoneyInput value={editAmt} onChange={setEditAmt} />
+                      <select className="select" value={editType} onChange={e => setEditType(e.target.value)}>
+                        <option value="owe">Mình nợ họ</option>
+                        <option value="lend">Họ nợ mình</option>
+                      </select>
+                      <input className="input" type="text" value={editNote} onChange={e => setEditNote(e.target.value)} placeholder="Ghi chú" />
+                      <div className="debt-actions">
+                        <button className="btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={saveEdit}>Lưu</button>
+                        <button className="btn-secondary btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={cancelEdit}>Hủy</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div className={"debt-row" + (isPaid ? " paid" : "")} key={d.id}>
                   <div className="debt-avatar" style={{ background: color, opacity: isPaid ? 0.5 : 1 }}>
@@ -1527,14 +1892,24 @@ function Debts({ debts, onAddDebt, onDeleteDebt, onSettleDebt }) {
                     {isPaid ? null : (d.type === "owe" ? "−" : "+")}{fmt(d.amount)}
                   </span>
                   {isPaid ? (
-                    <span className="debt-status-pill paid">
-                      <Icons.check size={10} style={{ verticalAlign: "middle" }} /> Xong
-                    </span>
+                    <div className="debt-actions">
+                      <span className="debt-status-pill paid">
+                        <Icons.check size={10} style={{ verticalAlign: "middle" }} /> Xong
+                      </span>
+                      <button className="btn-secondary btn debt-small-btn" onClick={() => onReopenDebt && onReopenDebt(d.id)}>
+                        Mở lại
+                      </button>
+                      <button className="debt-icon-btn" title="Sửa" onClick={() => startEdit(d)}>
+                        <Icons.pencil size={13} />
+                      </button>
+                    </div>
                   ) : (
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <button className="btn-secondary btn" style={{ padding: "6px 12px", fontSize: 12 }}
-                        onClick={() => onSettleDebt && onSettleDebt(d.id)}>
+                    <div className="debt-actions">
+                      <button className="btn-secondary btn debt-small-btn" onClick={() => onSettleDebt && onSettleDebt(d.id)}>
                         {d.type === "owe" ? "Trả" : "Thu"}
+                      </button>
+                      <button className="debt-icon-btn" title="Sửa" onClick={() => startEdit(d)}>
+                        <Icons.pencil size={13} />
                       </button>
                       <button className="tx-delete" title="Xóa"
                         onClick={() => onDeleteDebt && onDeleteDebt(d.id)}
@@ -1827,6 +2202,24 @@ const DEFAULT_GOALS = [
   { id: 2, emoji: "🏖️", color: "#FF9500", name: "Đi Đà Lạt cuối năm", current: 1100000, target: 3500000,  monthly: 600000 },
 ];
 
+function localDateKey(dateLike = new Date()) {
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return localDateKey(new Date());
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function debtSettlementTransaction(debt, paidDate = new Date(), idPrefix = "settle") {
+  return {
+    id: `${idPrefix}-${debt.id}`,
+    debtId: debt.id,
+    type: debt.type === "owe" ? "expense" : "income",
+    desc: debt.type === "owe" ? `Trả nợ ${debt.name}` : `Thu nợ ${debt.name}`,
+    amount: debt.amount,
+    cat: debt.type === "owe" ? "Trả nợ" : "Thu nhập",
+    date: localDateKey(paidDate),
+  };
+}
+
 function App() {
   const [allTransactions, setAllTransactions] = useState([]);
   const [debts, setDebts]       = useState([]);
@@ -1869,13 +2262,17 @@ function App() {
         const dbts = d.debts   || [];
         const bdgs = d.budgets || [];
         const gls  = d.goals   || DEFAULT_GOALS;
-        setAllTransactions(result);
+        const missingSettlementTxs = dbts
+          .filter(debt => debt.settled && debt.paidDate && !result.some(t => t.debtId === debt.id))
+          .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
+        const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...result] : result;
+        setAllTransactions(txns);
         setDebts(dbts);
         setBudgets(bdgs);
         setGoals(gls);
         setLoaded(true);
-        if (changed) {
-          window._fsDoc.set({ transactions: result, debts: dbts, budgets: bdgs, goals: gls });
+        if (changed || missingSettlementTxs.length) {
+          window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls });
         }
       } else {
         setAllTransactions(_SEED.transactions);
@@ -1902,6 +2299,14 @@ function App() {
     persist(next, debts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  const updateTransaction = useCallback((id, patch) => {
+    const next = allTransactions.map(t => (
+      t.id === id ? { ...t, ...patch, amount: Number(patch.amount) || t.amount } : t
+    ));
+    setAllTransactions(next);
+    persist(next, debts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
   const deleteTransaction = useCallback((id) => {
     const next = allTransactions.filter(t => t.id !== id);
     setAllTransactions(next);
@@ -1916,14 +2321,63 @@ function App() {
 
   const deleteDebt = useCallback((id) => {
     const next = debts.filter(d => d.id !== id);
+    const nextTransactions = allTransactions.filter(t => t.debtId !== id);
     setDebts(next);
-    persist(allTransactions, next, budgets, goals);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, next, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const updateDebt = useCallback((id, patch) => {
+    const current = debts.find(d => d.id === id);
+    if (!current) return;
+
+    const updated = { ...current, ...patch, amount: Number(patch.amount) || current.amount };
+    const nextDebts = debts.map(d => d.id === id ? updated : d);
+    const nextTransactions = allTransactions.map(t => (
+      t.debtId === id
+        ? {
+            ...t,
+            type: updated.type === "owe" ? "expense" : "income",
+            desc: updated.type === "owe" ? `Trả nợ ${updated.name}` : `Thu nợ ${updated.name}`,
+            amount: updated.amount,
+            cat: updated.type === "owe" ? "Trả nợ" : "Thu nhập",
+          }
+        : t
+    ));
+
+    setDebts(nextDebts);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, nextDebts, budgets, goals);
+  }, [allTransactions, debts, budgets, goals, persist]);
+
+  const reopenDebt = useCallback((id) => {
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+
+    const nextDebts = debts.map(d => (
+      d.id === id ? { ...d, settled: false, paidDate: null } : d
+    ));
+    const nextTransactions = allTransactions.filter(t => t.debtId !== id);
+
+    setDebts(nextDebts);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, nextDebts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
   const settleDebt = useCallback((id) => {
-    const next = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: new Date().toISOString() } : d);
-    setDebts(next);
-    persist(allTransactions, next, budgets, goals);
+    const debt = debts.find(d => d.id === id);
+    if (!debt || debt.settled) return;
+
+    const now = new Date();
+    const settlementTx = debtSettlementTransaction(debt, now);
+    const nextDebts = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: now.toISOString() } : d);
+    const nextTransactions = allTransactions.some(t => t.debtId === id)
+      ? allTransactions
+      : [settlementTx, ...allTransactions];
+
+    setDebts(nextDebts);
+    setAllTransactions(nextTransactions);
+    persist(nextTransactions, nextDebts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
   const saveBudget = useCallback((cat, cap) => {
@@ -1977,10 +2431,13 @@ function App() {
     viewYear,
     monthLabel,
     onAddTransaction:    addTransaction,
+    onUpdateTransaction: updateTransaction,
     onDeleteTransaction: deleteTransaction,
     onAddDebt:           addDebt,
+    onUpdateDebt:        updateDebt,
     onDeleteDebt:        deleteDebt,
     onSettleDebt:        settleDebt,
+    onReopenDebt:        reopenDebt,
     onSaveBudget:        saveBudget,
     onDeleteBudget:      deleteBudget,
     onSaveGoal:          saveGoal,

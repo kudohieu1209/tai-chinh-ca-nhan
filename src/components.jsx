@@ -2,6 +2,79 @@
 
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
+// ====== useCountup — animates a number from 0 to target on mount/change ======
+function useCountup(target, duration = 850) {
+  const [value, setValue] = useState(0);
+  const rafRef  = useRef(null);
+  const fromRef = useRef(0);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const from  = fromRef.current;
+    const start = performance.now();
+    const tick  = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const cur = Math.round(from + (target - from) * eased);
+      setValue(cur);
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = target;
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+
+  return value;
+}
+
+// ====== AppSkeleton — shown while Firebase loads ======
+function AppSkeleton() {
+  return (
+    <div className="app">
+      <aside className="sidebar" style={{ paddingTop: 24 }}>
+        <div style={{ padding: "0 10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton" style={{ height: 11, width: "65%", marginBottom: 6 }} />
+            <div className="skeleton" style={{ height: 9,  width: "40%" }} />
+          </div>
+        </div>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", marginBottom: 3 }}>
+            <div className="skeleton" style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0 }} />
+            <div className="skeleton" style={{ flex: 1, height: 11 }} />
+          </div>
+        ))}
+      </aside>
+      <main className="main">
+        <div className="toolbar">
+          <div className="skeleton" style={{ width: 80, height: 14, borderRadius: 6 }} />
+          <div className="skeleton" style={{ width: 164, height: 30, borderRadius: 999 }} />
+        </div>
+        <div className="page">
+          <div style={{ marginBottom: 26 }}>
+            <div className="skeleton" style={{ height: 11, width: 180, marginBottom: 10, borderRadius: 6 }} />
+            <div className="skeleton" style={{ height: 28, width: 260, borderRadius: 8 }} />
+          </div>
+          <div className="stat-grid" style={{ marginBottom: 14 }}>
+            {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 116, borderRadius: 22 }} />)}
+          </div>
+          <div className="grid-2">
+            <div className="skeleton" style={{ height: 290, borderRadius: 22 }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="skeleton" style={{ height: 180, borderRadius: 22 }} />
+              <div className="skeleton" style={{ height: 100, borderRadius: 22 }} />
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 // ====== Sidebar ======
 function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
   const openDebtCount = debts.filter(d => !d.settled).length;
@@ -145,10 +218,10 @@ function Insight({ tone = "blue", icon = "lightbulb", title, children }) {
 function Empty({ icon = "inbox", title, text }) {
   const Icon = Icons[icon];
   return (
-    <div className="empty">
+    <div className="empty fade-in">
       <div className="empty-icon"><Icon size={26} /></div>
       <div className="empty-title">{title}</div>
-      <div className="empty-text">{text}</div>
+      {text && <div className="empty-text">{text}</div>}
     </div>
   );
 }
