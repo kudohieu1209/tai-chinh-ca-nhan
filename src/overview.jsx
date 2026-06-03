@@ -150,7 +150,7 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, onNavigate, onSaveGoal, onDeleteGoal }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onSaveGoal, onDeleteGoal }) {
   const [editingGoal, setEditingGoal] = useState(null); // null = closed, "new" = add form, goal obj = edit form
 
   const income = useMemo(() =>
@@ -161,14 +161,15 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
     transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
     [transactions]
   );
-  const remaining = income - expense;
+  const remaining = periodBalance ?? (income - expense);
+  const finalBalance = closingBalance ?? (openingBalance + remaining);
   const savingsRate = income > 0 ? Math.round((remaining / income) * 100) : 0;
   const incomeCount = transactions.filter(t => t.type === "income").length;
   const expenseCount = transactions.filter(t => t.type === "expense").length;
 
   const incomeAnim    = useCountup(income);
   const expenseAnim   = useCountup(expense);
-  const remainingAnim = useCountup(remaining);
+  const closingBalanceAnim = useCountup(finalBalance);
 
   const catRows = useMemo(() => {
     const spend = {};
@@ -283,20 +284,21 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
         </div>
         <div className="stat stagger stagger-3">
-          <div className="stat-label"><Icons.wallet size={13} /> Dư tháng này</div>
-          <div className="stat-value num">{fmt(remainingAnim)}</div>
+          <div className="stat-label"><Icons.wallet size={13} /> Số dư cuối tháng</div>
+          <div className="stat-value num">{fmt(closingBalanceAnim)}</div>
           <div className="stat-sub">
-            {remaining >= 0 ? "Còn lại sau chi tiêu" : "Đang thâm hụt tháng này"}
+            Đầu tháng <span className="num">{fmt(openingBalance)}</span> ·
+            tháng này <span className="num">{remaining >= 0 ? "+" : "-"}{fmt(Math.abs(remaining))}</span>
           </div>
         </div>
       </div>
 
       <div className="insights overview-insights">
-        <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Tỷ lệ tiết kiệm">
+        <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Dòng tiền tháng">
           {income > 0 ? (
-            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
+            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này. Số dư cuối tháng là <b>{fmt(finalBalance)}</b>.</>
           ) : (
-            <>Chưa có thu nhập trong tháng này.</>
+            <>Chưa có thu nhập trong tháng này. Số dư cuối tháng là <b>{fmt(finalBalance)}</b>.</>
           )}
         </Insight>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">

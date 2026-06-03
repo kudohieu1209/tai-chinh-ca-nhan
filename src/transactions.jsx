@@ -1,6 +1,6 @@
 // Transactions — 2-column: form+summary (left sticky) + tabbed list (right)
 
-function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel }) {
+function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel, openingBalance = 0, periodBalance, closingBalance }) {
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
@@ -74,6 +74,8 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
 
   const totalIn  = incomeList.reduce((s, t) => s + t.amount, 0);
   const totalOut = expenseList.reduce((s, t) => s + t.amount, 0);
+  const monthlyBalance = periodBalance ?? (totalIn - totalOut);
+  const finalBalance = closingBalance ?? (openingBalance + monthlyBalance);
   const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
   const hasListFilters = Boolean(search.trim()) ||
     (mode === "expense" && categoryFilter !== "all") ||
@@ -401,10 +403,18 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
               </div>
               <div>
                 <div className="mini-label">
-                  <Icons.wallet size={12} /> Dư
+                  <Icons.wallet size={12} /> Đầu tháng
                 </div>
-                <div className="mini-value num" style={{ color: "var(--c-green)" }}>
-                  {fmt(totalIn - totalOut)}
+                <div className="mini-value num">
+                  {fmt(openingBalance)}
+                </div>
+              </div>
+              <div>
+                <div className="mini-label">
+                  <Icons.wallet size={12} /> Cuối tháng
+                </div>
+                <div className="mini-value num" style={{ color: finalBalance >= 0 ? "var(--c-green)" : "var(--c-red)" }}>
+                  {fmt(finalBalance)}
                 </div>
               </div>
             </div>
@@ -414,13 +424,13 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
                   Tỉ lệ tiết kiệm
                 </span>
                 <span className="num" style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--c-green)" }}>
-                  {totalIn === 0 ? "0" : Math.max(0, Math.round(((totalIn - totalOut) / totalIn) * 100))}%
+                  {totalIn === 0 ? "0" : Math.max(0, Math.round((monthlyBalance / totalIn) * 100))}%
                 </span>
               </div>
               <div style={{ height: 6, background: "var(--surface-2)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{
                   height: "100%",
-                  width: (totalIn === 0 ? 0 : Math.max(0, Math.min(100, ((totalIn - totalOut) / totalIn) * 100))) + "%",
+                  width: (totalIn === 0 ? 0 : Math.max(0, Math.min(100, (monthlyBalance / totalIn) * 100))) + "%",
                   background: "linear-gradient(90deg, var(--c-green), #2ABF52)",
                   borderRadius: 3, transition: "width 0.4s ease",
                 }} />

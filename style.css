@@ -1100,7 +1100,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 10px !important;
 }
 .tx-summary-card .mini-summary-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .tx-summary-card .mini-summary-list > div {
@@ -1112,6 +1112,13 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 .tx-summary-card .mini-summary-list > div:last-child {
   border-right: none;
+}
+.tx-summary-card .mini-summary-list > div:nth-child(2n) {
+  border-right: none;
+}
+.tx-summary-card .mini-summary-list > div:nth-child(n+3) {
+  border-top: 0.5px solid var(--divider);
+  padding-top: 10px;
 }
 .tx-summary-card .mini-summary-list .mini-label {
   margin-bottom: 5px;

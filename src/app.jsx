@@ -57,6 +57,39 @@ function debtSettlementTransaction(debt, paidDate = new Date(), idPrefix = "sett
   };
 }
 
+function getMonthlyBalance(transactions, viewYear, viewMonth) {
+  const monthStart = new Date(viewYear, viewMonth, 1);
+  const nextMonthStart = new Date(viewYear, viewMonth + 1, 1);
+  let openingBalance = 0;
+  let income = 0;
+  let expense = 0;
+
+  transactions.forEach(t => {
+    const d = new Date((t.date || "") + "T00:00:00");
+    if (Number.isNaN(d.getTime())) return;
+
+    const amount = Number(t.amount) || 0;
+    const signedAmount = t.type === "income" ? amount : t.type === "expense" ? -amount : 0;
+
+    if (d < monthStart) {
+      openingBalance += signedAmount;
+      return;
+    }
+
+    if (d >= monthStart && d < nextMonthStart) {
+      if (t.type === "income") income += amount;
+      if (t.type === "expense") expense += amount;
+    }
+  });
+
+  const periodBalance = income - expense;
+  return {
+    openingBalance,
+    periodBalance,
+    closingBalance: openingBalance + periodBalance,
+  };
+}
+
 function App() {
   const [allTransactions, setAllTransactions] = useState([]);
   const [debts, setDebts]       = useState([]);
@@ -251,6 +284,10 @@ function App() {
     });
   }, [allTransactions, viewMonth, viewYear]);
 
+  const monthlyBalance = useMemo(() => (
+    getMonthlyBalance(allTransactions, viewYear, viewMonth)
+  ), [allTransactions, viewYear, viewMonth]);
+
   if (!loaded) return <AppSkeleton />;
 
   const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget };
@@ -264,6 +301,9 @@ function App() {
     viewMonth,
     viewYear,
     monthLabel,
+    openingBalance:      monthlyBalance.openingBalance,
+    periodBalance:       monthlyBalance.periodBalance,
+    closingBalance:      monthlyBalance.closingBalance,
     onAddTransaction:    addTransaction,
     onUpdateTransaction: updateTransaction,
     onDeleteTransaction: deleteTransaction,
