@@ -295,6 +295,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         <div className="stat stagger stagger-4">
           <div className="stat-label"><Icons.wallet size={13} /> {balanceLabel}</div>
           <div className="stat-value num">{fmt(closingBalanceAnim)}</div>
+          <div className="stat-sub">
+            {finalBalance >= 0 ? "Còn lại sau chi tiêu" : "Đang âm sau chi tiêu"}
+          </div>
         </div>
       </div>
 
