@@ -354,6 +354,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
                   </div>
                 ))}
               </div>
+              <div className="cat-donut-wrap" aria-label="Biểu đồ donut chi tiêu theo danh mục">
+                <DonutChart segments={catRows} total={expense} />
+                <div className="cat-donut-center">
+                  <div className="cat-donut-total num">{fmt(expense)}</div>
+                  <div className="cat-donut-sub">{expenseCount} giao dịch</div>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -102,6 +102,7 @@ function FlowChart({ data, daysInMonth = 31 }) {
 
 // ====== Category spend donut ======
 function DonutChart({ segments, total }) {
+  const [tooltip, setTooltip] = React.useState(null);
   const R   = 86;
   const SW  = 24;
   const C   = 2 * Math.PI * R;
@@ -117,27 +118,60 @@ function DonutChart({ segments, total }) {
 
   const cx = R + SW / 2 + 4;
   const size = cx * 2;
+  const updateTooltip = (event, segment) => {
+    const svg = event.currentTarget.ownerSVGElement;
+    const bounds = svg.getBoundingClientRect();
+    setTooltip({
+      segment,
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    });
+  };
+  const tooltipPct = tooltip && total > 0 ? Math.round(tooltip.segment.amount / total * 100) : 0;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      <circle cx={cx} cy={cx} r={R} fill="none"
-        stroke="var(--surface-2)" strokeWidth={SW} />
-      {arcs.map((s, i) => (
-        <circle key={s.id}
-          cx={cx} cy={cx} r={R}
-          fill="none"
-          stroke={s.color}
-          strokeWidth={SW}
-          strokeLinecap="butt"
-          strokeDasharray={`${s.len} ${C - s.len}`}
-          strokeDashoffset={s.offset}
-          style={{
-            transition: `stroke-dasharray var(--dur-reveal) var(--spring-snappy), stroke-dashoffset var(--dur-reveal) var(--spring-snappy)`,
-            animationDelay: `${i * 40}ms`,
-          }}
-        />
-      ))}
-    </svg>
+    <div className="cat-donut-chart">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cx} r={R} fill="none"
+          stroke="var(--surface-2)" strokeWidth={SW} />
+        {arcs.map((s, i) => (
+          <circle key={s.id}
+            className="cat-donut-segment"
+            cx={cx} cy={cx} r={R}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={SW}
+            strokeLinecap="butt"
+            strokeDasharray={`${s.len} ${C - s.len}`}
+            strokeDashoffset={s.offset}
+            tabIndex="0"
+            role="img"
+            aria-label={`${s.name}: ${total > 0 ? Math.round(s.amount / total * 100) : 0}%, ${fmt(s.amount)}`}
+            onMouseEnter={e => updateTooltip(e, s)}
+            onMouseMove={e => updateTooltip(e, s)}
+            onMouseLeave={() => setTooltip(null)}
+            onFocus={() => setTooltip({ segment: s, x: size / 2, y: size / 2 })}
+            onBlur={() => setTooltip(null)}
+            style={{
+              transition: `stroke-dasharray var(--dur-reveal) var(--spring-snappy), stroke-dashoffset var(--dur-reveal) var(--spring-snappy), opacity var(--dur-quick) var(--spring-crisp), filter var(--dur-quick) var(--spring-crisp)`,
+              animationDelay: `${i * 40}ms`,
+            }}
+          />
+        ))}
+      </svg>
+      {tooltip && (
+        <div className="cat-donut-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+          <div className="cat-donut-tooltip-name">
+            <span style={{ background: tooltip.segment.color }} />
+            {tooltip.segment.name}
+          </div>
+          <div className="cat-donut-tooltip-meta">
+            <b>{tooltipPct}%</b>
+            <span>{fmt(tooltip.segment.amount)}</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -260,6 +294,7 @@ function BenchmarkBar({ value, benchmark, max }) {
 
 Object.assign(window, {
   FlowChart,
+  DonutChart,
   SixMonthBars,
   BenchmarkBar,
   formatCurrency,
