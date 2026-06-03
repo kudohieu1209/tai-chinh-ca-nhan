@@ -328,7 +328,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   --overview-gap: 16px;
 }
 .overview-stat-grid {
-  grid-template-columns: minmax(0, 0.88fr) minmax(0, 0.88fr) minmax(0, 1.24fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.2fr);
   gap: var(--overview-gap);
   margin-bottom: var(--overview-gap);
 }
