@@ -1,6 +1,6 @@
 // Transactions — 2-column: form+summary (left sticky) + tabbed list (right)
 
-function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel, openingBalance = 0, periodBalance, closingBalance }) {
+function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel, viewMonth, viewYear, openingBalance = 0, periodBalance, closingBalance }) {
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
@@ -76,6 +76,9 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   const totalOut = expenseList.reduce((s, t) => s + t.amount, 0);
   const monthlyBalance = periodBalance ?? (totalIn - totalOut);
   const finalBalance = closingBalance ?? (openingBalance + monthlyBalance);
+  const today = new Date();
+  const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+  const balanceLabel = isCurrentView ? "Hiện tại" : "Cuối tháng";
   const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
   const hasListFilters = Boolean(search.trim()) ||
     (mode === "expense" && categoryFilter !== "all") ||
@@ -411,7 +414,7 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
               </div>
               <div>
                 <div className="mini-label">
-                  <Icons.wallet size={12} /> Cuối tháng
+                  <Icons.wallet size={12} /> {balanceLabel}
                 </div>
                 <div className="mini-value num" style={{ color: finalBalance >= 0 ? "var(--c-green)" : "var(--c-red)" }}>
                   {fmt(finalBalance)}

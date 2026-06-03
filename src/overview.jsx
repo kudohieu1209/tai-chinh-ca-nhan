@@ -237,6 +237,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const openDebts = debts.filter(d => !d.settled);
   const today = new Date();
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+  const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
   const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
   const dailyPace = expense > 0 ? expense / daysElapsed : 0;
   const projectedExpense = expense > 0 ? dailyPace * daysInMonth : 0;
@@ -284,11 +285,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
         </div>
         <div className="stat stagger stagger-3">
-          <div className="stat-label"><Icons.wallet size={13} /> Số dư cuối tháng</div>
+          <div className="stat-label"><Icons.wallet size={13} /> {balanceLabel}</div>
           <div className="stat-value num">{fmt(closingBalanceAnim)}</div>
           <div className="stat-sub">
             Đầu tháng <span className="num">{fmt(openingBalance)}</span> ·
-            tháng này <span className="num">{remaining >= 0 ? "+" : "-"}{fmt(Math.abs(remaining))}</span>
+            dòng tiền tháng này <span className="num">{remaining >= 0 ? "+" : "-"}{fmt(Math.abs(remaining))}</span>
           </div>
         </div>
       </div>
@@ -296,9 +297,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
       <div className="insights overview-insights">
         <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Dòng tiền tháng">
           {income > 0 ? (
-            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này. Số dư cuối tháng là <b>{fmt(finalBalance)}</b>.</>
+            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này. {balanceLabel} là <b>{fmt(finalBalance)}</b>.</>
           ) : (
-            <>Chưa có thu nhập trong tháng này. Số dư cuối tháng là <b>{fmt(finalBalance)}</b>.</>
+            <>Chưa có thu nhập trong tháng này. {balanceLabel} là <b>{fmt(finalBalance)}</b>.</>
           )}
         </Insight>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
