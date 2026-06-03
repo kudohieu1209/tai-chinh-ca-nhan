@@ -295,10 +295,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         <div className="stat stagger stagger-4">
           <div className="stat-label"><Icons.wallet size={13} /> {balanceLabel}</div>
           <div className="stat-value num">{fmt(closingBalanceAnim)}</div>
-          <div className="stat-sub">
-            Đầu tháng <span className="num">{fmt(openingBalance)}</span> ·
-            dòng tiền tháng này <span className="num">{remaining >= 0 ? "+" : "-"}{fmt(Math.abs(remaining))}</span>
-          </div>
         </div>
       </div>
 
