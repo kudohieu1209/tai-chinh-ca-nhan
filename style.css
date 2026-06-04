@@ -1511,7 +1511,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .budget-fill.danger { background: linear-gradient(90deg, var(--c-red), #D63027); }
 .budget-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--text-3); }
 .budget-benchmark {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap;
   padding: 3px 8px; border-radius: var(--r-pill);
   background: var(--surface-2); font-weight: 500;
 }

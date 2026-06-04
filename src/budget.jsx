@@ -32,6 +32,7 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
       benchPct,
       level,
       averageDaily: Math.round(actual / averageDayCount),
+      averageWeekly: Math.round(actual / (averageDayCount / 7)),
       vsBench: actual - benchmark,
       benchmark,
     };
@@ -204,10 +205,12 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
               <div className="budget-foot">
                 <span><span className="num">{r.pct.toFixed(0)}%</span> đã dùng</span>
                 <span className="budget-benchmark lower"
-                  title={`Trung bình đã chi mỗi ngày: ${fmt(r.averageDaily)}/ngày`}>
+                  title={`Trung bình đã chi: ${fmt(r.averageDaily)}/ngày, ${fmt(r.averageWeekly)}/tuần`}>
                   <Icons.calendar size={11} />
                   TB{" "}
                   <span className="num">{fmt(r.averageDaily)}</span>/ngày
+                  <span aria-hidden="true">·</span>
+                  <span className="num">{fmt(r.averageWeekly)}</span>/tuần
                 </span>
               </div>
 
