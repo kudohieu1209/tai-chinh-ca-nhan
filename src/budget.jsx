@@ -1,11 +1,17 @@
 // Budget — caps per category with peer benchmark + over-limit warnings + edit/delete
 
-function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget }) {
+function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth, viewYear }) {
   const [editingCat, setEditingCat] = useState(null);
   const [editCat, setEditCat] = useState(Object.keys(CATEGORIES)[0]);
   const [editAmt, setEditAmt] = useState(800000);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const formRef = useRef(null);
+  const today = new Date();
+  const safeViewMonth = Number.isInteger(viewMonth) ? viewMonth : today.getMonth();
+  const safeViewYear = Number.isInteger(viewYear) ? viewYear : today.getFullYear();
+  const daysInViewedMonth = new Date(safeViewYear, safeViewMonth + 1, 0).getDate();
+  const isCurrentView = today.getMonth() === safeViewMonth && today.getFullYear() === safeViewYear;
+  const averageDayCount = Math.max(1, isCurrentView ? today.getDate() : daysInViewedMonth);
 
   const rows = budgets.map(b => {
     const actual = transactions
@@ -25,6 +31,7 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget }) {
       pct,
       benchPct,
       level,
+      averageDaily: Math.round(actual / averageDayCount),
       vsBench: actual - benchmark,
       benchmark,
     };
@@ -196,11 +203,11 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget }) {
 
               <div className="budget-foot">
                 <span><span className="num">{r.pct.toFixed(0)}%</span> đã dùng</span>
-                <span className={"budget-benchmark " + (r.vsBench > 0 ? "higher" : "lower")}
-                  title={`Sinh viên cùng nhóm chi TB ${fmt(r.benchmark)}/tháng`}>
-                  <Icons.users size={11} />
-                  {r.vsBench > 0 ? "Cao hơn" : "Thấp hơn"} TB nhóm{" "}
-                  <span className="num">{fmt(Math.abs(r.vsBench))}</span>
+                <span className="budget-benchmark lower"
+                  title={`Trung bình đã chi mỗi ngày: ${fmt(r.averageDaily)}/ngày`}>
+                  <Icons.calendar size={11} />
+                  TB{" "}
+                  <span className="num">{fmt(r.averageDaily)}</span>/ngày
                 </span>
               </div>
 
