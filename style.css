@@ -1662,7 +1662,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
    Responsive
    ========================================================================== */
 @media (max-width: 1024px) {
-  .app { grid-template-columns: 1fr; }
+  .app { grid-template-columns: 1fr; height: 100dvh; }
   .sidebar {
     position: fixed; bottom: 0; left: 0; right: 0; top: auto;
     flex-direction: row;
@@ -1671,11 +1671,48 @@ input, select, textarea { font-family: inherit; color: inherit; }
     z-index: 20; gap: 4px; overflow-x: auto;
   }
   .sidebar-brand, .sidebar-section-label, .sidebar-footer { display: none; }
-  .nav-item { flex-direction: column; flex: 1; padding: 6px 4px; font-size: 10px; gap: 3px; text-align: center; }
+  .nav-list {
+    flex: 1;
+    min-width: 0;
+    flex-direction: row;
+    gap: 4px;
+  }
+  .sidebar > .nav-item { display: none; }
+  .nav-item {
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 52px;
+    padding: 7px 4px;
+    font-size: 10.5px;
+    gap: 4px;
+    text-align: center;
+    justify-content: center;
+  }
+  .nav-item .nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .nav-item .nav-badge { display: none; }
   .nav-icon { width: 22px; height: 22px; }
   .main { padding-bottom: 70px; }
   .page { padding: 20px 18px 80px; }
+  .page-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .page-header > div:last-child {
+    flex-shrink: 0;
+  }
+  .card-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .card-header .btn {
+    padding-inline: 12px;
+  }
   .stat-grid { grid-template-columns: 1fr; }
   .overview-page { --overview-gap: 12px; }
   .overview-stat-grid { grid-template-columns: 1fr; }
@@ -1736,6 +1773,24 @@ input, select, textarea { font-family: inherit; color: inherit; }
   }
   .tx-form-card {
     padding: 16px;
+  }
+  .goal-form-grid,
+  .debt-form-grid,
+  .budget-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .goal-form-grid .btn,
+  .debt-form-grid .btn,
+  .budget-form-grid .btn {
+    width: 100%;
+  }
+  .input,
+  .select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .btn {
+    min-height: 44px;
   }
   .tx-summary-card {
     flex: 0 0 auto;
@@ -1856,5 +1911,218 @@ input, select, textarea { font-family: inherit; color: inherit; }
   .tx-actions {
     opacity: 1;
     justify-content: flex-start;
+  }
+  .budget-head {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .budget-right {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .budget-actions {
+    opacity: 1;
+  }
+  .budget-confirm {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .budget-confirm .btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  body::before,
+  body::after {
+    display: none;
+  }
+
+  .toolbar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .toolbar-title {
+    min-width: 0;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .toolbar-right {
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .month-picker .label {
+    min-width: 92px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+  .page {
+    padding: 16px 12px calc(88px + env(safe-area-inset-bottom));
+  }
+  .page-header {
+    margin-bottom: 16px;
+  }
+  .page-greet {
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+  .page-title {
+    font-size: 24px;
+  }
+
+  .card,
+  .stat,
+  .budget-row,
+  .insight {
+    border-radius: var(--r-lg);
+  }
+  .card {
+    padding: 14px;
+  }
+  .stat {
+    padding: 16px;
+  }
+  .card-title {
+    font-size: 16px;
+  }
+  .card-subtitle {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .stat-value,
+  .mini-value {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .stat-value {
+    font-size: clamp(22px, 7.4vw, 30px);
+  }
+  .stat.hero .stat-value {
+    font-size: clamp(30px, 10vw, 40px);
+  }
+  .stat-sub .pill {
+    margin-left: 0;
+    margin-top: 6px;
+  }
+
+  .sidebar {
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+  }
+  .nav-item {
+    min-height: 50px;
+    padding: 6px 2px;
+    font-size: 9.5px;
+  }
+  .nav-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tx-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .tx-tab {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+  .tx-tab-count {
+    display: none;
+  }
+  .search-bar {
+    padding: 9px 11px;
+  }
+  .search-meta {
+    display: none;
+  }
+  .tx-category-chips {
+    margin-inline: -2px;
+    padding: 0 2px 4px;
+  }
+  .quick-template-list {
+    grid-template-columns: 1fr;
+  }
+  .tx-row-fields {
+    grid-template-columns: 1fr;
+  }
+  .mini-summary,
+  .tx-summary-card .mini-summary-list {
+    grid-template-columns: 1fr;
+  }
+  .tx-summary-card .mini-summary-list > div {
+    border-right: none;
+    border-top: 0.5px solid var(--divider);
+  }
+  .tx-summary-card .mini-summary-list > div:first-child {
+    border-top: none;
+  }
+
+  .cat-row-main {
+    grid-template-columns: 10px minmax(0, 1fr) 30px;
+  }
+  .cat-amount {
+    grid-column: 2 / 4;
+    text-align: left;
+    margin-top: 2px;
+  }
+  .flow-y-labels {
+    display: none;
+  }
+  .flow-chart-wrap {
+    margin-left: 0;
+  }
+  .overview-area-flow .flow-chart-wrap,
+  .category-flow-row .flow-chart-wrap {
+    height: 210px;
+  }
+  .month-chart {
+    height: 210px;
+    min-height: 210px;
+  }
+  .month-bars {
+    gap: 5px;
+  }
+
+  .debt-row {
+    gap: 10px;
+    padding: 12px 6px;
+  }
+  .debt-actions,
+  .tx-actions {
+    gap: 6px;
+  }
+  .debt-small-btn {
+    flex: 1;
+  }
+  .budget-head {
+    flex-direction: column;
+  }
+  .budget-right {
+    width: 100%;
+    align-items: stretch;
+  }
+  .budget-amount {
+    text-align: left !important;
+  }
+  .budget-actions {
+    justify-content: flex-start;
+  }
+  .budget-foot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .budget-benchmark {
+    max-width: 100%;
+    white-space: normal;
   }
 }

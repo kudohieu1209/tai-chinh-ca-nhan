@@ -833,7 +833,7 @@ function GoalForm({ goal, onSave, onCancel }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+      <div className="goal-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <div className="field">
           <span className="field-label">Đã có</span>
           <MoneyInput value={current} onChange={setCurrent} />
@@ -1874,7 +1874,7 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
             <div className="card-subtitle">Theo dõi ai nợ ai để không quên</div>
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+        <div className="debt-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
           <div className="field">
             <span className="field-label">Tên người</span>
             <input className="input" type="text" placeholder="VD: Nam, Hân, Shopee..."
@@ -2114,7 +2114,7 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget }) {
             </button>
           )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+        <div className="budget-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
           <div className="field">
             <span className="field-label">Danh mục</span>
             <select className="select" value={editCat} onChange={e => setEditCat(e.target.value)}>
