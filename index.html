@@ -1220,7 +1220,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
 // transactions.jsx
 // ============================================================
 
-function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel, viewMonth, viewYear, openingBalance = 0, periodBalance, closingBalance }) {
+function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel }) {
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
@@ -1292,16 +1292,6 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
     });
   }, [filtered, sortMode]);
 
-  const totalIn  = incomeList.reduce((s, t) => s + t.amount, 0);
-  const totalOut = expenseList.reduce((s, t) => s + t.amount, 0);
-  const monthlyBalance = periodBalance ?? (totalIn - totalOut);
-  const finalBalance = closingBalance ?? (openingBalance + monthlyBalance);
-  const today = new Date();
-  const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
-  const balanceLabel = isCurrentView ? "Hiện tại" : "Cuối tháng";
-  const savingsRate = totalIn === 0 ? 0 : Math.round((monthlyBalance / totalIn) * 100);
-  const savingsProgress = Math.max(0, Math.min(100, savingsRate));
-  const savingsTone = monthlyBalance >= 0 ? "var(--c-green)" : "var(--c-red)";
   const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
   const hasListFilters = Boolean(search.trim()) ||
     (mode === "expense" && categoryFilter !== "all") ||
@@ -1596,61 +1586,6 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
             </div>
           </div>
 
-          <div className="card tx-summary-card">
-            <div className="card-header tx-summary-header">
-              <div>
-                <div className="card-title">Tóm tắt tháng</div>
-                <div className="card-subtitle">{monthLabel}</div>
-              </div>
-            </div>
-            <div className="mini-summary mini-summary-list tx-summary-grid">
-              <div className="tx-summary-item">
-                <div className="mini-label">
-                  <Icons.arrowDownLeft size={12} style={{ color: "var(--c-green)" }} /> Thu
-                </div>
-                <div className="mini-value num">{fmt(totalIn)}</div>
-              </div>
-              <div className="tx-summary-item">
-                <div className="mini-label">
-                  <Icons.arrowUpRight size={12} style={{ color: "var(--c-red)" }} /> Chi
-                </div>
-                <div className="mini-value num">{fmt(totalOut)}</div>
-              </div>
-              <div className="tx-summary-item">
-                <div className="mini-label">
-                  <Icons.wallet size={12} /> Đầu tháng
-                </div>
-                <div className="mini-value num">
-                  {fmt(openingBalance)}
-                </div>
-              </div>
-              <div className="tx-summary-item">
-                <div className="mini-label">
-                  <Icons.wallet size={12} /> {balanceLabel}
-                </div>
-                <div className="mini-value num" style={{ color: finalBalance >= 0 ? "var(--c-green)" : "var(--c-red)" }}>
-                  {fmt(finalBalance)}
-                </div>
-              </div>
-            </div>
-            <div className="tx-savings">
-              <div className="tx-savings-head">
-                <span>Tỉ lệ tiết kiệm</span>
-                <span className="num" style={{ color: savingsTone }}>{savingsRate}%</span>
-              </div>
-              <div className="tx-savings-bar">
-                <div
-                  className="tx-savings-fill"
-                  style={{
-                    width: savingsProgress + "%",
-                    background: monthlyBalance >= 0
-                      ? "linear-gradient(90deg, var(--c-green), #2ABF52)"
-                      : "linear-gradient(90deg, var(--c-red), #FF8A80)",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
         </aside>
 
         <div className="tx-main">
