@@ -92,9 +92,11 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   const [editingQuickTemplates, setEditingQuickTemplates] = useState(false);
   const quickTemplates = savedQuickTemplates || defaultQuickTemplates;
 
-  const normalizeQuickTemplate = (tpl, idx = 0) => {
+  const normalizeQuickTemplate = (tpl, idx = 0, options = {}) => {
+    const { allowEmptyLabel = false } = options;
     const type = tpl.type === "income" ? "income" : "expense";
-    const label = String(tpl.label || tpl.desc || "Mẫu mới").trim() || "Mẫu mới";
+    const rawLabel = String(tpl.label ?? tpl.desc ?? "").trim();
+    const label = allowEmptyLabel ? rawLabel : (rawLabel || "Mẫu mới");
     return {
       id: tpl.id || `${Date.now()}-${idx}`,
       label,
@@ -134,14 +136,24 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
     setSavedQuickTemplates((current) => {
       const base = current || defaultQuickTemplates;
       return base.map((tpl, idx) => {
-        if (tpl.id !== id) return normalizeQuickTemplate(tpl, idx);
+        if (tpl.id !== id) return normalizeQuickTemplate(tpl, idx, { allowEmptyLabel: true });
         const next = { ...tpl, ...patch };
         if (patch.label != null && patch.desc == null) next.desc = patch.label;
         if (patch.type === "income") next.cat = incomeCat;
         if (patch.type === "expense" && tpl.type === "income") next.cat = firstExpenseCat;
-        return normalizeQuickTemplate(next, idx);
+        return normalizeQuickTemplate(next, idx, { allowEmptyLabel: true });
       });
     });
+  };
+
+  const toggleQuickTemplateEditor = () => {
+    if (editingQuickTemplates) {
+      setSavedQuickTemplates((current) => (current || defaultQuickTemplates).map(normalizeQuickTemplate));
+      setEditingQuickTemplates(false);
+      return;
+    }
+    setSavedQuickTemplates((current) => (current || defaultQuickTemplates).map(normalizeQuickTemplate));
+    setEditingQuickTemplates(true);
   };
 
   const addQuickTemplate = () => {
@@ -275,7 +287,7 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
                     )}
                     <button
                       className="quick-template-tool"
-                      onClick={() => setEditingQuickTemplates(v => !v)}
+                      onClick={toggleQuickTemplateEditor}
                     >
                       {editingQuickTemplates ? <Icons.check size={13} /> : <Icons.pencil size={13} />}
                       {editingQuickTemplates ? "Xong" : "Sửa"}
@@ -328,7 +340,7 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
                         className={"quick-template-btn " + tpl.type}
                         onClick={() => applyTemplate(tpl)}
                       >
-                        <span>{tpl.label}</span>
+                        <span>{tpl.label || tpl.desc || "Mẫu mới"}</span>
                         <span className="num">{fmtShort(tpl.amount)}</span>
                       </button>
                     ))}
