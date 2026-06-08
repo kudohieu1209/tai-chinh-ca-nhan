@@ -1,4 +1,4 @@
-// Transactions — 2-column: form+summary (left sticky) + tabbed list (right)
+// Transactions — 2-column: entry form (left sticky) + tabbed list (right)
 
 function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel }) {
   const [mode, setMode] = useState("expense");
@@ -13,6 +13,7 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   const [btnSuccess, setBtnSuccess] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
   const formRef = useRef(null);
+  const pendingQuickTemplateFocusId = useRef(null);
   const firstExpenseCat = Object.keys(CATEGORIES)[0] || cat;
   const incomeCat = "Thu nhập";
 
@@ -132,6 +133,20 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
     }
   }, [mode, categoryFilter]);
 
+  useEffect(() => {
+    if (!editingQuickTemplates || !pendingQuickTemplateFocusId.current) return;
+    const id = pendingQuickTemplateFocusId.current;
+    requestAnimationFrame(() => {
+      const row = document.querySelector(`[data-quick-template-id="${id}"]`);
+      const input = row?.querySelector(".quick-template-name");
+      if (!input) return;
+      input.focus();
+      input.select();
+      input.scrollIntoView({ block: "nearest" });
+      pendingQuickTemplateFocusId.current = null;
+    });
+  }, [editingQuickTemplates, quickTemplates.length]);
+
   const updateQuickTemplate = (id, patch) => {
     setSavedQuickTemplates((current) => {
       const base = current || defaultQuickTemplates;
@@ -157,16 +172,18 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   };
 
   const addQuickTemplate = () => {
+    const id = `tpl-${Date.now()}`;
+    pendingQuickTemplateFocusId.current = id;
     setSavedQuickTemplates((current) => [
       ...(current || defaultQuickTemplates).map(normalizeQuickTemplate),
       normalizeQuickTemplate({
-        id: `tpl-${Date.now()}`,
-        label: "Mẫu mới",
+        id,
+        label: "",
         type: mode,
-        desc: "Mẫu mới",
+        desc: "",
         amount: 10000,
         cat: mode === "expense" ? cat : incomeCat,
-      }),
+      }, 0, { allowEmptyLabel: true }),
     ]);
     setEditingQuickTemplates(true);
   };
@@ -297,10 +314,15 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
                 {editingQuickTemplates ? (
                   <div className="quick-template-editor">
                     {quickTemplates.map(tpl => (
-                      <div className={"quick-template-edit-row " + tpl.type} key={tpl.id}>
+                      <div
+                        className={"quick-template-edit-row " + tpl.type}
+                        key={tpl.id}
+                        data-quick-template-id={tpl.id}
+                      >
                         <input
                           className="input quick-template-name"
                           value={tpl.label}
+                          placeholder="Tên mẫu"
                           onChange={e => updateQuickTemplate(tpl.id, { label: e.target.value })}
                         />
                         <select
