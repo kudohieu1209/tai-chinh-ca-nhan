@@ -1,6 +1,7 @@
 // Overview â€” hero stats, category breakdown, flow chart, goals, debts, 6-month
 
 const GOAL_COLORS = ["#0A84FF","#FF9500","#34C759","#FF2D55","#5856D6","#AF52DE","#FF3B30","#00C7BE","#FFCC00","#A2845E"];
+const FIXED_PACE_CATEGORIES = new Set(["Thuê trọ", "Trả nợ"]);
 const GOAL_EMOJIS = ["ðŸŽ¯","ðŸ’»","ðŸ–ï¸","ðŸš—","ðŸ“š","ðŸ ","âœˆï¸","ðŸ’","ðŸŽ“","ðŸ“±","ðŸ’ª","ðŸ‹ï¸","ðŸŽ¸","ðŸŒ","ðŸ¶"];
 
 function GoalForm({ goal, onSave, onCancel }) {
@@ -240,8 +241,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
   const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
-  const dailyPace = expense > 0 ? expense / daysElapsed : 0;
-  const projectedExpense = expense > 0 ? dailyPace * daysInMonth : 0;
+  const fixedPaceExpense = transactions
+    .filter(t => t.type === "expense" && FIXED_PACE_CATEGORIES.has(t.cat))
+    .reduce((s, t) => s + t.amount, 0);
+  const variablePaceExpense = Math.max(0, expense - fixedPaceExpense);
+  const dailyPace = variablePaceExpense > 0 ? variablePaceExpense / daysElapsed : 0;
+  const projectedExpense = expense > 0 ? fixedPaceExpense + dailyPace * daysInMonth : 0;
+  const hasFixedPaceExpense = fixedPaceExpense > 0;
   const budgetWatch = budgets
     .map(b => {
       const actual = transactions
@@ -311,7 +317,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         </Insight>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
           {expense > 0 ? (
-            <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
+            hasFixedPaceExpense ? (
+              <>Khoản cố định đã tính một lần; nếu giữ nhịp còn lại, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
+            ) : (
+              <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
+            )
           ) : (
             <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
           )}
