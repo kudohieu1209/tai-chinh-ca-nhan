@@ -309,9 +309,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
       <div className="insights overview-insights">
         <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Dòng tiền tháng">
           {income > 0 ? (
-            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này. {balanceLabel} là <b>{fmt(finalBalance)}</b>.</>
+            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
           ) : (
-            <>Chưa có thu nhập trong tháng này. Dư đầu tháng không tính là thu nhập mới. {balanceLabel} là <b>{fmt(finalBalance)}</b>.</>
+            <>Chưa có thu nhập trong tháng này. Dư đầu tháng không tính là thu nhập mới.</>
           )}
         </Insight>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
