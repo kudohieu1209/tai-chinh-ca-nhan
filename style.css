@@ -367,7 +367,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .stat-value { font-size: clamp(28px, 3.2vw, 36px); font-weight: 700; letter-spacing: -0.025em; margin-top: 10px; line-height: 1.05; white-space: nowrap; }
 .stat.hero .stat-value { font-size: 48px; }
 .stat-sub { font-size: 13px; color: var(--text-3); margin-top: 10px; line-height: 1.4; display: block; }
-.stat-sub .num { color: var(--text-2); font-weight: 500; }
+.stat-sub .num { color: inherit; font-weight: inherit; letter-spacing: 0; }
 .stat-sub .pill { margin-left: 8px; }
 .stat .pill {
   display: inline-flex; align-items: center; gap: 3px;

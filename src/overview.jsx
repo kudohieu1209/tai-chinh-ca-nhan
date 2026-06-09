@@ -247,7 +247,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const variablePaceExpense = Math.max(0, expense - fixedPaceExpense);
   const dailyPace = variablePaceExpense > 0 ? variablePaceExpense / daysElapsed : 0;
   const projectedExpense = expense > 0 ? fixedPaceExpense + dailyPace * daysInMonth : 0;
-  const hasFixedPaceExpense = fixedPaceExpense > 0;
   const budgetWatch = budgets
     .map(b => {
       const actual = transactions
@@ -284,7 +283,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
           <div className="stat-value num">{fmt(incomeAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dịch ·
+            <span>{incomeCount}</span> giao dịch ·
             TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
           </div>
         </div>
@@ -294,7 +293,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
           <div className="stat-value num">{fmt(expenseAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dịch ·
+            <span>{expenseCount}</span> giao dịch ·
             TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
           </div>
         </div>
@@ -317,11 +316,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         </Insight>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
           {expense > 0 ? (
-            hasFixedPaceExpense ? (
-              <>Khoản cố định đã tính một lần; nếu giữ nhịp còn lại, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
-            ) : (
-              <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
-            )
+            <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
           ) : (
             <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
           )}

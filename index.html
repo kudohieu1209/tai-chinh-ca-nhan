@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Tài chính của Hiếu</title>
-  <link rel="stylesheet" href="style.css?v=20260604-mobile" />
+  <link rel="stylesheet" href="style.css?v=20260609-stat-muted" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23007AFF'/%3E%3Ctext x='50' y='68' font-family='-apple-system,sans-serif' font-size='60' font-weight='700' fill='white' text-anchor='middle'%3E%C4%91%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
@@ -1013,7 +1013,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const variablePaceExpense = Math.max(0, expense - fixedPaceExpense);
   const dailyPace = variablePaceExpense > 0 ? variablePaceExpense / daysElapsed : 0;
   const projectedExpense = expense > 0 ? fixedPaceExpense + dailyPace * daysInMonth : 0;
-  const hasFixedPaceExpense = fixedPaceExpense > 0;
   const budgetWatch = budgets
     .map(b => {
       const actual = transactions
@@ -1048,7 +1047,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
           <div className="stat-value num">{fmt(incomeAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-green)" }}>{incomeCount}</span> giao dịch ·
+            <span>{incomeCount}</span> giao dịch ·
             TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
           </div>
         </div>
@@ -1058,7 +1057,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
           <div className="stat-value num">{fmt(expenseAnim)}</div>
           <div className="stat-sub">
-            <span style={{ color: "var(--c-red)" }}>{expenseCount}</span> giao dịch ·
+            <span>{expenseCount}</span> giao dịch ·
             TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
           </div>
         </div>
@@ -1081,11 +1080,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         </Insight>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
           {expense > 0 ? (
-            hasFixedPaceExpense ? (
-              <>Khoản cố định đã tính một lần; nếu giữ nhịp còn lại, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
-            ) : (
-              <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
-            )
+            <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
           ) : (
             <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
           )}
