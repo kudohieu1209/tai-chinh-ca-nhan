@@ -154,16 +154,18 @@ function GoalRow({ goal, onEdit, onDelete }) {
 function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onSaveGoal, onDeleteGoal }) {
   const [editingGoal, setEditingGoal] = useState(null); // null = closed, "new" = add form, goal obj = edit form
 
-  const settledDebts = useMemo(() => debts.filter(d => d.settled), [debts]);
   const isVisibleDebtPayment = useCallback((t) => {
-    if (t.type !== "expense" || t.cat !== "Trả nợ") return true;
-    return settledDebts.some(debt => {
-      const sameDebtId = t.debtId != null && String(t.debtId) === String(debt.id);
-      const sameAmount = (Number(t.amount) || 0) === (Number(debt.amount) || 0);
-      const sameName = String(t.desc || "").toLowerCase().includes(String(debt.name || "").toLowerCase());
-      return sameDebtId || (sameAmount && sameName);
-    });
-  }, [settledDebts]);
+    if (t.type !== "expense") return true;
+    const normalize = (value) => String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+    const cat = normalize(t.cat);
+    const desc = normalize(t.desc);
+    const isDebtPayment = t.debtId != null || cat === "tra no" || desc.startsWith("tra no ");
+    return !isDebtPayment;
+  }, []);
   const reportTransactions = useMemo(() => {
     return transactions.filter(isVisibleDebtPayment);
   }, [transactions, isVisibleDebtPayment]);
