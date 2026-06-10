@@ -914,19 +914,36 @@ function GoalRow({ goal, onEdit, onDelete }) {
 function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onSaveGoal, onDeleteGoal }) {
   const [editingGoal, setEditingGoal] = useState(null);
 
+  const settledDebts = useMemo(() => debts.filter(d => d.settled), [debts]);
+  const isVisibleDebtPayment = useCallback((t) => {
+    if (t.type !== "expense" || t.cat !== "Trả nợ") return true;
+    return settledDebts.some(debt => {
+      const sameDebtId = t.debtId != null && String(t.debtId) === String(debt.id);
+      const sameAmount = (Number(t.amount) || 0) === (Number(debt.amount) || 0);
+      const sameName = String(t.desc || "").toLowerCase().includes(String(debt.name || "").toLowerCase());
+      return sameDebtId || (sameAmount && sameName);
+    });
+  }, [settledDebts]);
+  const reportTransactions = useMemo(() => {
+    return transactions.filter(isVisibleDebtPayment);
+  }, [transactions, isVisibleDebtPayment]);
+  const reportAllTransactions = useMemo(() => {
+    return allTransactions.filter(isVisibleDebtPayment);
+  }, [allTransactions, isVisibleDebtPayment]);
+
   const income = useMemo(() =>
-    transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
-    [transactions]
+    reportTransactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
+    [reportTransactions]
   );
   const expense = useMemo(() =>
-    transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
-    [transactions]
+    reportTransactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+    [reportTransactions]
   );
   const remaining = periodBalance ?? (income - expense);
   const finalBalance = closingBalance ?? (openingBalance + remaining);
   const savingsRate = income > 0 ? Math.round((remaining / income) * 100) : 0;
-  const incomeCount = transactions.filter(t => t.type === "income").length;
-  const expenseCount = transactions.filter(t => t.type === "expense").length;
+  const incomeCount = reportTransactions.filter(t => t.type === "income").length;
+  const expenseCount = reportTransactions.filter(t => t.type === "expense").length;
 
   const openingBalanceAnim = useCountup(openingBalance);
   const incomeAnim    = useCountup(income);
@@ -935,7 +952,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
 
   const catRows = useMemo(() => {
     const spend = {};
-    transactions.filter(t => t.type === "expense").forEach(t => {
+    reportTransactions.filter(t => t.type === "expense").forEach(t => {
       spend[t.cat] = (spend[t.cat] || 0) + t.amount;
     });
     return Object.entries(spend)
@@ -946,18 +963,18 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         pct: expense > 0 ? (amount / expense) * 100 : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [transactions, expense]);
+  }, [reportTransactions, expense]);
 
   const dailyFlow = useMemo(() => {
     const flow = {};
-    transactions.forEach(t => {
+    reportTransactions.forEach(t => {
       const day = new Date(t.date + 'T00:00:00').getDate();
       if (!flow[day]) flow[day] = { d: day, inc: 0, exp: 0 };
       if (t.type === "income") flow[day].inc += t.amount;
       else flow[day].exp += t.amount;
     });
     return Object.values(flow).sort((a, b) => a.d - b.d);
-  }, [transactions]);
+  }, [reportTransactions]);
 
   const sixMonths = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
@@ -965,7 +982,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
       const m = d.getMonth();
       const y = d.getFullYear();
       const label = `T${m + 1}/${String(y).slice(2)}`;
-      const txns = allTransactions.filter(t => {
+      const txns = reportAllTransactions.filter(t => {
         const td = new Date(t.date + 'T00:00:00');
         return td.getMonth() === m && td.getFullYear() === y;
       });
@@ -975,7 +992,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         exp: txns.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
       };
     });
-  }, [allTransactions, viewMonth, viewYear]);
+  }, [reportAllTransactions, viewMonth, viewYear]);
 
   const currentLabel = `T${viewMonth + 1}/${String(viewYear).slice(2)}`;
   const currentMonthIndex = sixMonths.findIndex(m => m.label === currentLabel);
@@ -1001,7 +1018,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
   const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
-  const fixedPaceExpense = transactions
+  const fixedPaceExpense = reportTransactions
     .filter(t => t.type === "expense" && FIXED_PACE_CATEGORIES.has(t.cat))
     .reduce((s, t) => s + t.amount, 0);
   const variablePaceExpense = Math.max(0, expense - fixedPaceExpense);
@@ -1009,7 +1026,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const projectedExpense = expense > 0 ? fixedPaceExpense + dailyPace * daysInMonth : 0;
   const budgetWatch = budgets
     .map(b => {
-      const actual = transactions
+      const actual = reportTransactions
         .filter(t => t.type === "expense" && t.cat === b.cat)
         .reduce((s, t) => s + t.amount, 0);
       return { ...b, actual, pct: b.cap > 0 ? (actual / b.cap) * 100 : 0 };
