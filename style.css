@@ -424,6 +424,48 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .insight-text b { color: inherit; font-weight: inherit; }
 
 /* ==========================================================================
+   Notes
+   ========================================================================== */
+.notes-page {
+  min-height: calc(100vh - 64px);
+}
+.note-save-status {
+  display: inline-flex; align-items: center;
+  min-height: 28px; padding: 0 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px; font-weight: 500;
+}
+.note-editor {
+  padding: 0;
+  overflow: hidden;
+}
+.note-textarea {
+  width: 100%;
+  min-height: clamp(420px, 66vh, 760px);
+  display: block;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  padding: 22px 24px;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.note-textarea::placeholder {
+  color: var(--text-3);
+}
+.note-footer {
+  display: flex; justify-content: space-between; gap: 14px;
+  padding: 12px 18px;
+  border-top: 0.5px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+/* ==========================================================================
    Grids
    ========================================================================== */
 .grid-2    { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin-bottom: 14px; }

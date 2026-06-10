@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Tài chính của Hiếu</title>
-  <link rel="stylesheet" href="style.css?v=20260609-insight-muted" />
+  <link rel="stylesheet" href="style.css?v=20260610-notes" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23007AFF'/%3E%3Ctext x='50' y='68' font-family='-apple-system,sans-serif' font-size='60' font-weight='700' fill='white' text-anchor='middle'%3E%C4%91%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
@@ -470,6 +470,7 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
     { id: "transactions", label: "Giao dịch",  icon: "arrowLeftRight", badge: null },
     { id: "debts",        label: "Nợ vay",     icon: "creditCard",     badge: openDebtCount > 0 ? openDebtCount : null },
     { id: "budget",       label: "Ngân sách",  icon: "wallet",         badge: null },
+    { id: "notes",        label: "Note",       icon: "pencil",         badge: null },
   ];
 
   useEffect(() => {
@@ -525,17 +526,6 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
         })}
       </div>
 
-      <div className="sidebar-section-label">Khám phá</div>
-      <div className="nav-item">
-        <Icons.sparkle size={17} className="nav-icon" />
-        <span className="nav-label">Gợi ý AI</span>
-        <span className="nav-badge" style={{ background: "rgba(94,92,230,0.15)", color: "#5E5CE6" }}>3</span>
-      </div>
-      <div className="nav-item">
-        <Icons.users size={17} className="nav-icon" />
-        <span className="nav-label">Cộng đồng SV</span>
-      </div>
-
       <div className="sidebar-footer">
         <div className="theme-toggle">
           <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")} title="Light mode">
@@ -562,17 +552,21 @@ function Toolbar({ activePage, month, onMonthChange }) {
     transactions: "Giao dịch",
     debts: "Nợ vay",
     budget: "Ngân sách",
+    notes: "Note",
   }[activePage];
+  const showMonthPicker = activePage !== "notes";
 
   return (
     <div className="toolbar">
       <div className="toolbar-title">{pageTitle}</div>
       <div className="toolbar-right">
-        <div className="month-picker">
-          <button onClick={() => onMonthChange(1)}><Icons.chevLeft size={14} /></button>
-          <span className="label">{month}</span>
-          <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
-        </div>
+        {showMonthPicker && (
+          <div className="month-picker">
+            <button onClick={() => onMonthChange(1)}><Icons.chevLeft size={14} /></button>
+            <span className="label">{month}</span>
+            <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2208,6 +2202,58 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
 }
 
 // ============================================================
+// notes.jsx — Financial notes
+// ============================================================
+
+function Notes({ notes = "", onSaveNotes }) {
+  const [draft, setDraft] = useState(notes || "");
+  const [savedAt, setSavedAt] = useState(null);
+
+  useEffect(() => {
+    setDraft(notes || "");
+  }, [notes]);
+
+  useEffect(() => {
+    const next = draft || "";
+    if (next === (notes || "")) return;
+
+    const timer = setTimeout(() => {
+      onSaveNotes(next);
+      setSavedAt(new Date());
+    }, 650);
+
+    return () => clearTimeout(timer);
+  }, [draft, notes, onSaveNotes]);
+
+  const noteLength = draft.trim().length;
+  const savedLabel = savedAt
+    ? `Đã lưu ${savedAt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
+    : "Tự lưu khi bạn nhập";
+
+  return (
+    <div className="page fade-in notes-page">
+      <PageHeader greet="Note" title="Ghi chú tài chính">
+        <span className="note-save-status">{savedLabel}</span>
+      </PageHeader>
+
+      <section className="note-editor card">
+        <textarea
+          className="note-textarea"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Ghi lại những việc cần nhớ: tiền trọ, khoản sắp phải trả, quyết định chi tiêu, mục tiêu tiết kiệm..."
+          spellCheck={false}
+        />
+        <div className="note-footer">
+          <span>{noteLength} ký tự</span>
+          <span>Được lưu cùng dữ liệu tài chính của bạn</span>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ============================================================
 // app.jsx — Root app
 // ============================================================
 
@@ -2305,13 +2351,14 @@ function App() {
   const [debts, setDebts]       = useState([]);
   const [budgets, setBudgets]   = useState([]);
   const [goals, setGoals]       = useState([]);
+  const [notes, setNotes]       = useState("");
   const [loaded, setLoaded]     = useState(false);
   const [page, setPage]         = useState("overview");
   const [slideDir, setSlideDir] = useState("right");
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
   const [monthOffset, setMonthOffset] = useState(0);
 
-  const PAGE_ORDER = ['overview', 'transactions', 'debts', 'budget'];
+  const PAGE_ORDER = ['overview', 'transactions', 'debts', 'budget', 'notes'];
   const navigateTo = useCallback((newPage) => {
     const pi = PAGE_ORDER.indexOf(page);
     const ni = PAGE_ORDER.indexOf(newPage);
@@ -2342,6 +2389,7 @@ function App() {
         const dbts = d.debts   || [];
         const bdgs = d.budgets || [];
         const gls  = d.goals   || DEFAULT_GOALS;
+        const nts  = d.notes   || "";
         const missingSettlementTxs = dbts
           .filter(debt => debt.settled && debt.paidDate && !result.some(t => t.debtId === debt.id))
           .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
@@ -2350,17 +2398,19 @@ function App() {
         setDebts(dbts);
         setBudgets(bdgs);
         setGoals(gls);
+        setNotes(nts);
         setLoaded(true);
         if (changed || missingSettlementTxs.length) {
-          window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls });
+          window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
         setAllTransactions(_SEED.transactions);
         setDebts(_SEED.debts);
         setBudgets([]);
         setGoals(DEFAULT_GOALS);
+        setNotes("");
         setLoaded(true);
-        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS });
+        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS, notes: "" });
       }
     }, err => console.error("Firebase error:", err));
 
@@ -2369,7 +2419,7 @@ function App() {
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
     if (window._fsDoc) {
-      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }).catch(console.error);
+      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }, { merge: true }).catch(console.error);
     }
   }, []);
 
@@ -2490,6 +2540,13 @@ function App() {
     persist(allTransactions, debts, budgets, next);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  const saveNotes = useCallback((nextNotes) => {
+    setNotes(nextNotes);
+    if (window._fsDoc) {
+      window._fsDoc.set({ notes: nextNotes }, { merge: true }).catch(console.error);
+    }
+  }, []);
+
   const monthTransactions = useMemo(() => {
     return allTransactions.filter(t => {
       const d = new Date(t.date + "T00:00:00");
@@ -2503,7 +2560,7 @@ function App() {
 
   if (!loaded) return <AppSkeleton />;
 
-  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget };
+  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget, notes: Notes };
   const PageEl = PageComponents[page];
   const pageProps = {
     transactions:     monthTransactions,
@@ -2511,6 +2568,7 @@ function App() {
     debts,
     budgets,
     goals,
+    notes,
     viewMonth,
     viewYear,
     monthLabel,
@@ -2529,6 +2587,7 @@ function App() {
     onDeleteBudget:      deleteBudget,
     onSaveGoal:          saveGoal,
     onDeleteGoal:        deleteGoal,
+    onSaveNotes:         saveNotes,
     onNavigate:          navigateTo,
   };
 

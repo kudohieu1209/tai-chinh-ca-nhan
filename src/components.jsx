@@ -84,6 +84,7 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
     { id: "transactions", label: "Giao dịch",  icon: "arrowLeftRight", badge: null },
     { id: "debts",        label: "Nợ vay",     icon: "creditCard",     badge: openDebtCount > 0 ? openDebtCount : null },
     { id: "budget",       label: "Ngân sách",  icon: "wallet",         badge: null },
+    { id: "notes",        label: "Note",       icon: "pencil",         badge: null },
   ];
 
   return (
@@ -125,17 +126,6 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
         );
       })}
 
-      <div className="sidebar-section-label">Khám phá</div>
-      <div className="nav-item">
-        <Icons.sparkle size={17} className="nav-icon" />
-        <span className="nav-label">Gợi ý AI</span>
-        <span className="nav-badge" style={{ background: "rgba(94,92,230,0.15)", color: "#5E5CE6" }}>3</span>
-      </div>
-      <div className="nav-item">
-        <Icons.users size={17} className="nav-icon" />
-        <span className="nav-label">Cộng đồng SV</span>
-      </div>
-
       <div className="sidebar-footer">
         <div className="theme-toggle">
           <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")} title="Light mode">
@@ -164,17 +154,21 @@ function Toolbar({ activePage, month, onMonthChange }) {
     transactions: "Giao dịch",
     debts: "Nợ vay",
     budget: "Ngân sách",
+    notes: "Note",
   }[activePage];
+  const showMonthPicker = activePage !== "notes";
 
   return (
     <div className="toolbar">
       <div className="toolbar-title">{pageTitle}</div>
       <div className="toolbar-right">
-        <div className="month-picker">
-          <button onClick={() => onMonthChange(1)}><Icons.chevLeft size={14} /></button>
-          <span className="label">{month}</span>
-          <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
-        </div>
+        {showMonthPicker && (
+          <div className="month-picker">
+            <button onClick={() => onMonthChange(1)}><Icons.chevLeft size={14} /></button>
+            <span className="label">{month}</span>
+            <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
+          </div>
+        )}
       </div>
     </div>
   );

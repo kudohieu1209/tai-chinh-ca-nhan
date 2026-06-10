@@ -95,6 +95,7 @@ function App() {
   const [debts, setDebts]       = useState([]);
   const [budgets, setBudgets]   = useState([]);
   const [goals, setGoals]       = useState([]);
+  const [notes, setNotes]       = useState("");
   const [loaded, setLoaded]     = useState(false);
   const [page, setPage]         = useState("overview");
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
@@ -124,6 +125,7 @@ function App() {
         const dbts = d.debts   || [];
         const bdgs = d.budgets || [];
         const gls  = d.goals   || DEFAULT_GOALS;
+        const nts  = d.notes   || "";
         const missingSettlementTxs = dbts
           .filter(debt => debt.settled && debt.paidDate && !result.some(t => t.debtId === debt.id))
           .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
@@ -132,17 +134,19 @@ function App() {
         setDebts(dbts);
         setBudgets(bdgs);
         setGoals(gls);
+        setNotes(nts);
         setLoaded(true);
         if (changed || missingSettlementTxs.length) {
-          window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls });
+          window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
         setAllTransactions(_SEED.transactions);
         setDebts(_SEED.debts);
         setBudgets([]);
         setGoals(DEFAULT_GOALS);
+        setNotes("");
         setLoaded(true);
-        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS });
+        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS, notes: "" });
       }
     }, err => console.error("Firebase error:", err));
 
@@ -151,7 +155,7 @@ function App() {
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
     if (window._fsDoc) {
-      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }).catch(console.error);
+      window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }, { merge: true }).catch(console.error);
     }
   }, []);
 
@@ -276,6 +280,13 @@ function App() {
     persist(allTransactions, debts, budgets, next);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  const saveNotes = useCallback((nextNotes) => {
+    setNotes(nextNotes);
+    if (window._fsDoc) {
+      window._fsDoc.set({ notes: nextNotes }, { merge: true }).catch(console.error);
+    }
+  }, []);
+
   // Filter transactions for viewed month
   const monthTransactions = useMemo(() => {
     return allTransactions.filter(t => {
@@ -290,7 +301,7 @@ function App() {
 
   if (!loaded) return <AppSkeleton />;
 
-  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget };
+  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget, notes: Notes };
   const PageEl = PageComponents[page];
   const pageProps = {
     transactions:     monthTransactions,
@@ -298,6 +309,7 @@ function App() {
     debts,
     budgets,
     goals,
+    notes,
     viewMonth,
     viewYear,
     monthLabel,
@@ -316,6 +328,7 @@ function App() {
     onDeleteBudget:      deleteBudget,
     onSaveGoal:          saveGoal,
     onDeleteGoal:        deleteGoal,
+    onSaveNotes:         saveNotes,
     onNavigate:          setPage,
   };
 
