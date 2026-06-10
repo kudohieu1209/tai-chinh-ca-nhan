@@ -2313,6 +2313,26 @@ function debtSettlementTransaction(debt, paidDate = new Date(), idPrefix = "sett
   };
 }
 
+function isDebtSettlementTransactionForDebt(t, debt) {
+  if (!t || !debt) return false;
+
+  const debtId = String(debt.id);
+  if (t.debtId != null && String(t.debtId) === debtId) return true;
+
+  const txId = String(t.id ?? "");
+  if (txId === `settle-${debtId}` || txId === `settle-backfill-${debtId}`) return true;
+
+  const expectedType = debt.type === "owe" ? "expense" : "income";
+  const expectedCat = debt.type === "owe" ? "Trả nợ" : "Thu nhập";
+  const expectedDesc = debt.type === "owe" ? `Trả nợ ${debt.name}` : `Thu nợ ${debt.name}`;
+  return (
+    t.type === expectedType &&
+    t.cat === expectedCat &&
+    String(t.desc || "").trim() === expectedDesc &&
+    (Number(t.amount) || 0) === (Number(debt.amount) || 0)
+  );
+}
+
 function getMonthlyBalance(transactions, viewYear, viewMonth) {
   const monthStart = new Date(viewYear, viewMonth, 1);
   const nextMonthStart = new Date(viewYear, viewMonth + 1, 1);
@@ -2390,17 +2410,23 @@ function App() {
         const bdgs = d.budgets || [];
         const gls  = d.goals   || DEFAULT_GOALS;
         const nts  = d.notes   || "";
+        const openDebtSettlements = result.filter(t =>
+          dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt))
+        );
+        const cleanedResult = openDebtSettlements.length
+          ? result.filter(t => !dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt)))
+          : result;
         const missingSettlementTxs = dbts
-          .filter(debt => debt.settled && debt.paidDate && !result.some(t => t.debtId === debt.id))
+          .filter(debt => debt.settled && debt.paidDate && !cleanedResult.some(t => isDebtSettlementTransactionForDebt(t, debt)))
           .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
-        const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...result] : result;
+        const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...cleanedResult] : cleanedResult;
         setAllTransactions(txns);
         setDebts(dbts);
         setBudgets(bdgs);
         setGoals(gls);
         setNotes(nts);
         setLoaded(true);
-        if (changed || missingSettlementTxs.length) {
+        if (changed || missingSettlementTxs.length || openDebtSettlements.length) {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
@@ -2450,8 +2476,11 @@ function App() {
   }, [allTransactions, debts, budgets, goals, persist]);
 
   const deleteDebt = useCallback((id) => {
+    const debt = debts.find(d => d.id === id);
     const next = debts.filter(d => d.id !== id);
-    const nextTransactions = allTransactions.filter(t => t.debtId !== id);
+    const nextTransactions = debt
+      ? allTransactions.filter(t => !isDebtSettlementTransactionForDebt(t, debt))
+      : allTransactions.filter(t => t.debtId !== id);
     setDebts(next);
     setAllTransactions(nextTransactions);
     persist(nextTransactions, next, budgets, goals);
@@ -2487,7 +2516,7 @@ function App() {
     const nextDebts = debts.map(d => (
       d.id === id ? { ...d, settled: false, paidDate: null } : d
     ));
-    const nextTransactions = allTransactions.filter(t => t.debtId !== id);
+    const nextTransactions = allTransactions.filter(t => !isDebtSettlementTransactionForDebt(t, debt));
 
     setDebts(nextDebts);
     setAllTransactions(nextTransactions);
@@ -2501,7 +2530,7 @@ function App() {
     const now = new Date();
     const settlementTx = debtSettlementTransaction(debt, now);
     const nextDebts = debts.map(d => d.id === id ? { ...d, settled: true, paidDate: now.toISOString() } : d);
-    const nextTransactions = allTransactions.some(t => t.debtId === id)
+    const nextTransactions = allTransactions.some(t => isDebtSettlementTransactionForDebt(t, debt))
       ? allTransactions
       : [settlementTx, ...allTransactions];
 
