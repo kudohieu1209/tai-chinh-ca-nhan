@@ -96,8 +96,8 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   const normalizeQuickTemplate = (tpl, idx = 0, options = {}) => {
     const { allowEmptyLabel = false } = options;
     const type = tpl.type === "income" ? "income" : "expense";
-    const rawLabel = String(tpl.label ?? tpl.desc ?? "").trim();
-    const label = allowEmptyLabel ? rawLabel : (rawLabel || "Mẫu mới");
+    const rawLabel = String(tpl.label ?? tpl.desc ?? "");
+    const label = allowEmptyLabel ? rawLabel : (rawLabel.trim() || "Mẫu mới");
     return {
       id: tpl.id || `${Date.now()}-${idx}`,
       label,
