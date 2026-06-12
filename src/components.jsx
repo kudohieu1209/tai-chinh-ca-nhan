@@ -2,7 +2,6 @@
 
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-// ====== useCountup — animates a number from 0 to target on mount/change ======
 function useCountup(target, duration = 850) {
   const [value, setValue] = useState(0);
   const rafRef  = useRef(null);
@@ -14,7 +13,7 @@ function useCountup(target, duration = 850) {
     const start = performance.now();
     const tick  = (now) => {
       const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       const cur = Math.round(from + (target - from) * eased);
       setValue(cur);
       if (t < 1) {
@@ -30,7 +29,6 @@ function useCountup(target, duration = 850) {
   return value;
 }
 
-// ====== AppSkeleton — shown while Firebase loads ======
 function AppSkeleton() {
   return (
     <div className="app">
@@ -59,8 +57,11 @@ function AppSkeleton() {
             <div className="skeleton" style={{ height: 11, width: 180, marginBottom: 10, borderRadius: 6 }} />
             <div className="skeleton" style={{ height: 28, width: 260, borderRadius: 8 }} />
           </div>
-          <div className="stat-grid" style={{ marginBottom: 14 }}>
-            {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 116, borderRadius: 22 }} />)}
+          <div className="grid-2" style={{ marginBottom: 14 }}>
+            <div className="skeleton" style={{ height: 240, borderRadius: 28 }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ flex: 1, borderRadius: 16 }} />)}
+            </div>
           </div>
           <div className="grid-2">
             <div className="skeleton" style={{ height: 290, borderRadius: 22 }} />
@@ -75,9 +76,10 @@ function AppSkeleton() {
   );
 }
 
-// ====== Sidebar ======
 function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
   const openDebtCount = debts.filter(d => !d.settled).length;
+  const pillRef    = useRef(null);
+  const navListRef = useRef(null);
 
   const navItems = [
     { id: "overview",     label: "Tổng quan",  icon: "squareGrid",    badge: null },
@@ -86,6 +88,16 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
     { id: "budget",       label: "Ngân sách",  icon: "wallet",         badge: null },
     { id: "notes",        label: "Note",       icon: "pencil",         badge: null },
   ];
+
+  useEffect(() => {
+    const pill = pillRef.current;
+    const list = navListRef.current;
+    if (!pill || !list) return;
+    const el = list.querySelector(`[data-id="${active}"]`);
+    if (!el) return;
+    pill.style.top    = el.offsetTop + 'px';
+    pill.style.height = el.offsetHeight + 'px';
+  }, [active]);
 
   return (
     <aside className="sidebar">
@@ -111,20 +123,33 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
       </div>
 
       <div className="sidebar-section-label">Quản lý</div>
-      {navItems.map(item => {
-        const Icon = Icons[item.icon];
-        return (
-          <div
-            key={item.id}
-            className={"nav-item" + (active === item.id ? " active" : "")}
-            onClick={() => onChange(item.id)}
-          >
-            <Icon size={17} className="nav-icon" />
-            <span className="nav-label">{item.label}</span>
-            {item.badge != null && <span className="nav-badge">{item.badge}</span>}
-          </div>
-        );
-      })}
+      <div className="nav-list" ref={navListRef}>
+        <div className="nav-pill" ref={pillRef} />
+        {navItems.map(item => {
+          const Icon = Icons[item.icon];
+          return (
+            <div
+              key={item.id}
+              data-id={item.id}
+              className={"nav-item" + (active === item.id ? " active" : "")}
+              role="button"
+              tabIndex={0}
+              aria-current={active === item.id ? "page" : undefined}
+              onClick={() => onChange(item.id)}
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange(item.id);
+                }
+              }}
+            >
+              <Icon size={17} className="nav-icon" />
+              <span className="nav-label">{item.label}</span>
+              {item.badge != null && <span className="nav-badge">{item.badge}</span>}
+            </div>
+          );
+        })}
+      </div>
 
       <div className="sidebar-footer">
         <div className="theme-toggle">
@@ -136,10 +161,9 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
           </button>
         </div>
         <div className="sidebar-user">
-          <div className="sidebar-avatar">H</div>
+          <div className="sidebar-avatar"><img src="avatar.jpg" alt="Kudo Hiếu" /></div>
           <div className="sidebar-user-meta">
-            <span className="sidebar-user-name">Hiếu Vũ</span>
-            <span className="sidebar-user-role">Sinh viên · K22</span>
+            <span className="sidebar-user-name">Kudo Hiếu</span>
           </div>
         </div>
       </div>
@@ -147,7 +171,6 @@ function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
   );
 }
 
-// ====== Toolbar ======
 function Toolbar({ activePage, month, onMonthChange }) {
   const pageTitle = {
     overview: "Tổng quan",
@@ -174,7 +197,6 @@ function Toolbar({ activePage, month, onMonthChange }) {
   );
 }
 
-// ====== Page header ======
 function PageHeader({ greet, title, children }) {
   if (!greet && !title && !children) return null;
   return (
@@ -188,7 +210,6 @@ function PageHeader({ greet, title, children }) {
   );
 }
 
-// ====== Insight card ======
 function Insight({ tone = "blue", icon = "lightbulb", title, children }) {
   const colorMap = {
     blue: "#0A84FF", green: "#34C759", orange: "#FF9500",
@@ -208,7 +229,6 @@ function Insight({ tone = "blue", icon = "lightbulb", title, children }) {
   );
 }
 
-// ====== Empty state ======
 function Empty({ icon = "inbox", title, text }) {
   const Icon = Icons[icon];
   return (
@@ -220,7 +240,6 @@ function Empty({ icon = "inbox", title, text }) {
   );
 }
 
-// ====== Money input — raw digits while typing, formatted when blurred ======
 function MoneyInput({ value, onChange, placeholder = "0" }) {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw]         = useState("");
@@ -256,4 +275,40 @@ function MoneyInput({ value, onChange, placeholder = "0" }) {
   );
 }
 
-Object.assign(window, { Sidebar, Toolbar, PageHeader, Insight, Empty, MoneyInput });
+// ====== TabBar — segmented control with sliding indicator ======
+function TabBar({ tabs, active, onChange, style, className }) {
+  const indicRef = useRef(null);
+  const barRef   = useRef(null);
+
+  useEffect(() => {
+    const indic = indicRef.current;
+    const bar   = barRef.current;
+    if (!indic || !bar) return;
+    const el = bar.querySelector(`[data-tab="${active}"]`);
+    if (!el) return;
+    indic.style.left    = el.offsetLeft + 'px';
+    indic.style.width   = el.offsetWidth + 'px';
+    indic.style.opacity = '1';
+  }, [active]);
+
+  return (
+    <div className={"tx-tabs " + (className || "")} ref={barRef} style={style}>
+      <div className="tab-indicator" ref={indicRef} style={{ opacity: 0 }} />
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          data-tab={t.id}
+          className={"tx-tab" + (active === t.id ? " active" : "") + (t.cls ? " " + t.cls : "")}
+          onClick={() => onChange(t.id)}
+          style={t.btnStyle}
+        >
+          {t.icon && <t.icon size={13} />}
+          {t.label}
+          {t.count != null && <span className="tx-tab-count">{t.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+Object.assign(window, { Sidebar, Toolbar, PageHeader, Insight, Empty, MoneyInput, TabBar });

@@ -1,12 +1,12 @@
-// Overview â€” hero stats, category breakdown, flow chart, goals, debts, 6-month
+// Overview — hero balance, insights, category breakdown, flow chart, 6-month trend, debts
 
 const GOAL_COLORS = ["#0A84FF","#FF9500","#34C759","#FF2D55","#5856D6","#AF52DE","#FF3B30","#00C7BE","#FFCC00","#A2845E"];
 const FIXED_PACE_CATEGORIES = new Set(["Thuê trọ", "Trả nợ"]);
-const GOAL_EMOJIS = ["ðŸŽ¯","ðŸ’»","ðŸ–ï¸","ðŸš—","ðŸ“š","ðŸ ","âœˆï¸","ðŸ’","ðŸŽ“","ðŸ“±","ðŸ’ª","ðŸ‹ï¸","ðŸŽ¸","ðŸŒ","ðŸ¶"];
+const GOAL_EMOJIS = ["🎯","💻","🏖️","🚗","📚","🏠","✈️","💍","🎓","📱","💪","🏋️","🎸","🌍","🐶"];
 
 function GoalForm({ goal, onSave, onCancel }) {
   const [name, setName]       = useState(goal?.name    || "");
-  const [emoji, setEmoji]     = useState(goal?.emoji   || "ðŸŽ¯");
+  const [emoji, setEmoji]     = useState(goal?.emoji   || "🎯");
   const [color, setColor]     = useState(goal?.color   || "#0A84FF");
   const [current, setCurrent] = useState(goal?.current || 0);
   const [target, setTarget]   = useState(goal?.target  || 0);
@@ -24,7 +24,6 @@ function GoalForm({ goal, onSave, onCancel }) {
       border: "0.5px solid var(--border)",
       display: "flex", flexDirection: "column", gap: 12,
     }}>
-      {/* Emoji picker + name */}
       <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
         <div className="field" style={{ width: 70 }}>
           <span className="field-label">Icon</span>
@@ -33,14 +32,13 @@ function GoalForm({ goal, onSave, onCancel }) {
             onChange={e => setEmoji(e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <span className="field-label">TÃªn má»¥c tiÃªu</span>
-          <input className="input" type="text" placeholder="VD: MacBook, Du lá»‹ch Nháº­t..."
+          <span className="field-label">Tên mục tiêu</span>
+          <input className="input" type="text" placeholder="VD: MacBook, Du lịch Nhật..."
             value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSave()} />
         </div>
       </div>
 
-      {/* Emoji presets */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {GOAL_EMOJIS.map(e => (
           <button key={e} onClick={() => setEmoji(e)} style={{
@@ -51,9 +49,8 @@ function GoalForm({ goal, onSave, onCancel }) {
         ))}
       </div>
 
-      {/* Color swatches */}
       <div>
-        <div className="field-label" style={{ marginBottom: 6 }}>MÃ u</div>
+        <div className="field-label" style={{ marginBottom: 6 }}>Màu</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {GOAL_COLORS.map(c => (
             <button key={c} onClick={() => setColor(c)} style={{
@@ -66,34 +63,32 @@ function GoalForm({ goal, onSave, onCancel }) {
         </div>
       </div>
 
-      {/* Amounts */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+      <div className="goal-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <div className="field">
-          <span className="field-label">ÄÃ£ cÃ³</span>
+          <span className="field-label">Đã có</span>
           <MoneyInput value={current} onChange={setCurrent} />
         </div>
         <div className="field">
-          <span className="field-label">Má»¥c tiÃªu</span>
+          <span className="field-label">Mục tiêu</span>
           <MoneyInput value={target} onChange={setTarget} />
         </div>
         <div className="field">
-          <span className="field-label">Tiáº¿t kiá»‡m/thÃ¡ng</span>
+          <span className="field-label">Tiết kiệm/tháng</span>
           <MoneyInput value={monthly} onChange={setMonthly} />
         </div>
       </div>
 
-      {/* ETA preview */}
       {target > 0 && monthly > 0 && (
         <div style={{ fontSize: 12, color: "var(--text-3)" }}>
-          Æ¯á»›c tÃ­nh cÃ²n <b style={{ color: "var(--text-2)" }}>
-            ~{Math.ceil(Math.max(0, target - current) / monthly)} thÃ¡ng
-          </b> ná»¯a Ä‘á»ƒ Ä‘áº¡t má»¥c tiÃªu
+          Ước tính còn <b style={{ color: "var(--text-2)" }}>
+            ~{Math.ceil(Math.max(0, target - current) / monthly)} tháng
+          </b> nữa để đạt mục tiêu
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
         <button className="btn" style={{ flex: 1, height: 38 }} onClick={handleSave}>
-          <Icons.check size={14} /> {goal ? "LÆ°u thay Ä‘á»•i" : "ThÃªm má»¥c tiÃªu"}
+          <Icons.check size={14} /> {goal ? "Lưu thay đổi" : "Thêm mục tiêu"}
         </button>
         <button className="btn btn-secondary" style={{ height: 38, padding: "0 14px" }} onClick={onCancel}>
           <Icons.x size={14} />
@@ -129,21 +124,21 @@ function GoalRow({ goal, onEdit, onDelete }) {
         </div>
         <div className="goal-meta">
           <span className="num">{fmt(current)}</span>
-          <span className="goal-sep">Â·</span>
-          <span>cÃ²n <span className="num">{fmt(remaining)}</span></span>
+          <span className="goal-sep">·</span>
+          <span>còn <span className="num">{fmt(remaining)}</span></span>
           {etaMonths != null && (
             <>
-              <span className="goal-sep">Â·</span>
-              <span>~{etaMonths} thÃ¡ng ná»¯a</span>
+              <span className="goal-sep">·</span>
+              <span>~{etaMonths} tháng nữa</span>
             </>
           )}
         </div>
       </div>
       <div className="goal-actions">
-        <button className="goal-action-btn" onClick={() => onEdit(goal)} title="Sá»­a">
+        <button className="goal-action-btn" onClick={() => onEdit(goal)} title="Sửa">
           <Icons.pencil size={13} />
         </button>
-        <button className="goal-action-btn danger" onClick={() => onDelete(goal.id)} title="XÃ³a">
+        <button className="goal-action-btn danger" onClick={() => onDelete(goal.id)} title="Xóa">
           <Icons.trash size={13} />
         </button>
       </div>
@@ -152,7 +147,16 @@ function GoalRow({ goal, onEdit, onDelete }) {
 }
 
 function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onSaveGoal, onDeleteGoal }) {
-  const [editingGoal, setEditingGoal] = useState(null); // null = closed, "new" = add form, goal obj = edit form
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [hoverCat, setHoverCat] = useState(null);
+  const [pinnedCat, setPinnedCat] = useState(null);
+  const activeCat = hoverCat ?? pinnedCat;
+  const togglePinnedCat = (id) => setPinnedCat(p => (p === id ? null : id));
+
+  useEffect(() => {
+    setHoverCat(null);
+    setPinnedCat(null);
+  }, [viewMonth, viewYear]);
 
   const income = useMemo(() =>
     transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
@@ -182,6 +186,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
       .map(([cat, amount]) => ({
         id: cat, name: cat,
         color: CATEGORIES[cat]?.color || "#8E8E93",
+        emoji: CATEGORIES[cat]?.emoji || "📦",
         amount,
         pct: expense > 0 ? (amount / expense) * 100 : 0,
       }))
@@ -241,6 +246,17 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
   const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
+  const balanceSeries = useMemo(() => {
+    const byDay = new Map(dailyFlow.map(f => [f.d, f]));
+    let running = openingBalance;
+    const pts = [{ d: 0, v: running }];
+    for (let day = 1; day <= daysElapsed; day++) {
+      const f = byDay.get(day);
+      if (f) running += (f.inc || 0) - (f.exp || 0);
+      pts.push({ d: day, v: running });
+    }
+    return pts;
+  }, [dailyFlow, openingBalance, daysElapsed]);
   const fixedPaceExpense = transactions
     .filter(t => t.type === "expense" && FIXED_PACE_CATEGORIES.has(t.cat))
     .reduce((s, t) => s + t.amount, 0);
@@ -266,47 +282,47 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   };
 
   return (
-    <div className="page fade-in overview-page">
+    <div className="page overview-page">
+      <div className="overview-hero">
+        <section className="hero-balance stagger stagger-1" aria-label={balanceLabel}>
+          <div className="hero-bg" aria-hidden="true" />
+          <BalanceSparkline points={balanceSeries} totalDays={daysInMonth} />
+          <div className="hero-balance-head">
+            <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
+            {income > 0 && (
+              <span className={"hero-pill" + (remaining < 0 ? " negative" : "")}>
+                {remaining < 0 ? "Chi vượt thu" : `Giữ lại ${savingsRate}% thu nhập`}
+              </span>
+            )}
+          </div>
+          <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
+          <div className="hero-balance-sub">
+            {finalBalance >= 0 ? "Còn lại sau chi tiêu" : "Đang âm sau chi tiêu"} · {monthLabel}
+          </div>
+          <div className="hero-chips">
+            <div className="hero-chip">
+              <span className="hero-chip-label"><Icons.wallet size={12} /> Dư đầu tháng</span>
+              <span className="hero-chip-value num">{fmt(openingBalanceAnim)}</span>
+              <span className="hero-chip-sub">Chuyển từ các tháng trước</span>
+            </div>
+            <div className="hero-chip">
+              <span className="hero-chip-label"><Icons.arrowDownLeft size={12} /> Thu tháng này</span>
+              <span className="hero-chip-value num">{fmt(incomeAnim)}</span>
+              <span className="hero-chip-sub">
+                {incomeCount} giao dịch · TB {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}/lần
+              </span>
+            </div>
+            <div className="hero-chip">
+              <span className="hero-chip-label"><Icons.arrowUpRight size={12} /> Chi tháng này</span>
+              <span className="hero-chip-value num">{fmt(expenseAnim)}</span>
+              <span className="hero-chip-sub">
+                {expenseCount} giao dịch · TB {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}/lần
+              </span>
+            </div>
+          </div>
+        </section>
 
-      {/* === Main stats === */}
-      <div className="stat-grid overview-stat-grid">
-        <div className="stat stagger stagger-1">
-          <div className="stat-label"><Icons.wallet size={13} /> Dư đầu tháng</div>
-          <div className="stat-value num">{fmt(openingBalanceAnim)}</div>
-          <div className="stat-sub">
-            Chuyển từ các tháng trước
-          </div>
-        </div>
-        <div className="stat stagger stagger-2">
-          <div className="stat-label" style={{ color: "var(--c-green)" }}>
-            <Icons.arrowDownLeft size={13} /> Thu tháng này
-          </div>
-          <div className="stat-value num">{fmt(incomeAnim)}</div>
-          <div className="stat-sub">
-            <span>{incomeCount}</span> giao dịch ·
-            TB <span className="num">{" "}{incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}</span>/lần
-          </div>
-        </div>
-        <div className="stat stagger stagger-3">
-          <div className="stat-label" style={{ color: "var(--c-red)" }}>
-            <Icons.arrowUpRight size={13} /> Chi tháng này
-          </div>
-          <div className="stat-value num">{fmt(expenseAnim)}</div>
-          <div className="stat-sub">
-            <span>{expenseCount}</span> giao dịch ·
-            TB <span className="num">{" "}{expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}</span>/lần
-          </div>
-        </div>
-        <div className="stat stagger stagger-4">
-          <div className="stat-label"><Icons.wallet size={13} /> {balanceLabel}</div>
-          <div className="stat-value num">{fmt(closingBalanceAnim)}</div>
-          <div className="stat-sub">
-            {finalBalance >= 0 ? "Còn lại sau chi tiêu" : "Đang âm sau chi tiêu"}
-          </div>
-        </div>
-      </div>
-
-      <div className="insights overview-insights">
+        <div className="overview-insights overview-hero-insights">
         <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Dòng tiền tháng">
           {income > 0 ? (
             <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
@@ -328,43 +344,55 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
             <>Chưa có danh mục nào chạm ngưỡng 80%.</>
           )}
         </Insight>
+        </div>
       </div>
 
-      {/* === Breakdown + Flow + Goals === */}
       <div className="overview-dashboard-grid">
         <div className="card category-card overview-area-category stagger stagger-4">
           <div className="card-header">
             <div>
-              <div className="card-title">Chi tiÃªu theo danh má»¥c</div>
-              <div className="card-subtitle">{fmt(expense)} Â· {expenseCount} giao dá»‹ch</div>
+              <div className="card-title">Chi tiêu theo danh mục</div>
+              <div className="card-subtitle">{fmt(expense)} · {expenseCount} giao dịch</div>
             </div>
-            <button className="card-action" onClick={() => onNavigate && onNavigate("transactions")}>Xem táº¥t cáº£</button>
+            <button className="card-action" onClick={() => onNavigate && onNavigate("transactions")}>Xem tất cả</button>
           </div>
           {catRows.length === 0 ? (
-            <Empty icon="inbox" title="ChÆ°a cÃ³ chi tiÃªu" text="ThÃªm giao dá»‹ch Ä‘á»ƒ xem phÃ¢n tÃ­ch" />
+            <Empty icon="inbox" title="Chưa có chi tiêu" text="Thêm giao dịch để xem phân tích" />
           ) : (
-            <div className="cat-layout">
+            <div className="cat-donut-layout">
+              <CategoryDonut
+                data={catRows}
+                total={expense}
+                activeId={activeCat}
+                onHover={setHoverCat}
+                onSelect={togglePinnedCat}
+              />
               <div className="cat-list">
                 {catRows.map(c => (
-                  <div className="cat-row" key={c.id} style={{ "--cat-color": c.color, "--cat-pct": c.pct + "%" }}>
-                    <div className="cat-row-main">
-                      <span className="cat-dot" style={{ background: c.color }} />
-                      <div className="cat-name-text">{c.name}</div>
-                      <div className="cat-pct">{c.pct.toFixed(0)}%</div>
-                      <div className="cat-amount num">{fmt(c.amount)}</div>
-                    </div>
-                    <div className="cat-bar" aria-hidden="true">
-                      <span />
-                    </div>
+                  <div
+                    className={"cat-row" + (activeCat == null ? "" : activeCat === c.id ? " is-active" : " is-dimmed")}
+                    key={c.id}
+                    style={{ "--cat-color": c.color, "--cat-tint": c.color + "26" }}
+                    role="button"
+                    tabIndex={0}
+                    onMouseEnter={() => setHoverCat(c.id)}
+                    onMouseLeave={() => setHoverCat(null)}
+                    onFocus={() => setHoverCat(c.id)}
+                    onBlur={() => setHoverCat(null)}
+                    onClick={() => togglePinnedCat(c.id)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        togglePinnedCat(c.id);
+                      }
+                    }}
+                  >
+                    <span className="cat-chip" aria-hidden="true">{c.emoji}</span>
+                    <div className="cat-name-text">{c.name}</div>
+                    <div className="cat-pct">{c.pct.toFixed(0)}%</div>
+                    <div className="cat-amount num">{fmt(c.amount)}</div>
                   </div>
                 ))}
-              </div>
-              <div className="cat-donut-wrap" aria-label="Biểu đồ donut chi tiêu theo danh mục">
-                <DonutChart segments={catRows} total={expense} />
-                <div className="cat-donut-center">
-                  <div className="cat-donut-total num">{fmt(expense)}</div>
-                  <div className="cat-donut-sub">{expenseCount} giao dịch</div>
-                </div>
               </div>
             </div>
           )}
@@ -373,12 +401,12 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         <div className="card flow-card overview-area-flow stagger stagger-5">
             <div className="card-header">
               <div>
-                <div className="card-title">DÃ²ng tiá»n theo ngÃ y</div>
-                <div className="card-subtitle">{monthLabel} Â· {incomeCount + expenseCount} giao dá»‹ch</div>
+                <div className="card-title">Dòng tiền theo ngày</div>
+                <div className="card-subtitle">{monthLabel} · {incomeCount + expenseCount} giao dịch</div>
               </div>
             </div>
             {dailyFlow.length === 0 ? (
-              <Empty icon="trendUp" title="ChÆ°a cÃ³ dá»¯ liá»‡u" text="ThÃªm giao dá»‹ch Ä‘á»ƒ xem dÃ²ng tiá»n" />
+              <Empty icon="trendUp" title="Chưa có dữ liệu" text="Thêm giao dịch để xem dòng tiền" />
             ) : (
               <FlowChart data={dailyFlow} daysInMonth={daysInMonth} />
             )}
@@ -418,23 +446,23 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         <div className="card overview-debt-card overview-area-debt stagger stagger-7">
           <div className="card-header">
             <div className="card-title">Nợ &amp; Cho Vay</div>
-            <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quáº£n lÃ½</button>
+            <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quản lý</button>
           </div>
           <div className="debt-split">
             <div className="debt-card owe">
-              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Báº¡n Ä‘ang ná»£</div>
+              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Bạn đang nợ</div>
               <div className="debt-card-value num">{fmt(openOwe)}</div>
-              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoáº£n Ä‘ang ná»£</div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</div>
             </div>
             <div className="debt-card owed">
-              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> NgÆ°á»i khÃ¡c ná»£ báº¡n</div>
+              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> Người khác nợ bạn</div>
               <div className="debt-card-value num">{fmt(openOwed)}</div>
-              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoáº£n chÆ°a thu</div>
+              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</div>
             </div>
           </div>
           <div className="debt-list overview-debt-list">
             {openDebts.length === 0 ? (
-              <Empty icon="check" title="Sáº¡ch ná»£!" text="KhÃ´ng cÃ³ khoáº£n ná»£ nÃ o Ä‘ang má»Ÿ" />
+              <Empty icon="check" title="Sạch nợ!" text="Không có khoản nợ nào đang mở" />
             ) : (
               openDebts.map(d => {
                 const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();

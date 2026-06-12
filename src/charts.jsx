@@ -2,11 +2,14 @@
 
 const { useMemo: useMemoC } = React;
 
-// ====== Daily cash flow — overlaid area chart ======
 function FlowChart({ data, daysInMonth = 31 }) {
-  const W = 600, H = 220, PAD_L = 40, PAD_R = 12, PAD_T = 14, PAD_B = 28;
+  // Y-axis labels live in a fixed CSS gutter outside this viewBox, so the
+  // horizontal padding stays small and never collides with them when the
+  // SVG stretches (preserveAspectRatio="none").
+  const W = 600, H = 220, PAD_L = 8, PAD_R = 10, PAD_T = 14, PAD_B = 28;
   const innerW = W - PAD_L - PAD_R;
   const innerH = H - PAD_T - PAD_B;
+  const [hoverDay, setHoverDay] = React.useState(null);
 
   const series = useMemoC(() => {
     const arr = [];
@@ -40,6 +43,14 @@ function FlowChart({ data, daysInMonth = 31 }) {
   const expArea = smooth(expPts) + ` L ${xOf(daysInMonth - 1)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
   const xTicks = [1, 7, 14, 21, 28, daysInMonth];
 
+  const handleHoverMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width * W;
+    const idx = Math.round((px - PAD_L) / innerW * (daysInMonth - 1));
+    setHoverDay(Math.max(0, Math.min(daysInMonth - 1, idx)));
+  };
+  const hovered = hoverDay != null ? series[hoverDay] : null;
+
   return (
     <>
       <div className="flow-chart-wrap">
@@ -50,7 +61,9 @@ function FlowChart({ data, daysInMonth = 31 }) {
             return <span key={i} style={{ top: `${y / H * 100}%` }}>{formatAxisValue(v)}</span>;
           })}
         </div>
-        <svg viewBox={`0 0 ${W} ${H}`} className="flow-chart" preserveAspectRatio="none">
+        <div className="flow-plot">
+        <svg viewBox={`0 0 ${W} ${H}`} className="flow-chart" preserveAspectRatio="none"
+          onMouseMove={handleHoverMove} onMouseLeave={() => setHoverDay(null)}>
           <defs>
             <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--c-green)" stopOpacity="0.5" />
@@ -75,17 +88,29 @@ function FlowChart({ data, daysInMonth = 31 }) {
           <path d={incArea} className="flow-area-income" />
           <path d={smooth(expPts)} className="flow-line-expense" />
           <path d={smooth(incPts)} className="flow-line-income" />
-          {series.map((s, i) => s.inc > 0 && (
-            <circle key={"i" + i} cx={xOf(i)} cy={yOf(s.inc)} r="3" className="flow-dot-income" />
-          ))}
-          {series.map((s, i) => s.exp > 0 && (
-            <circle key={"e" + i} cx={xOf(i)} cy={yOf(s.exp)} r="3" className="flow-dot-expense" />
-          ))}
+          {hovered && (
+            <g className="flow-hover" aria-hidden="true">
+              <line className="flow-hover-line" x1={xOf(hoverDay)} y1={PAD_T} x2={xOf(hoverDay)} y2={PAD_T + innerH} />
+              <circle cx={xOf(hoverDay)} cy={yOf(hovered.inc)} r="4.5" className="flow-dot-income" />
+              <circle cx={xOf(hoverDay)} cy={yOf(hovered.exp)} r="4.5" className="flow-dot-expense" />
+            </g>
+          )}
         </svg>
         <div className="flow-x-labels" aria-hidden="true">
           {xTicks.map(d => (
             <span key={d} style={{ left: `${xOf(d - 1) / W * 100}%` }}>{d}</span>
           ))}
+        </div>
+        {hovered && (
+          <div
+            className={"flow-tooltip" + (hoverDay > (daysInMonth - 1) * 0.62 ? " flip" : "")}
+            style={{ left: `${xOf(hoverDay) / W * 100}%` }}
+          >
+            <div className="flow-tooltip-day">Ngày {hovered.d}</div>
+            <div className="flow-tooltip-row income"><span />Thu <b className="num">{fmt(hovered.inc)}</b></div>
+            <div className="flow-tooltip-row expense"><span />Chi <b className="num">{fmt(hovered.exp)}</b></div>
+          </div>
+        )}
         </div>
       </div>
       <div className="legend">
@@ -100,82 +125,6 @@ function FlowChart({ data, daysInMonth = 31 }) {
   );
 }
 
-// ====== Category spend donut ======
-function DonutChart({ segments, total }) {
-  const [tooltip, setTooltip] = React.useState(null);
-  const R   = 86;
-  const SW  = 24;
-  const C   = 2 * Math.PI * R;
-  const GAP = 2.5;
-
-  let accumulated = 0;
-  const arcs = segments.map(s => {
-    const len    = total > 0 ? (s.amount / total) * C - GAP : 0;
-    const offset = C * 0.25 - accumulated;
-    accumulated += len + GAP;
-    return { ...s, len: Math.max(len, 0), offset };
-  });
-
-  const cx = R + SW / 2 + 4;
-  const size = cx * 2;
-  const updateTooltip = (event, segment) => {
-    const svg = event.currentTarget.ownerSVGElement;
-    const bounds = svg.getBoundingClientRect();
-    setTooltip({
-      segment,
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-    });
-  };
-  const tooltipPct = tooltip && total > 0 ? Math.round(tooltip.segment.amount / total * 100) : 0;
-
-  return (
-    <div className="cat-donut-chart">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-        <circle cx={cx} cy={cx} r={R} fill="none"
-          stroke="var(--surface-2)" strokeWidth={SW} />
-        {arcs.map((s, i) => (
-          <circle key={s.id}
-            className="cat-donut-segment"
-            cx={cx} cy={cx} r={R}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={SW}
-            strokeLinecap="butt"
-            strokeDasharray={`${s.len} ${C - s.len}`}
-            strokeDashoffset={s.offset}
-            tabIndex="0"
-            role="img"
-            aria-label={`${s.name}: ${total > 0 ? Math.round(s.amount / total * 100) : 0}%, ${fmt(s.amount)}`}
-            onMouseEnter={e => updateTooltip(e, s)}
-            onMouseMove={e => updateTooltip(e, s)}
-            onMouseLeave={() => setTooltip(null)}
-            onFocus={() => setTooltip({ segment: s, x: size / 2, y: size / 2 })}
-            onBlur={() => setTooltip(null)}
-            style={{
-              transition: `stroke-dasharray var(--dur-reveal) var(--spring-snappy), stroke-dashoffset var(--dur-reveal) var(--spring-snappy), opacity var(--dur-quick) var(--spring-crisp), filter var(--dur-quick) var(--spring-crisp)`,
-              animationDelay: `${i * 40}ms`,
-            }}
-          />
-        ))}
-      </svg>
-      {tooltip && (
-        <div className="cat-donut-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
-          <div className="cat-donut-tooltip-name">
-            <span style={{ background: tooltip.segment.color }} />
-            {tooltip.segment.name}
-          </div>
-          <div className="cat-donut-tooltip-meta">
-            <b>{tooltipPct}%</b>
-            <span>{fmt(tooltip.segment.amount)}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ====== Six-month bar comparison ======
 function formatCurrency(value) {
   const n = Number.isFinite(value) ? value : 0;
   return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ';
@@ -292,11 +241,121 @@ function BenchmarkBar({ value, benchmark, max }) {
   );
 }
 
+// ====== BalanceSparkline — cumulative balance line inside the hero card ======
+function BalanceSparkline({ points, totalDays = 31 }) {
+  if (!points || points.length < 2) return null;
+  const W = 600, H = 150, PAD = 12;
+  const vals = points.map(p => p.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const flat = max === min;
+  const xOf = (p) => W * p.d / totalDays;
+  const yOf = (v) => flat ? H * 0.55 : PAD + (H - PAD * 2) * (1 - (v - min) / (max - min));
+  const pts = points.map(p => ({ x: xOf(p), y: yOf(p.v) }));
+  let line = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) {
+    const p0 = pts[i - 1], p1 = pts[i];
+    const cx = (p0.x + p1.x) / 2;
+    line += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+  }
+  const last = pts[pts.length - 1];
+  const area = line + ` L ${last.x} ${H} L ${pts[0].x} ${H} Z`;
+  return (
+    <svg className="hero-sparkline" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="heroSparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#heroSparkFill)" />
+      <path d={line} fill="none" stroke="var(--accent)" strokeOpacity="0.55" strokeWidth="2"
+        vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ====== CategoryDonut — spending share ring for the overview category card ======
+function CategoryDonut({ data, total, activeId, onHover, onSelect }) {
+  const SIZE = 200, R = 78, STROKE = 24, STROKE_ACTIVE = 30;
+  const C = 2 * Math.PI * R;
+  const GAP = data.length > 1 ? 5 : 0;
+
+  // Clamp tiny slices to a visible/hoverable arc, then rescale the rest
+  const segments = useMemoC(() => {
+    if (!data.length || total <= 0) return [];
+    const MIN_LEN = 7;
+    const usable = C - GAP * data.length;
+    const raw = data.map(c => Math.max(MIN_LEN, usable * c.amount / total));
+    const scale = usable / raw.reduce((s, v) => s + v, 0);
+    let start = 0;
+    return data.map((c, i) => {
+      const len = raw[i] * scale;
+      const seg = { ...c, len, start };
+      start += len + GAP;
+      return seg;
+    });
+  }, [data, total]);
+
+  const active = activeId != null ? data.find(c => c.id === activeId) : null;
+
+  return (
+    <div className="cat-donut">
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="Tỷ trọng chi tiêu theo danh mục">
+        <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
+          {segments.map(s => (
+            <circle
+              key={s.id}
+              className={"cat-donut-seg" + (activeId == null ? "" : activeId === s.id ? " is-active" : " is-dimmed")}
+              cx={SIZE / 2} cy={SIZE / 2} r={R}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={activeId === s.id ? STROKE_ACTIVE : STROKE}
+              strokeDasharray={`${s.len} ${C - s.len}`}
+              strokeDashoffset={-s.start}
+              tabIndex={0}
+              aria-label={`${s.name} · ${s.pct.toFixed(0)}%`}
+              onMouseEnter={() => onHover && onHover(s.id)}
+              onMouseLeave={() => onHover && onHover(null)}
+              onFocus={() => onHover && onHover(s.id)}
+              onBlur={() => onHover && onHover(null)}
+              onClick={() => onSelect && onSelect(s.id)}
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect && onSelect(s.id);
+                }
+              }}
+            >
+              <title>{`${s.name} · ${s.pct.toFixed(0)}%`}</title>
+            </circle>
+          ))}
+        </g>
+      </svg>
+      <div className="cat-donut-center" aria-hidden="true">
+        {active ? (
+          <>
+            <span className="cat-donut-center-label">{active.emoji} {active.name}</span>
+            <span className="cat-donut-center-value num" style={{ color: active.color }}>{fmtShort(active.amount)}</span>
+            <span className="cat-donut-center-sub">{active.pct.toFixed(0)}% tổng chi</span>
+          </>
+        ) : (
+          <>
+            <span className="cat-donut-center-label">Tổng chi</span>
+            <span className="cat-donut-center-value num">{fmtShort(total)}</span>
+            <span className="cat-donut-center-sub">{data.length} danh mục</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
   FlowChart,
-  DonutChart,
+  CategoryDonut,
   SixMonthBars,
   BenchmarkBar,
+  BalanceSparkline,
   formatCurrency,
   formatPercent,
   calculateChangePercent,
