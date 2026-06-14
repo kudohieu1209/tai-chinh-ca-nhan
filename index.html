@@ -3294,7 +3294,41 @@ function App() {
         />
         <PageEl key={page} {...pageProps} />
       </main>
+      <BottomNav activePage={page} onChange={setPage} debts={debts} />
     </div>
+  );
+}
+
+function BottomNav({ activePage, onChange, debts = [] }) {
+  const openDebtCount = debts.filter(d => !d.settled).length;
+  const items = [
+    { id: "overview",     label: "Tổng quan",  icon: "squareGrid" },
+    { id: "transactions", label: "Giao dịch",  icon: "arrowLeftRight" },
+    { id: "debts",        label: "Nợ vay",     icon: "creditCard",    badge: openDebtCount > 0 ? openDebtCount : null },
+    { id: "budget",       label: "Ngân sách",  icon: "wallet" },
+    { id: "notes",        label: "Note",       icon: "pencil" },
+  ];
+  return (
+    <nav className="bottom-nav" aria-label="Page navigation">
+      {items.map(item => {
+        const Icon = Icons[item.icon];
+        const active = activePage === item.id;
+        return (
+          <button
+            key={item.id}
+            className={"bottom-nav-item" + (active ? " active" : "")}
+            onClick={() => onChange(item.id)}
+            aria-current={active ? "page" : undefined}
+          >
+            <span className="bottom-nav-icon-wrap">
+              <Icon size={20} />
+              {item.badge != null && <span className="bottom-nav-badge">{item.badge}</span>}
+            </span>
+            <span className="bottom-nav-label">{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
