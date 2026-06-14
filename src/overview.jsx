@@ -146,10 +146,18 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onSaveGoal, onDeleteGoal }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onSaveGoal, onDeleteGoal }) {
   const [editingGoal, setEditingGoal] = useState(null);
   const [hoverCat, setHoverCat] = useState(null);
   const [pinnedCat, setPinnedCat] = useState(null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteText, setNoteText] = useState(notes);
+  const [showAddTx, setShowAddTx] = useState(false);
+  const [addTxType, setAddTxType] = useState("expense");
+  const [addTxDesc, setAddTxDesc] = useState("");
+  const [addTxAmount, setAddTxAmount] = useState(0);
+  const [addTxCat, setAddTxCat] = useState(() => Object.keys(CATEGORIES)[0] || "Ăn uống");
+  const [addTxDate, setAddTxDate] = useState(() => new Date().toISOString().slice(0, 10));
   const activeCat = hoverCat ?? pinnedCat;
   const togglePinnedCat = (id) => setPinnedCat(p => (p === id ? null : id));
 
@@ -276,6 +284,24 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const paceTone = projectedExpense > income && income > 0 ? "orange" : "indigo";
   const budgetTone = budgetWatch?.pct >= 100 ? "red" : budgetWatch ? "orange" : "green";
 
+  const handleAddQuickTx = () => {
+    if (!addTxDesc.trim() || addTxAmount <= 0) return;
+    if (onAddTransaction) {
+      onAddTransaction({
+        type: addTxType,
+        desc: addTxDesc.trim(),
+        amount: addTxAmount,
+        cat: addTxType === "expense" ? addTxCat : "Thu nhập",
+        date: addTxDate,
+      });
+    }
+    setAddTxDesc("");
+    setAddTxAmount(0);
+    setAddTxCat(Object.keys(CATEGORIES)[0] || "Ăn uống");
+    setAddTxDate(new Date().toISOString().slice(0, 10));
+    setShowAddTx(false);
+  };
+
   const handleSaveGoal = (g) => {
     onSaveGoal(g);
     setEditingGoal(null);
@@ -312,8 +338,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
                 {incomeCount} giao dịch · TB {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}/lần
               </span>
             </div>
-            <div className="hero-chip">
-              <span className="hero-chip-label"><Icons.arrowUpRight size={12} /> Chi tháng này</span>
+            <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
+                 onClick={() => { setAddTxType("expense"); setAddTxDate(new Date().toISOString().slice(0, 10)); setShowAddTx(true); }}
+                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setAddTxType("expense"), setShowAddTx(true))}>
+              <span className="hero-chip-label">
+                <Icons.arrowUpRight size={12} /> Chi tháng này
+                <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
+              </span>
               <span className="hero-chip-value num">{fmt(expenseAnim)}</span>
               <span className="hero-chip-sub">
                 {expenseCount} giao dịch · TB {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}/lần
@@ -323,13 +354,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         </section>
 
         <div className="overview-insights overview-hero-insights">
-        <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Dòng tiền tháng">
-          {income > 0 ? (
-            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
-          ) : (
-            <>Chưa có thu nhập trong tháng này. Dư đầu tháng không tính là thu nhập mới.</>
-          )}
-        </Insight>
+        <div onClick={() => { setNoteText(notes); setNoteOpen(true); }} style={{ cursor: "pointer" }}>
+          <Insight tone="orange" icon="pencil" title="Note">
+            {notes ? "Đã có ghi chú. Nhấn để xem." : "Nhấn để thêm ghi chú tháng này…"}
+          </Insight>
+        </div>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
           {expense > 0 ? (
             <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
@@ -337,14 +366,126 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
             <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
           )}
         </Insight>
-        <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title="Ngân sách">
-          {budgetWatch ? (
-            <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
-          ) : (
-            <>Chưa có danh mục nào chạm ngưỡng 80%.</>
-          )}
-        </Insight>
+        <div onClick={() => onNavigate && onNavigate("budget")} style={{ cursor: "pointer" }}>
+          <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title={
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              Ngân sách <Icons.chevRight size={13} />
+            </span>
+          }>
+            {budgetWatch ? (
+              <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
+            ) : (
+              <>Chưa có danh mục nào chạm ngưỡng 80%.</>
+            )}
+          </Insight>
         </div>
+        </div>
+        {noteOpen && (
+          <Modal
+            title="Ghi chú tháng này"
+            onClose={() => setNoteOpen(false)}
+            width={460}
+            footer={
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setNoteOpen(false)}>Hủy</button>
+                <button className="btn" onClick={() => {
+                  if (onSaveNotes) onSaveNotes(noteText);
+                  setNoteOpen(false);
+                }}>Lưu</button>
+              </div>
+            }
+          >
+            <textarea
+              style={{
+                width: "100%", minHeight: 140, resize: "vertical",
+                background: "var(--surface-2)", border: "0.5px solid var(--border)",
+                borderRadius: "var(--r-md)", padding: "10px 12px",
+                fontSize: 14, color: "var(--text)", outline: "none",
+                fontFamily: "inherit", lineHeight: 1.6, boxSizing: "border-box",
+              }}
+              placeholder="Ghi chú nhanh về tháng này…"
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+            />
+          </Modal>
+        )}
+        {showAddTx && (
+          <Modal
+            title="Thêm giao dịch"
+            subtitle="Ghi lại ngay để không quên"
+            onClose={() => setShowAddTx(false)}
+            width={400}
+            footer={
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setShowAddTx(false)}>Hủy</button>
+                <button className="btn" onClick={handleAddQuickTx}
+                  disabled={!addTxDesc.trim() || addTxAmount <= 0}
+                  style={{ opacity: (!addTxDesc.trim() || addTxAmount <= 0) ? 0.5 : 1 }}>
+                  <Icons.plus size={14} /> Thêm giao dịch
+                </button>
+              </div>
+            }
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className={"btn" + (addTxType === "expense" ? "" : " btn-secondary")}
+                  style={{ flex: 1, height: 36, fontSize: 13 }}
+                  onClick={() => { setAddTxType("expense"); setAddTxCat(Object.keys(CATEGORIES)[0] || "Ăn uống"); }}
+                >
+                  <Icons.arrowUpRight size={13} /> Chi tiêu
+                </button>
+                <button
+                  className={"btn" + (addTxType === "income" ? "" : " btn-secondary")}
+                  style={{ flex: 1, height: 36, fontSize: 13 }}
+                  onClick={() => setAddTxType("income")}
+                >
+                  <Icons.arrowDownLeft size={13} /> Thu nhập
+                </button>
+              </div>
+              <div className="field">
+                <span className="field-label">Mô tả</span>
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="VD: Ăn trưa, Cà phê…"
+                  value={addTxDesc}
+                  onChange={e => setAddTxDesc(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAddQuickTx()}
+                  autoFocus
+                />
+              </div>
+              <div className="field">
+                <span className="field-label">Số tiền</span>
+                <MoneyInput value={addTxAmount} onChange={setAddTxAmount} />
+              </div>
+              {addTxType === "expense" && (
+                <div className="field">
+                  <span className="field-label">Danh mục</span>
+                  <select
+                    className="input"
+                    value={addTxCat}
+                    onChange={e => setAddTxCat(e.target.value)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {Object.values(CATEGORIES).map(c => (
+                      <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="field">
+                <span className="field-label">Ngày</span>
+                <input
+                  className="input"
+                  type="date"
+                  value={addTxDate}
+                  onChange={e => setAddTxDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
 
       <div className="overview-dashboard-grid">

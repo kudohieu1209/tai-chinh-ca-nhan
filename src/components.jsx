@@ -32,26 +32,7 @@ function useCountup(target, duration = 850) {
 function AppSkeleton() {
   return (
     <div className="app">
-      <aside className="sidebar" style={{ paddingTop: 24 }}>
-        <div style={{ padding: "0 10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <div className="skeleton" style={{ height: 11, width: "65%", marginBottom: 6 }} />
-            <div className="skeleton" style={{ height: 9,  width: "40%" }} />
-          </div>
-        </div>
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", marginBottom: 3 }}>
-            <div className="skeleton" style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0 }} />
-            <div className="skeleton" style={{ flex: 1, height: 11 }} />
-          </div>
-        ))}
-      </aside>
       <main className="main">
-        <div className="toolbar">
-          <div className="skeleton" style={{ width: 80, height: 14, borderRadius: 6 }} />
-          <div className="skeleton" style={{ width: 164, height: 30, borderRadius: 999 }} />
-        </div>
         <div className="page">
           <div style={{ marginBottom: 26 }}>
             <div className="skeleton" style={{ height: 11, width: 180, marginBottom: 10, borderRadius: 6 }} />
@@ -76,114 +57,51 @@ function AppSkeleton() {
   );
 }
 
-function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
-  const openDebtCount = debts.filter(d => !d.settled).length;
-  const pillRef    = useRef(null);
-  const navListRef = useRef(null);
-
-  const navItems = [
-    { id: "overview",     label: "Tổng quan",  icon: "squareGrid",    badge: null },
-    { id: "transactions", label: "Giao dịch",  icon: "arrowLeftRight", badge: null },
-    { id: "debts",        label: "Nợ vay",     icon: "creditCard",     badge: openDebtCount > 0 ? openDebtCount : null },
-    { id: "budget",       label: "Ngân sách",  icon: "wallet",         badge: null },
-    { id: "notes",        label: "Note",       icon: "pencil",         badge: null },
-  ];
+function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMonth, viewYear, theme, onTheme, lang, onLang }) {
+  const balanceAnim = useCountup(closingBalance);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
 
   useEffect(() => {
-    const pill = pillRef.current;
-    const list = navListRef.current;
-    if (!pill || !list) return;
-    const el = list.querySelector(`[data-id="${active}"]`);
-    if (!el) return;
-    pill.style.top    = el.offsetTop + 'px';
-    pill.style.height = el.offsetHeight + 'px';
-  }, [active]);
+    if (!settingsOpen) return;
+    const handler = (e) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [settingsOpen]);
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <div className="sidebar-brand-mark">
-          <svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
-            <defs>
-              <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#0A84FF" />
-                <stop offset="100%" stopColor="#5E5CE6" />
-              </linearGradient>
-            </defs>
-            <rect width="28" height="28" rx="7" fill="url(#brandGrad)" />
-            <rect x="6.5" y="15" width="3.2" height="7" rx="1.2" fill="white" opacity="0.7" />
-            <rect x="12.4" y="11" width="3.2" height="11" rx="1.2" fill="white" opacity="0.85" />
-            <rect x="18.3" y="6" width="3.2" height="16" rx="1.2" fill="white" />
-          </svg>
-        </div>
-        <div className="sidebar-brand-text">
-          <span className="sidebar-brand-name">Hiewu</span>
-          <span className="sidebar-brand-sub">Finance</span>
-        </div>
-      </div>
-
-      <div className="sidebar-section-label">Quản lý</div>
-      <div className="nav-list" ref={navListRef}>
-        <div className="nav-pill" ref={pillRef} />
-        {navItems.map(item => {
-          const Icon = Icons[item.icon];
-          return (
-            <div
-              key={item.id}
-              data-id={item.id}
-              className={"nav-item" + (active === item.id ? " active" : "")}
-              role="button"
-              tabIndex={0}
-              aria-current={active === item.id ? "page" : undefined}
-              onClick={() => onChange(item.id)}
-              onKeyDown={e => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onChange(item.id);
-                }
-              }}
-            >
-              <Icon size={17} className="nav-icon" />
-              <span className="nav-label">{item.label}</span>
-              {item.badge != null && <span className="nav-badge">{item.badge}</span>}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="sidebar-footer">
-        <div className="theme-toggle">
-          <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")} title="Light mode">
-            <Icons.sun size={12} /> Sáng
-          </button>
-          <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")} title="Dark mode">
-            <Icons.moon size={12} /> Tối
-          </button>
-        </div>
-        <div className="sidebar-user">
-          <div className="sidebar-avatar"><img src="avatar.jpg" alt="Kudo Hiếu" /></div>
-          <div className="sidebar-user-meta">
-            <span className="sidebar-user-name">Kudo Hiếu</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function Toolbar({ activePage, month, onMonthChange }) {
-  const pageTitle = {
-    overview: "Tổng quan",
-    transactions: "Giao dịch",
-    debts: "Nợ vay",
-    budget: "Ngân sách",
-    notes: "Note",
-  }[activePage];
+  const isOverview = activePage === "overview";
   const showMonthPicker = activePage !== "notes";
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+  const balanceLabel = isCurrentMonth
+    ? (lang === "en" ? "Current balance" : "Số dư hiện tại")
+    : (lang === "en" ? "End-of-month balance" : "Số dư cuối tháng");
+
+  const pageTitles = {
+    transactions: lang === "en" ? "Transactions" : "Giao dịch",
+    debts:        lang === "en" ? "Debts"        : "Nợ vay",
+    budget:       lang === "en" ? "Budget"       : "Ngân sách",
+    notes:        "Note",
+  };
 
   return (
-    <div className="toolbar">
-      <div className="toolbar-title">{pageTitle}</div>
+    <div className={"toolbar" + (isOverview ? " toolbar-overview" : "")}>
+      <div className="toolbar-left">
+        {isOverview ? (
+          <div className="toolbar-balance">
+            <span className={"toolbar-balance-value num" + (balanceAnim < 0 ? " negative" : "")}>
+              {fmt(balanceAnim)}
+            </span>
+            <span className="toolbar-balance-label">{balanceLabel}</span>
+          </div>
+        ) : (
+          <div className="toolbar-title">{pageTitles[activePage]}</div>
+        )}
+      </div>
       <div className="toolbar-right">
         {showMonthPicker && (
           <div className="month-picker">
@@ -192,6 +110,58 @@ function Toolbar({ activePage, month, onMonthChange }) {
             <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
           </div>
         )}
+        <div className="toolbar-settings-wrap" ref={settingsRef}>
+          <button
+            className={"toolbar-settings-btn" + (settingsOpen ? " active" : "")}
+            onClick={() => setSettingsOpen(o => !o)}
+            aria-label="Settings"
+            title="Cài đặt"
+          >
+            <Icons.gear size={16} />
+          </button>
+          {settingsOpen && (
+            <div className="settings-dropdown">
+              <div className="settings-section-label">
+                {lang === "en" ? "Appearance" : "Giao diện"}
+              </div>
+              <div className="settings-row">
+                <button
+                  className={"settings-opt-btn" + (theme === "light" ? " active" : "")}
+                  onClick={() => onTheme("light")}
+                >
+                  <Icons.sun size={13} /> {lang === "en" ? "Light" : "Sáng"}
+                </button>
+                <button
+                  className={"settings-opt-btn" + (theme === "dark" ? " active" : "")}
+                  onClick={() => onTheme("dark")}
+                >
+                  <Icons.moon size={13} /> {lang === "en" ? "Dark" : "Tối"}
+                </button>
+              </div>
+              <div className="settings-divider" />
+              <div className="settings-section-label">
+                {lang === "en" ? "Language" : "Ngôn ngữ"}
+              </div>
+              <div className="settings-row">
+                <button
+                  className={"settings-opt-btn" + (lang === "vi" ? " active" : "")}
+                  onClick={() => onLang("vi")}
+                >
+                  🇻🇳 Tiếng Việt
+                </button>
+                <button
+                  className={"settings-opt-btn" + (lang === "en" ? " active" : "")}
+                  onClick={() => onLang("en")}
+                >
+                  🇺🇸 English
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="toolbar-avatar">
+          <img src="avatar.jpg" alt="Kudo Hiếu" />
+        </div>
       </div>
     </div>
   );
@@ -275,6 +245,39 @@ function MoneyInput({ value, onChange, placeholder = "0" }) {
   );
 }
 
+// ====== Modal — centered dialog with overlay, Escape/backdrop close ======
+// Rendered through a portal: page-level entrance animations keep a transform
+// (fill-mode: forwards), which would otherwise trap position:fixed inside the page.
+function Modal({ title, subtitle, onClose, children, footer, headerExtra, width = 560 }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return ReactDOM.createPortal(
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" style={{ maxWidth: width }} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="modal-head">
+          <div className="modal-head-text">
+            <div className="modal-title">{title}</div>
+            {subtitle && <div className="modal-subtitle">{subtitle}</div>}
+          </div>
+          <div className="modal-head-tools">
+            {headerExtra}
+            <button className="modal-close" onClick={onClose} aria-label="Đóng" title="Đóng">
+              <Icons.x size={15} />
+            </button>
+          </div>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ====== TabBar — segmented control with sliding indicator ======
 function TabBar({ tabs, active, onChange, style, className }) {
   const indicRef = useRef(null);
@@ -311,4 +314,4 @@ function TabBar({ tabs, active, onChange, style, className }) {
   );
 }
 
-Object.assign(window, { Sidebar, Toolbar, PageHeader, Insight, Empty, MoneyInput, TabBar });
+Object.assign(window, { Sidebar, Toolbar, PageHeader, Insight, Empty, MoneyInput, Modal, TabBar });

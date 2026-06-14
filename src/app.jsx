@@ -39,6 +39,36 @@ const DEFAULT_GOALS = [
   { id: 2, emoji: "🏖️", color: "#FF9500", name: "Đi Đà Lạt cuối năm", current: 1100000, target: 3500000,  monthly: 600000 },
 ];
 
+const LOCAL_DATA_KEY = "fintrack-local-data-v1";
+
+function seedData() {
+  return {
+    transactions: _SEED.transactions,
+    debts: _SEED.debts,
+    budgets: [],
+    goals: DEFAULT_GOALS,
+    notes: "",
+  };
+}
+
+function readLocalData() {
+  try {
+    const raw = localStorage.getItem(LOCAL_DATA_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.warn("Local data unavailable:", err);
+    return null;
+  }
+}
+
+function saveLocalData(data) {
+  try {
+    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.warn("Local data save failed:", err);
+  }
+}
+
 function localDateKey(dateLike = new Date()) {
   const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
   if (Number.isNaN(d.getTime())) return localDateKey(new Date());
@@ -119,7 +149,10 @@ function App() {
   const [loaded, setLoaded]     = useState(false);
   const [page, setPage]         = useState("overview");
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
+  const [lang, setLang]         = useState(() => localStorage.getItem("hieu-lang") || "vi");
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
+  // Bumped whenever the shared CATEGORIES map is rebuilt so all pages re-render
+  const [, setCatsVersion] = useState(0);
 
   // Compute viewed month
   const now = new Date();
@@ -134,56 +167,67 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    localStorage.setItem("hieu-lang", lang);
+  }, [lang]);
+
+  useEffect(() => {
+    const hydrate = (data = {}) => {
+      setCategories(data.categories);
+      setCatsVersion(v => v + 1);
+      const { result, changed } = migrateCats(data.transactions || []);
+      const dbts = data.debts   || [];
+      const bdgs = data.budgets || [];
+      const gls  = data.goals   || DEFAULT_GOALS;
+      const nts  = data.notes   || "";
+      const openDebtSettlements = result.filter(t =>
+        dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt))
+      );
+      const cleanedResult = openDebtSettlements.length
+        ? result.filter(t => !dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt)))
+        : result;
+      const missingSettlementTxs = dbts
+        .filter(debt => debt.settled && debt.paidDate && !cleanedResult.some(t => isDebtSettlementTransactionForDebt(t, debt)))
+        .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
+      const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...cleanedResult] : cleanedResult;
+      setAllTransactions(txns);
+      setDebts(dbts);
+      setBudgets(bdgs);
+      setGoals(gls);
+      setNotes(nts);
+      setLoaded(true);
+      saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts });
+      return { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements };
+    };
+
     try { firebase.initializeApp(firebaseConfig); } catch (_) { /* already initialized */ }
     const db = firebase.firestore();
     window._fsDoc = db.collection("fintrack").doc("hiewu");
 
     const unsub = window._fsDoc.onSnapshot(snap => {
       if (snap.exists) {
-        const d = snap.data();
-        const { result, changed } = migrateCats(d.transactions || []);
-        const dbts = d.debts   || [];
-        const bdgs = d.budgets || [];
-        const gls  = d.goals   || DEFAULT_GOALS;
-        const nts  = d.notes   || "";
-        const openDebtSettlements = result.filter(t =>
-          dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt))
-        );
-        const cleanedResult = openDebtSettlements.length
-          ? result.filter(t => !dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt)))
-          : result;
-        const missingSettlementTxs = dbts
-          .filter(debt => debt.settled && debt.paidDate && !cleanedResult.some(t => isDebtSettlementTransactionForDebt(t, debt)))
-          .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
-        const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...cleanedResult] : cleanedResult;
-        setAllTransactions(txns);
-        setDebts(dbts);
-        setBudgets(bdgs);
-        setGoals(gls);
-        setNotes(nts);
-        setLoaded(true);
+        const { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements } = hydrate(snap.data());
         if (changed || missingSettlementTxs.length || openDebtSettlements.length) {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
-        setAllTransactions(_SEED.transactions);
-        setDebts(_SEED.debts);
-        setBudgets([]);
-        setGoals(DEFAULT_GOALS);
-        setNotes("");
-        setLoaded(true);
-        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS, notes: "" });
+        const fallback = readLocalData() || seedData();
+        hydrate(fallback);
+        window._fsDoc.set(fallback);
       }
-    }, err => console.error("Firebase error:", err));
+    }, err => {
+      console.error("Firebase error:", err);
+      hydrate(readLocalData() || seedData());
+    });
 
     return () => unsub();
   }, []);
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes });
     if (window._fsDoc) {
       window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }, { merge: true }).catch(console.error);
     }
-  }, []);
+  }, [notes]);
 
   // ── Transaction CRUD ──
   const addTransaction = useCallback((tx) => {
@@ -309,12 +353,54 @@ function App() {
     persist(allTransactions, debts, budgets, next);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  // ── Category management ──
+  // Applies the new list, renames categories on existing transactions/budgets,
+  // and reassigns transactions of deleted categories to "Khác".
+  const saveCategories = useCallback((nextList, renames = {}, removed = []) => {
+    const removedSet = new Set(removed);
+    const mapCat = (catName) => {
+      if (renames[catName]) return renames[catName];
+      if (removedSet.has(catName)) return "Khác";
+      return catName;
+    };
+
+    const needsMigration = Object.keys(renames).length > 0 || removedSet.size > 0;
+    const nextTransactions = needsMigration
+      ? allTransactions.map(t => {
+          if (!t.cat || t.cat === "Thu nhập") return t;
+          const mapped = mapCat(t.cat);
+          return mapped === t.cat ? t : { ...t, cat: mapped };
+        })
+      : allTransactions;
+
+    const nextBudgets = [];
+    budgets.forEach(b => {
+      if (removedSet.has(b.cat)) return;
+      const cat = renames[b.cat] || b.cat;
+      if (!nextBudgets.some(x => x.cat === cat)) nextBudgets.push({ ...b, cat });
+    });
+
+    setCategories(nextList);
+    setCatsVersion(v => v + 1);
+    setAllTransactions(nextTransactions);
+    setBudgets(nextBudgets);
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: nextTransactions, debts, budgets: nextBudgets, goals, notes });
+    if (window._fsDoc) {
+      window._fsDoc.set({
+        categories: Object.values(CATEGORIES),
+        transactions: nextTransactions,
+        budgets: nextBudgets,
+      }, { merge: true }).catch(console.error);
+    }
+  }, [allTransactions, budgets, debts, goals, notes]);
+
   const saveNotes = useCallback((nextNotes) => {
     setNotes(nextNotes);
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: allTransactions, debts, budgets, goals, notes: nextNotes });
     if (window._fsDoc) {
       window._fsDoc.set({ notes: nextNotes }, { merge: true }).catch(console.error);
     }
-  }, []);
+  }, [allTransactions, debts, budgets, goals]);
 
   // Filter transactions for viewed month
   const monthTransactions = useMemo(() => {
@@ -358,17 +444,24 @@ function App() {
     onSaveGoal:          saveGoal,
     onDeleteGoal:        deleteGoal,
     onSaveNotes:         saveNotes,
+    onSaveCategories:    saveCategories,
     onNavigate:          setPage,
   };
 
   return (
     <div className="app">
-      <Sidebar active={page} onChange={setPage} theme={theme} onTheme={setTheme} debts={debts} />
       <main className="main">
         <Toolbar
           activePage={page}
           month={monthLabel}
           onMonthChange={(d) => setMonthOffset(m => Math.max(0, m + d))}
+          closingBalance={monthlyBalance.closingBalance}
+          viewMonth={viewMonth}
+          viewYear={viewYear}
+          theme={theme}
+          onTheme={setTheme}
+          lang={lang}
+          onLang={setLang}
         />
         <PageEl key={page} {...pageProps} />
       </main>

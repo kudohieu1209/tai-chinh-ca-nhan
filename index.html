@@ -162,6 +162,12 @@ const Icons = {
       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </I>
   ),
+  gear: (p) => (
+    <I {...p}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </I>
+  ),
 };
 
 // ============================================================
@@ -554,26 +560,7 @@ function useCountup(target, duration = 850) {
 function AppSkeleton() {
   return (
     <div className="app">
-      <aside className="sidebar" style={{ paddingTop: 24 }}>
-        <div style={{ padding: "0 10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <div className="skeleton" style={{ height: 11, width: "65%", marginBottom: 6 }} />
-            <div className="skeleton" style={{ height: 9,  width: "40%" }} />
-          </div>
-        </div>
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", marginBottom: 3 }}>
-            <div className="skeleton" style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0 }} />
-            <div className="skeleton" style={{ flex: 1, height: 11 }} />
-          </div>
-        ))}
-      </aside>
       <main className="main">
-        <div className="toolbar">
-          <div className="skeleton" style={{ width: 80, height: 14, borderRadius: 6 }} />
-          <div className="skeleton" style={{ width: 164, height: 30, borderRadius: 999 }} />
-        </div>
         <div className="page">
           <div style={{ marginBottom: 26 }}>
             <div className="skeleton" style={{ height: 11, width: 180, marginBottom: 10, borderRadius: 6 }} />
@@ -598,114 +585,51 @@ function AppSkeleton() {
   );
 }
 
-function Sidebar({ active, onChange, theme, onTheme, debts = [] }) {
-  const openDebtCount = debts.filter(d => !d.settled).length;
-  const pillRef    = useRef(null);
-  const navListRef = useRef(null);
-
-  const navItems = [
-    { id: "overview",     label: "Tổng quan",  icon: "squareGrid",    badge: null },
-    { id: "transactions", label: "Giao dịch",  icon: "arrowLeftRight", badge: null },
-    { id: "debts",        label: "Nợ vay",     icon: "creditCard",     badge: openDebtCount > 0 ? openDebtCount : null },
-    { id: "budget",       label: "Ngân sách",  icon: "wallet",         badge: null },
-    { id: "notes",        label: "Note",       icon: "pencil",         badge: null },
-  ];
+function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMonth, viewYear, theme, onTheme, lang, onLang }) {
+  const balanceAnim = useCountup(closingBalance);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
 
   useEffect(() => {
-    const pill = pillRef.current;
-    const list = navListRef.current;
-    if (!pill || !list) return;
-    const el = list.querySelector(`[data-id="${active}"]`);
-    if (!el) return;
-    pill.style.top    = el.offsetTop + 'px';
-    pill.style.height = el.offsetHeight + 'px';
-  }, [active]);
+    if (!settingsOpen) return;
+    const handler = (e) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [settingsOpen]);
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <div className="sidebar-brand-mark">
-          <svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
-            <defs>
-              <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#0A84FF" />
-                <stop offset="100%" stopColor="#5E5CE6" />
-              </linearGradient>
-            </defs>
-            <rect width="28" height="28" rx="7" fill="url(#brandGrad)" />
-            <rect x="6.5" y="15" width="3.2" height="7" rx="1.2" fill="white" opacity="0.7" />
-            <rect x="12.4" y="11" width="3.2" height="11" rx="1.2" fill="white" opacity="0.85" />
-            <rect x="18.3" y="6" width="3.2" height="16" rx="1.2" fill="white" />
-          </svg>
-        </div>
-        <div className="sidebar-brand-text">
-          <span className="sidebar-brand-name">Hiewu</span>
-          <span className="sidebar-brand-sub">Finance</span>
-        </div>
-      </div>
-
-      <div className="sidebar-section-label">Quản lý</div>
-      <div className="nav-list" ref={navListRef}>
-        <div className="nav-pill" ref={pillRef} />
-        {navItems.map(item => {
-          const Icon = Icons[item.icon];
-          return (
-            <div
-              key={item.id}
-              data-id={item.id}
-              className={"nav-item" + (active === item.id ? " active" : "")}
-              role="button"
-              tabIndex={0}
-              aria-current={active === item.id ? "page" : undefined}
-              onClick={() => onChange(item.id)}
-              onKeyDown={e => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onChange(item.id);
-                }
-              }}
-            >
-              <Icon size={17} className="nav-icon" />
-              <span className="nav-label">{item.label}</span>
-              {item.badge != null && <span className="nav-badge">{item.badge}</span>}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="sidebar-footer">
-        <div className="theme-toggle">
-          <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")} title="Light mode">
-            <Icons.sun size={12} /> Sáng
-          </button>
-          <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")} title="Dark mode">
-            <Icons.moon size={12} /> Tối
-          </button>
-        </div>
-        <div className="sidebar-user">
-          <div className="sidebar-avatar"><img src="avatar.jpg" alt="Kudo Hiếu" /></div>
-          <div className="sidebar-user-meta">
-            <span className="sidebar-user-name">Kudo Hiếu</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function Toolbar({ activePage, month, onMonthChange }) {
-  const pageTitle = {
-    overview: "Tổng quan",
-    transactions: "Giao dịch",
-    debts: "Nợ vay",
-    budget: "Ngân sách",
-    notes: "Note",
-  }[activePage];
+  const isOverview = activePage === "overview";
   const showMonthPicker = activePage !== "notes";
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+  const balanceLabel = isCurrentMonth
+    ? (lang === "en" ? "Current balance" : "Số dư hiện tại")
+    : (lang === "en" ? "End-of-month balance" : "Số dư cuối tháng");
+
+  const pageTitles = {
+    transactions: lang === "en" ? "Transactions" : "Giao dịch",
+    debts:        lang === "en" ? "Debts"        : "Nợ vay",
+    budget:       lang === "en" ? "Budget"       : "Ngân sách",
+    notes:        "Note",
+  };
 
   return (
-    <div className="toolbar">
-      <div className="toolbar-title">{pageTitle}</div>
+    <div className={"toolbar" + (isOverview ? " toolbar-overview" : "")}>
+      <div className="toolbar-left">
+        {isOverview ? (
+          <div className="toolbar-balance">
+            <span className={"toolbar-balance-value num" + (balanceAnim < 0 ? " negative" : "")}>
+              {fmt(balanceAnim)}
+            </span>
+            <span className="toolbar-balance-label">{balanceLabel}</span>
+          </div>
+        ) : (
+          <div className="toolbar-title">{pageTitles[activePage]}</div>
+        )}
+      </div>
       <div className="toolbar-right">
         {showMonthPicker && (
           <div className="month-picker">
@@ -714,6 +638,58 @@ function Toolbar({ activePage, month, onMonthChange }) {
             <button onClick={() => onMonthChange(-1)}><Icons.chevRight size={14} /></button>
           </div>
         )}
+        <div className="toolbar-settings-wrap" ref={settingsRef}>
+          <button
+            className={"toolbar-settings-btn" + (settingsOpen ? " active" : "")}
+            onClick={() => setSettingsOpen(o => !o)}
+            aria-label="Settings"
+            title="Cài đặt"
+          >
+            <Icons.gear size={16} />
+          </button>
+          {settingsOpen && (
+            <div className="settings-dropdown">
+              <div className="settings-section-label">
+                {lang === "en" ? "Appearance" : "Giao diện"}
+              </div>
+              <div className="settings-row">
+                <button
+                  className={"settings-opt-btn" + (theme === "light" ? " active" : "")}
+                  onClick={() => onTheme("light")}
+                >
+                  <Icons.sun size={13} /> {lang === "en" ? "Light" : "Sáng"}
+                </button>
+                <button
+                  className={"settings-opt-btn" + (theme === "dark" ? " active" : "")}
+                  onClick={() => onTheme("dark")}
+                >
+                  <Icons.moon size={13} /> {lang === "en" ? "Dark" : "Tối"}
+                </button>
+              </div>
+              <div className="settings-divider" />
+              <div className="settings-section-label">
+                {lang === "en" ? "Language" : "Ngôn ngữ"}
+              </div>
+              <div className="settings-row">
+                <button
+                  className={"settings-opt-btn" + (lang === "vi" ? " active" : "")}
+                  onClick={() => onLang("vi")}
+                >
+                  🇻🇳 Tiếng Việt
+                </button>
+                <button
+                  className={"settings-opt-btn" + (lang === "en" ? " active" : "")}
+                  onClick={() => onLang("en")}
+                >
+                  🇺🇸 English
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="toolbar-avatar">
+          <img src="avatar.jpg" alt="Kudo Hiếu" />
+        </div>
       </div>
     </div>
   );
@@ -797,6 +773,39 @@ function MoneyInput({ value, onChange, placeholder = "0" }) {
   );
 }
 
+// ====== Modal — centered dialog with overlay, Escape/backdrop close ======
+// Rendered through a portal: page-level entrance animations keep a transform
+// (fill-mode: forwards), which would otherwise trap position:fixed inside the page.
+function Modal({ title, subtitle, onClose, children, footer, headerExtra, width = 560 }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return ReactDOM.createPortal(
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" style={{ maxWidth: width }} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="modal-head">
+          <div className="modal-head-text">
+            <div className="modal-title">{title}</div>
+            {subtitle && <div className="modal-subtitle">{subtitle}</div>}
+          </div>
+          <div className="modal-head-tools">
+            {headerExtra}
+            <button className="modal-close" onClick={onClose} aria-label="Đóng" title="Đóng">
+              <Icons.x size={15} />
+            </button>
+          </div>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ====== TabBar — segmented control with sliding indicator ======
 function TabBar({ tabs, active, onChange, style, className }) {
   const indicRef = useRef(null);
@@ -832,7 +841,6 @@ function TabBar({ tabs, active, onChange, style, className }) {
     </div>
   );
 }
-
 // ============================================================
 // overview.jsx
 // ============================================================
@@ -983,17 +991,48 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, budgets = [], goals, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onSaveGoal, onDeleteGoal }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onSaveGoal, onDeleteGoal, onMonthChange, theme, onTheme, lang, onLang }) {
   const [editingGoal, setEditingGoal] = useState(null);
   const [hoverCat, setHoverCat] = useState(null);
   const [pinnedCat, setPinnedCat] = useState(null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteText, setNoteText] = useState(notes);
+  const [showAddTx, setShowAddTx] = useState(false);
+  const [addTxType, setAddTxType] = useState("expense");
+  const [addTxDesc, setAddTxDesc] = useState("");
+  const [addTxAmount, setAddTxAmount] = useState(0);
+  const [addTxCat, setAddTxCat] = useState(() => Object.keys(CATEGORIES)[0] || "Ăn uống");
+  const [addTxDate, setAddTxDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [heroSettingsOpen, setHeroSettingsOpen] = useState(false);
+  const [settingsBtnPos, setSettingsBtnPos] = useState(null);
+  const heroSettingsRef = useRef(null);
+  const portalDropdownRef = useRef(null);
   const activeCat = hoverCat ?? pinnedCat;
   const togglePinnedCat = (id) => setPinnedCat(p => (p === id ? null : id));
+
+  const handleSettingsToggle = () => {
+    if (!heroSettingsOpen && heroSettingsRef.current) {
+      const r = heroSettingsRef.current.getBoundingClientRect();
+      setSettingsBtnPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+    }
+    setHeroSettingsOpen(o => !o);
+  };
 
   useEffect(() => {
     setHoverCat(null);
     setPinnedCat(null);
   }, [viewMonth, viewYear]);
+
+  useEffect(() => {
+    if (!heroSettingsOpen) return;
+    const handler = (e) => {
+      const inBtn = heroSettingsRef.current && heroSettingsRef.current.contains(e.target);
+      const inDrop = portalDropdownRef.current && portalDropdownRef.current.contains(e.target);
+      if (!inBtn && !inDrop) setHeroSettingsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [heroSettingsOpen]);
 
   const income = useMemo(() =>
     transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
@@ -1081,7 +1120,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const openDebts = debts.filter(d => !d.settled);
   const today = new Date();
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
-  const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
+  const balanceLabel = "Tổng số dư";
   const daysElapsed = isCurrentView ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth;
   const balanceSeries = useMemo(() => {
     const byDay = new Map(dailyFlow.map(f => [f.d, f]));
@@ -1113,6 +1152,24 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
   const paceTone = projectedExpense > income && income > 0 ? "orange" : "indigo";
   const budgetTone = budgetWatch?.pct >= 100 ? "red" : budgetWatch ? "orange" : "green";
 
+  const handleAddQuickTx = () => {
+    if (!addTxDesc.trim() || addTxAmount <= 0) return;
+    if (onAddTransaction) {
+      onAddTransaction({
+        type: addTxType,
+        desc: addTxDesc.trim(),
+        amount: addTxAmount,
+        cat: addTxType === "expense" ? addTxCat : "Thu nhập",
+        date: addTxDate,
+      });
+    }
+    setAddTxDesc("");
+    setAddTxAmount(0);
+    setAddTxCat(Object.keys(CATEGORIES)[0] || "Ăn uống");
+    setAddTxDate(new Date().toISOString().slice(0, 10));
+    setShowAddTx(false);
+  };
+
   const handleSaveGoal = (g) => {
     onSaveGoal(g);
     setEditingGoal(null);
@@ -1123,13 +1180,28 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
       <div className="overview-hero">
         <section className="hero-balance stagger stagger-1" aria-label={balanceLabel}>
           <div className="hero-bg" aria-hidden="true" />
-          <BalanceSparkline points={balanceSeries} totalDays={daysInMonth} />
           <div className="hero-balance-head">
-            <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
-            {income > 0 && (
-              <span className={"hero-pill" + (remaining < 0 ? " negative" : "")}>
-                {remaining < 0 ? "Chi vượt thu" : `Giữ lại ${savingsRate}% thu nhập`}
-              </span>
+            <button className="hero-balance-nav" onClick={() => onNavigate && onNavigate("transactions")} aria-label="Đến giao dịch">
+              <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
+              <Icons.chevRight size={14} className="hero-nav-chevron" />
+            </button>
+            {onMonthChange && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div className="hero-month-picker">
+                  <button onClick={() => onMonthChange(1)} aria-label="Tháng trước"><Icons.chevLeft size={13} /></button>
+                  <span className="hero-month-label">{monthLabel}</span>
+                  <button onClick={() => onMonthChange(-1)} aria-label="Tháng sau"><Icons.chevRight size={13} /></button>
+                </div>
+                <button
+                  ref={heroSettingsRef}
+                  className={"toolbar-settings-btn" + (heroSettingsOpen ? " active" : "")}
+                  onClick={handleSettingsToggle}
+                  aria-label="Settings"
+                  title="Cài đặt"
+                >
+                  <Icons.gear size={15} />
+                </button>
+              </div>
             )}
           </div>
           <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
@@ -1149,8 +1221,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
                 {incomeCount} giao dịch · TB {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}/lần
               </span>
             </div>
-            <div className="hero-chip">
-              <span className="hero-chip-label"><Icons.arrowUpRight size={12} /> Chi tháng này</span>
+            <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
+                 onClick={() => { setAddTxType("expense"); setAddTxDate(new Date().toISOString().slice(0, 10)); setShowAddTx(true); }}
+                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setAddTxType("expense"), setShowAddTx(true))}>
+              <span className="hero-chip-label">
+                <Icons.arrowUpRight size={12} /> Chi tháng này
+                <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
+              </span>
               <span className="hero-chip-value num">{fmt(expenseAnim)}</span>
               <span className="hero-chip-sub">
                 {expenseCount} giao dịch · TB {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}/lần
@@ -1160,13 +1237,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
         </section>
 
         <div className="overview-insights overview-hero-insights">
-        <Insight tone={insightTone} icon={remaining < 0 ? "alertTri" : "wallet"} title="Dòng tiền tháng">
-          {income > 0 ? (
-            <>Bạn đang giữ lại <b>{savingsRate}%</b> thu nhập tháng này.</>
-          ) : (
-            <>Chưa có thu nhập trong tháng này. Dư đầu tháng không tính là thu nhập mới.</>
-          )}
-        </Insight>
+        <div onClick={() => { setNoteText(notes); setNoteOpen(true); }} style={{ cursor: "pointer" }}>
+          <Insight tone="orange" icon="pencil" title="Note">
+            {notes ? "Đã có ghi chú. Nhấn để xem." : "Nhấn để thêm ghi chú tháng này…"}
+          </Insight>
+        </div>
         <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
           {expense > 0 ? (
             <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
@@ -1174,14 +1249,126 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
             <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
           )}
         </Insight>
-        <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title="Ngân sách">
-          {budgetWatch ? (
-            <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
-          ) : (
-            <>Chưa có danh mục nào chạm ngưỡng 80%.</>
-          )}
-        </Insight>
+        <div onClick={() => onNavigate && onNavigate("budget")} style={{ cursor: "pointer" }}>
+          <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title={
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              Ngân sách <Icons.chevRight size={13} />
+            </span>
+          }>
+            {budgetWatch ? (
+              <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
+            ) : (
+              <>Chưa có danh mục nào chạm ngưỡng 80%.</>
+            )}
+          </Insight>
         </div>
+        </div>
+        {noteOpen && (
+          <Modal
+            title="Ghi chú tháng này"
+            onClose={() => setNoteOpen(false)}
+            width={460}
+            footer={
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setNoteOpen(false)}>Hủy</button>
+                <button className="btn" onClick={() => {
+                  if (onSaveNotes) onSaveNotes(noteText);
+                  setNoteOpen(false);
+                }}>Lưu</button>
+              </div>
+            }
+          >
+            <textarea
+              style={{
+                width: "100%", minHeight: 140, resize: "vertical",
+                background: "var(--surface-2)", border: "0.5px solid var(--border)",
+                borderRadius: "var(--r-md)", padding: "10px 12px",
+                fontSize: 14, color: "var(--text)", outline: "none",
+                fontFamily: "inherit", lineHeight: 1.6, boxSizing: "border-box",
+              }}
+              placeholder="Ghi chú nhanh về tháng này…"
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+            />
+          </Modal>
+        )}
+        {showAddTx && (
+          <Modal
+            title="Thêm giao dịch"
+            subtitle="Ghi lại ngay để không quên"
+            onClose={() => setShowAddTx(false)}
+            width={400}
+            footer={
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setShowAddTx(false)}>Hủy</button>
+                <button className="btn" onClick={handleAddQuickTx}
+                  disabled={!addTxDesc.trim() || addTxAmount <= 0}
+                  style={{ opacity: (!addTxDesc.trim() || addTxAmount <= 0) ? 0.5 : 1 }}>
+                  <Icons.plus size={14} /> Thêm giao dịch
+                </button>
+              </div>
+            }
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className={"btn" + (addTxType === "expense" ? "" : " btn-secondary")}
+                  style={{ flex: 1, height: 36, fontSize: 13 }}
+                  onClick={() => { setAddTxType("expense"); setAddTxCat(Object.keys(CATEGORIES)[0] || "Ăn uống"); }}
+                >
+                  <Icons.arrowUpRight size={13} /> Chi tiêu
+                </button>
+                <button
+                  className={"btn" + (addTxType === "income" ? "" : " btn-secondary")}
+                  style={{ flex: 1, height: 36, fontSize: 13 }}
+                  onClick={() => setAddTxType("income")}
+                >
+                  <Icons.arrowDownLeft size={13} /> Thu nhập
+                </button>
+              </div>
+              <div className="field">
+                <span className="field-label">Mô tả</span>
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="VD: Ăn trưa, Cà phê…"
+                  value={addTxDesc}
+                  onChange={e => setAddTxDesc(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAddQuickTx()}
+                  autoFocus
+                />
+              </div>
+              <div className="field">
+                <span className="field-label">Số tiền</span>
+                <MoneyInput value={addTxAmount} onChange={setAddTxAmount} />
+              </div>
+              {addTxType === "expense" && (
+                <div className="field">
+                  <span className="field-label">Danh mục</span>
+                  <select
+                    className="input"
+                    value={addTxCat}
+                    onChange={e => setAddTxCat(e.target.value)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {Object.values(CATEGORIES).map(c => (
+                      <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="field">
+                <span className="field-label">Ngày</span>
+                <input
+                  className="input"
+                  type="date"
+                  value={addTxDate}
+                  onChange={e => setAddTxDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
 
       <div className="overview-dashboard-grid">
@@ -1319,6 +1506,34 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
           </div>
         </div>
       </div>
+      {heroSettingsOpen && settingsBtnPos && ReactDOM.createPortal(
+        <div
+          ref={portalDropdownRef}
+          className="settings-dropdown"
+          style={{ position: "fixed", top: settingsBtnPos.top, right: settingsBtnPos.right, zIndex: 9999 }}
+        >
+          <div className="settings-section-label">Giao diện</div>
+          <div className="settings-row">
+            <button className={"settings-opt-btn" + (theme === "light" ? " active" : "")} onClick={() => onTheme("light")}>
+              <Icons.sun size={13} /> Sáng
+            </button>
+            <button className={"settings-opt-btn" + (theme === "dark" ? " active" : "")} onClick={() => onTheme("dark")}>
+              <Icons.moon size={13} /> Tối
+            </button>
+          </div>
+          <div className="settings-divider" />
+          <div className="settings-section-label">Ngôn ngữ</div>
+          <div className="settings-row">
+            <button className={"settings-opt-btn" + (lang === "vi" ? " active" : "")} onClick={() => onLang("vi")}>
+              🇻🇳 Tiếng Việt
+            </button>
+            <button className={"settings-opt-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")}>
+              🇺🇸 English
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -1327,7 +1542,335 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, v
 // transactions.jsx
 // ============================================================
 
-function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onDeleteTransaction, monthLabel }) {
+const TX_WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+const TX_AMOUNT_STEPS = [10000, 20000, 50000, 100000];
+
+const txLocalIso = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function txDayLabel(iso) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (iso === txLocalIso(today)) return "Hôm nay";
+  if (iso === txLocalIso(yesterday)) return "Hôm qua";
+  const d = new Date(iso + "T00:00:00");
+  return `${TX_WEEKDAYS[d.getDay()]}, ${fmtDate(iso)}`;
+}
+
+// ====== CategoryManagerModal — add / rename / recolor / delete categories ======
+function CategoryManagerModal({ usageCounts, onSave, onClose }) {
+  const [rows, setRows] = useState(() =>
+    Object.values(CATEGORIES).map(c => ({ key: c.name, name: c.name, emoji: c.emoji, color: c.color }))
+  );
+  const [paletteIdx, setPaletteIdx] = useState(null);
+  const [error, setError] = useState("");
+  const pendingFocusIdx = useRef(null);
+  const lockedSet = new Set(SYSTEM_CATEGORIES);
+
+  useEffect(() => {
+    if (pendingFocusIdx.current == null) return;
+    const idx = pendingFocusIdx.current;
+    requestAnimationFrame(() => {
+      const row = document.querySelector(`[data-cat-row="${idx}"]`);
+      const input = row?.querySelector(".cat-editor-name");
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ block: "nearest" });
+      }
+      pendingFocusIdx.current = null;
+    });
+  }, [rows.length]);
+
+  const updateRow = (idx, patch) => {
+    setError("");
+    setRows(rs => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+  const addRow = () => {
+    setError("");
+    pendingFocusIdx.current = rows.length;
+    setRows(rs => [...rs, { key: null, name: "", emoji: "📦", color: CAT_PALETTE[rs.length % CAT_PALETTE.length] }]);
+  };
+  const removeRow = (idx) => {
+    setError("");
+    setPaletteIdx(null);
+    setRows(rs => rs.filter((_, i) => i !== idx));
+  };
+
+  const keptKeys = new Set(rows.filter(r => r.key).map(r => r.key));
+  const removedInUse = Object.keys(CATEGORIES)
+    .filter(name => !keptKeys.has(name) && (usageCounts[name] || 0) > 0);
+  const movedCount = removedInUse.reduce((s, name) => s + usageCounts[name], 0);
+
+  const handleSave = () => {
+    const cleaned = rows.map(r => ({ ...r, name: r.name.trim() }));
+    if (cleaned.some(r => !r.name)) { setError("Tên danh mục không được để trống"); return; }
+    const names = cleaned.map(r => r.name);
+    if (new Set(names).size !== names.length) { setError("Tên danh mục bị trùng nhau"); return; }
+    if (names.includes("Thu nhập")) { setError("“Thu nhập” là tên dành riêng, không dùng cho danh mục chi"); return; }
+    const renames = {};
+    cleaned.forEach(r => { if (r.key && r.key !== r.name) renames[r.key] = r.name; });
+    const removed = Object.keys(CATEGORIES).filter(name => !keptKeys.has(name));
+    onSave(cleaned.map(({ name, emoji, color }) => ({ name, emoji: emoji || "📦", color })), renames, removed);
+    onClose();
+  };
+
+  return (
+    <Modal
+      title="Sửa danh mục"
+      subtitle="Đổi tên, biểu tượng, màu hoặc thêm danh mục mới"
+      onClose={onClose}
+      headerExtra={
+        <button className="quick-template-tool" onClick={addRow}>
+          <Icons.plus size={13} /> Thêm
+        </button>
+      }
+      footer={
+        <>
+          {error && <div className="modal-error">{error}</div>}
+          <button className="btn btn-secondary modal-btn" onClick={onClose}>Hủy</button>
+          <button className="btn modal-btn" onClick={handleSave}><Icons.check size={14} /> Lưu</button>
+        </>
+      }
+    >
+      <div className="cat-editor">
+        {rows.map((r, idx) => {
+          const locked = r.key && lockedSet.has(r.key);
+          const usage = r.key ? usageCounts[r.key] || 0 : 0;
+          return (
+            <React.Fragment key={r.key || `new-${idx}`}>
+              <div className="cat-editor-row" data-cat-row={idx}>
+                <input
+                  className="input cat-editor-emoji"
+                  value={r.emoji}
+                  maxLength={4}
+                  aria-label="Biểu tượng"
+                  onChange={e => updateRow(idx, { emoji: e.target.value })}
+                />
+                <input
+                  className="input cat-editor-name"
+                  value={r.name}
+                  placeholder="Tên danh mục"
+                  disabled={Boolean(locked)}
+                  title={locked ? "Danh mục hệ thống — không thể đổi tên" : undefined}
+                  onChange={e => updateRow(idx, { name: e.target.value })}
+                />
+                <button
+                  className="cat-editor-color"
+                  style={{ background: r.color }}
+                  title="Đổi màu"
+                  aria-label="Đổi màu"
+                  onClick={() => setPaletteIdx(p => (p === idx ? null : idx))}
+                />
+                <span className="cat-editor-usage num" title={usage > 0 ? `${usage} giao dịch đang dùng` : undefined}>
+                  {usage > 0 ? usage : ""}
+                </span>
+                {locked ? (
+                  <span className="cat-editor-lock" title="Danh mục hệ thống — không thể xóa" aria-label="Danh mục hệ thống">🔒</span>
+                ) : (
+                  <button className="cat-editor-delete" onClick={() => removeRow(idx)} title="Xóa danh mục">
+                    <Icons.trash size={13} />
+                  </button>
+                )}
+              </div>
+              {paletteIdx === idx && (
+                <div className="cat-editor-palette">
+                  {CAT_PALETTE.map(c => (
+                    <button
+                      key={c}
+                      className={"cat-swatch" + (r.color === c ? " active" : "")}
+                      style={{ background: c }}
+                      aria-label={"Màu " + c}
+                      onClick={() => { updateRow(idx, { color: c }); setPaletteIdx(null); }}
+                    />
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {removedInUse.length > 0 && (
+        <div className="cat-editor-warning">
+          <Icons.alertTri size={13} />
+          <span>
+            <b className="num">{movedCount}</b> giao dịch thuộc {removedInUse.map(n => `"${n}"`).join(", ")} sẽ chuyển sang "Khác" khi lưu
+          </span>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ====== QuickTemplateModal — edit quick-entry templates in a dialog ======
+function QuickTemplateModal({ templates, normalize, onSave, onClose }) {
+  const [rows, setRows] = useState(() => templates.map(t => ({ ...t })));
+  const pendingFocusId = useRef(null);
+
+  useEffect(() => {
+    if (!pendingFocusId.current) return;
+    const id = pendingFocusId.current;
+    requestAnimationFrame(() => {
+      const row = document.querySelector(`[data-quick-template-id="${id}"]`);
+      const input = row?.querySelector(".quick-template-name");
+      if (input) {
+        input.focus();
+        input.select();
+        input.scrollIntoView({ block: "nearest" });
+      }
+      pendingFocusId.current = null;
+    });
+  }, [rows.length]);
+
+  const updateRow = (id, patch) => {
+    setRows(rs => rs.map(r => {
+      if (r.id !== id) return r;
+      const next = { ...r, ...patch };
+      if (patch.label != null && patch.desc == null) next.desc = patch.label;
+      if (patch.type === "income") next.cat = "Thu nhập";
+      if (patch.type === "expense" && r.type === "income") next.cat = Object.keys(CATEGORIES)[0] || "Khác";
+      return next;
+    }));
+  };
+  const addRow = () => {
+    const id = `tpl-${Date.now()}`;
+    pendingFocusId.current = id;
+    setRows(rs => [...rs, { id, label: "", type: "expense", desc: "", amount: 10000, cat: Object.keys(CATEGORIES)[0] || "Khác" }]);
+  };
+  const removeRow = (id) => setRows(rs => rs.filter(r => r.id !== id));
+
+  const handleSave = () => {
+    onSave(rows.map((t, i) => normalize(t, i)));
+    onClose();
+  };
+
+  return (
+    <Modal
+      title="Sửa mẫu nhanh"
+      subtitle="Mẫu giúp điền sẵn form chỉ với một chạm"
+      onClose={onClose}
+      headerExtra={
+        <button className="quick-template-tool" onClick={addRow}>
+          <Icons.plus size={13} /> Thêm
+        </button>
+      }
+      footer={
+        <>
+          <button className="btn btn-secondary modal-btn" onClick={onClose}>Hủy</button>
+          <button className="btn modal-btn" onClick={handleSave}><Icons.check size={14} /> Lưu</button>
+        </>
+      }
+    >
+      {rows.length === 0 ? (
+        <Empty icon="inbox" title="Chưa có mẫu nào" text="Bấm Thêm để tạo mẫu đầu tiên" />
+      ) : (
+        <div className="quick-template-editor">
+          {rows.map(tpl => (
+            <div
+              className={"quick-template-edit-row " + tpl.type}
+              key={tpl.id}
+              data-quick-template-id={tpl.id}
+            >
+              <input
+                className="input quick-template-name"
+                value={tpl.label}
+                placeholder="Tên mẫu"
+                onChange={e => updateRow(tpl.id, { label: e.target.value })}
+              />
+              <select
+                className="select quick-template-type"
+                value={tpl.type}
+                onChange={e => updateRow(tpl.id, { type: e.target.value })}
+              >
+                <option value="expense">Chi</option>
+                <option value="income">Thu</option>
+              </select>
+              <MoneyInput
+                value={tpl.amount}
+                onChange={value => updateRow(tpl.id, { amount: value })}
+              />
+              {tpl.type === "expense" && (
+                <select
+                  className="select quick-template-cat"
+                  value={tpl.cat}
+                  onChange={e => updateRow(tpl.id, { cat: e.target.value })}
+                >
+                  {Object.values(CATEGORIES).map(c => (
+                    <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                  ))}
+                </select>
+              )}
+              <button className="quick-template-delete" onClick={() => removeRow(tpl.id)} title="Xóa mẫu">
+                <Icons.trash size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+const SORT_OPTIONS = [
+  { value: "date-desc", label: "Mới nhất" },
+  { value: "date-asc",  label: "Cũ nhất" },
+  { value: "amount-desc", label: "Tiền cao" },
+  { value: "amount-asc",  label: "Tiền thấp" },
+];
+
+function SortDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const btnRef = useRef(null);
+  const label = SORT_OPTIONS.find(o => o.value === value)?.label ?? "Sắp xếp";
+
+  const openMenu = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    }
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (btnRef.current && !btnRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const menu = open && ReactDOM.createPortal(
+    <div
+      className="sort-dropdown-menu"
+      style={{ top: menuPos.top, right: menuPos.right }}
+      onMouseDown={e => e.stopPropagation()}
+    >
+      {SORT_OPTIONS.map(o => (
+        <button
+          key={o.value}
+          className={"sort-dropdown-item" + (o.value === value ? " active" : "")}
+          onClick={() => { onChange(o.value); setOpen(false); }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>,
+    document.body
+  );
+
+  return (
+    <>
+      <button className="sort-dropdown-btn" ref={btnRef} onClick={openMenu}>
+        {label} <Icons.chevDown size={11} />
+      </button>
+      {menu}
+    </>
+  );
+}
+
+function Transactions({ transactions, allTransactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveCategories, monthLabel }) {
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
@@ -1339,8 +1882,9 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   const [justAdded, setJustAdded] = useState(false);
   const [btnSuccess, setBtnSuccess] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const formRef = useRef(null);
-  const pendingQuickTemplateFocusId = useRef(null);
   const firstExpenseCat = Object.keys(CATEGORIES)[0] || cat;
   const incomeCat = "Thu nhập";
 
@@ -1401,10 +1945,28 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   }, [filtered, sortMode]);
 
   const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
+  const maxDayTotal = useMemo(() =>
+    grouped.reduce((max, [, items]) => Math.max(max, items.reduce((s, t) => s + t.amount, 0)), 0),
+  [grouped]);
   const hasListFilters = Boolean(search.trim()) ||
     (mode === "expense" && categoryFilter !== "all") ||
     sortMode !== "date-desc";
   const quickTemplateStorageKey = "fintrack-quick-templates-v1";
+
+  const catUsageCounts = useMemo(() => {
+    const counts = {};
+    allTransactions.forEach(t => {
+      if (!t.cat || t.cat === incomeCat) return;
+      counts[t.cat] = (counts[t.cat] || 0) + 1;
+    });
+    return counts;
+  }, [allTransactions]);
+
+  // Keep form/filter selections valid after categories are renamed or deleted
+  useEffect(() => {
+    if (!CATEGORIES[cat]) setCat(Object.keys(CATEGORIES)[0] || "Khác");
+    if (categoryFilter !== "all" && !CATEGORIES[categoryFilter]) setCategoryFilter("all");
+  });
 
   const defaultQuickTemplates = useMemo(() => {
     const cats = Object.keys(CATEGORIES);
@@ -1417,7 +1979,6 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
     ];
   }, [firstExpenseCat, incomeCat]);
   const [savedQuickTemplates, setSavedQuickTemplates] = useState(null);
-  const [editingQuickTemplates, setEditingQuickTemplates] = useState(false);
   const quickTemplates = savedQuickTemplates || defaultQuickTemplates;
 
   const normalizeQuickTemplate = (tpl, idx = 0, options = {}) => {
@@ -1460,70 +2021,10 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
     }
   }, [mode, categoryFilter]);
 
-  useEffect(() => {
-    if (!editingQuickTemplates || !pendingQuickTemplateFocusId.current) return;
-    const id = pendingQuickTemplateFocusId.current;
-    requestAnimationFrame(() => {
-      const row = document.querySelector(`[data-quick-template-id="${id}"]`);
-      const input = row?.querySelector(".quick-template-name");
-      if (!input) return;
-      input.focus();
-      input.select();
-      input.scrollIntoView({ block: "nearest" });
-      pendingQuickTemplateFocusId.current = null;
-    });
-  }, [editingQuickTemplates, quickTemplates.length]);
-
-  const updateQuickTemplate = (id, patch) => {
-    setSavedQuickTemplates((current) => {
-      const base = current || defaultQuickTemplates;
-      return base.map((tpl, idx) => {
-        if (tpl.id !== id) return normalizeQuickTemplate(tpl, idx, { allowEmptyLabel: true });
-        const next = { ...tpl, ...patch };
-        if (patch.label != null && patch.desc == null) next.desc = patch.label;
-        if (patch.type === "income") next.cat = incomeCat;
-        if (patch.type === "expense" && tpl.type === "income") next.cat = firstExpenseCat;
-        return normalizeQuickTemplate(next, idx, { allowEmptyLabel: true });
-      });
-    });
-  };
-
-  const toggleQuickTemplateEditor = () => {
-    if (editingQuickTemplates) {
-      setSavedQuickTemplates((current) => (current || defaultQuickTemplates).map(normalizeQuickTemplate));
-      setEditingQuickTemplates(false);
-      return;
-    }
-    setSavedQuickTemplates((current) => (current || defaultQuickTemplates).map(normalizeQuickTemplate));
-    setEditingQuickTemplates(true);
-  };
-
-  const addQuickTemplate = () => {
-    const id = `tpl-${Date.now()}`;
-    pendingQuickTemplateFocusId.current = id;
-    setSavedQuickTemplates((current) => [
-      ...(current || defaultQuickTemplates).map(normalizeQuickTemplate),
-      normalizeQuickTemplate({
-        id,
-        label: "",
-        type: mode,
-        desc: "",
-        amount: 10000,
-        cat: mode === "expense" ? cat : incomeCat,
-      }, 0, { allowEmptyLabel: true }),
-    ]);
-    setEditingQuickTemplates(true);
-  };
-
-  const deleteQuickTemplate = (id) => {
-    setSavedQuickTemplates((current) => (current || defaultQuickTemplates)
-      .filter(tpl => tpl.id !== id)
-      .map(normalizeQuickTemplate));
-  };
-
   const clearDraft = () => {
     setDesc("");
     setAmount(0);
+    setDate(new Date().toISOString().slice(0, 10));
     setEditingTx(null);
   };
 
@@ -1568,7 +2069,8 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
       cat: mode === "expense" ? cat : incomeCat,
       date,
     });
-    clearDraft();
+    setDesc("");
+    setAmount(0);
     setJustAdded(true);
     setBtnSuccess(true);
     setTimeout(() => setJustAdded(false), 700);
@@ -1582,12 +2084,13 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
   };
 
   return (
-    <div className="page tx-page">
+    <div className="page tx-page fade-in">
       <PageHeader greet={`${monthLabel} · ${transactions.length} giao dịch`} />
 
       <div className="tx-layout">
+        {/* ===== LEFT: form + summary ===== */}
         <aside className="tx-aside">
-          <div ref={formRef} className="card tx-form-card" style={{ scrollMarginTop: 80 }}>
+          <div ref={formRef} className="card tx-form-card stagger stagger-1" style={{ scrollMarginTop: 80 }}>
             <div className="card-header" style={{ marginBottom: 14 }}>
               <div>
                 <div className="card-title">{editingTx ? "Sửa giao dịch" : "Thêm giao dịch"}</div>
@@ -1600,92 +2103,45 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
               )}
             </div>
 
-            <TabBar
-              style={{ marginBottom: 14, width: "100%" }}
-              active={mode}
-              onChange={setMode}
-              tabs={[
-                { id: "income",  label: "Thu nhập", icon: Icons.arrowDownLeft, cls: "income",  btnStyle: { flex: 1, justifyContent: "center" } },
-                { id: "expense", label: "Chi tiêu",  icon: Icons.arrowUpRight,  cls: "expense", btnStyle: { flex: 1, justifyContent: "center" } },
-              ]}
-            />
+            <div className="tx-tabs" style={{ marginBottom: 14, width: "100%" }}>
+              <button
+                className={"tx-tab" + (mode === "income" ? " active income" : "")}
+                onClick={() => setMode("income")}
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                <Icons.arrowDownLeft size={13} /> Thu nhập
+              </button>
+              <button
+                className={"tx-tab" + (mode === "expense" ? " active expense" : "")}
+                onClick={() => setMode("expense")}
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                <Icons.arrowUpRight size={13} /> Chi tiêu
+              </button>
+            </div>
 
             <div className="tx-form-vertical">
               <div className="quick-templates">
                 <div className="quick-template-head">
                   <div className="quick-template-label">Mẫu nhanh</div>
                   <div className="quick-template-tools">
-                    {editingQuickTemplates && (
-                      <button className="quick-template-tool" onClick={addQuickTemplate}>
-                        <Icons.plus size={13} /> Thêm
-                      </button>
-                    )}
-                    <button
-                      className="quick-template-tool"
-                      onClick={toggleQuickTemplateEditor}
-                    >
-                      {editingQuickTemplates ? <Icons.check size={13} /> : <Icons.pencil size={13} />}
-                      {editingQuickTemplates ? "Xong" : "Sửa"}
+                    <button className="quick-template-tool" onClick={() => setShowTemplateModal(true)}>
+                      <Icons.pencil size={13} /> Sửa
                     </button>
                   </div>
                 </div>
-                {editingQuickTemplates ? (
-                  <div className="quick-template-editor">
-                    {quickTemplates.map(tpl => (
-                      <div
-                        className={"quick-template-edit-row " + tpl.type}
-                        key={tpl.id}
-                        data-quick-template-id={tpl.id}
-                      >
-                        <input
-                          className="input quick-template-name"
-                          value={tpl.label}
-                          placeholder="Tên mẫu"
-                          onChange={e => updateQuickTemplate(tpl.id, { label: e.target.value })}
-                        />
-                        <select
-                          className="select quick-template-type"
-                          value={tpl.type}
-                          onChange={e => updateQuickTemplate(tpl.id, { type: e.target.value })}
-                        >
-                          <option value="expense">Chi</option>
-                          <option value="income">Thu</option>
-                        </select>
-                        <MoneyInput
-                          value={tpl.amount}
-                          onChange={value => updateQuickTemplate(tpl.id, { amount: value })}
-                        />
-                        {tpl.type === "expense" && (
-                          <select
-                            className="select quick-template-cat"
-                            value={tpl.cat}
-                            onChange={e => updateQuickTemplate(tpl.id, { cat: e.target.value })}
-                          >
-                            {Object.values(CATEGORIES).map(c => (
-                              <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
-                            ))}
-                          </select>
-                        )}
-                        <button className="quick-template-delete" onClick={() => deleteQuickTemplate(tpl.id)} title="Xóa mẫu">
-                          <Icons.trash size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="quick-template-list">
-                    {quickTemplates.map(tpl => (
-                      <button
-                        key={tpl.id}
-                        className={"quick-template-btn " + tpl.type}
-                        onClick={() => applyTemplate(tpl)}
-                      >
-                        <span>{tpl.label || tpl.desc || "Mẫu mới"}</span>
-                        <span className="num">{fmtShort(tpl.amount)}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="quick-template-list">
+                  {quickTemplates.map(tpl => (
+                    <button
+                      key={tpl.id}
+                      className={"quick-template-btn " + tpl.type}
+                      onClick={() => applyTemplate(tpl)}
+                    >
+                      <span>{tpl.label || tpl.desc || "Mẫu mới"}</span>
+                      <span className="num">{fmtShort(tpl.amount)}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="field">
                 <span className="field-label">Mô tả</span>
@@ -1697,22 +2153,44 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
                   onKeyDown={e => e.key === "Enter" && handleSubmit()}
                 />
               </div>
-              <div className="tx-row-fields">
-                <div className="field">
-                  <span className="field-label">Số tiền</span>
-                  <MoneyInput value={amount} onChange={setAmount} />
+              <div className="field tx-amount-field">
+                <span className="field-label">Số tiền</span>
+                <MoneyInput value={amount} onChange={setAmount} />
+                <div className="amount-quick-row">
+                  {TX_AMOUNT_STEPS.map(step => (
+                    <button
+                      key={step}
+                      className="amount-quick-chip num"
+                      onClick={() => setAmount(a => a + step)}
+                    >
+                      +{fmtShort(step)}
+                    </button>
+                  ))}
                 </div>
-                {mode === "expense" && (
-                  <div className="field">
-                    <span className="field-label">Danh mục</span>
-                    <select className="select" value={cat} onChange={e => setCat(e.target.value)}>
-                      {Object.values(CATEGORIES).map(c => (
-                        <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
+              {mode === "expense" && (
+                <div className="field">
+                  <div className="field-label-row">
+                    <span className="field-label">Danh mục</span>
+                    <button className="quick-template-tool" onClick={() => setShowCatModal(true)}>
+                      <Icons.pencil size={12} /> Sửa
+                    </button>
+                  </div>
+                  <div className="cat-grid">
+                    {Object.values(CATEGORIES).map(c => (
+                      <button
+                        key={c.name}
+                        className={"cat-grid-chip" + (cat === c.name ? " active" : "")}
+                        style={{ "--cat-color": c.color, "--cat-tint": c.color + "26" }}
+                        onClick={() => setCat(c.name)}
+                      >
+                        <span aria-hidden="true">{c.emoji}</span>
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="field">
                 <span className="field-label">Ngày</span>
                 <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
@@ -1729,62 +2207,25 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
 
         </aside>
 
+        {/* ===== RIGHT: list ===== */}
         <div className="tx-main">
-          <div className="search-bar">
+          <div className="search-bar stagger stagger-2">
             <Icons.search size={15} style={{ color: "var(--text-3)" }} />
             <input
               placeholder={`Tìm ${mode === "income" ? "thu nhập" : "chi tiêu"}, danh mục...`}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            <SortDropdown value={sortMode} onChange={setSortMode} />
+            {hasListFilters && (
+              <button className="tx-clear-filter" onClick={clearListFilters} title="Xóa lọc">
+                <Icons.x size={13} />
+              </button>
+            )}
             <span className="search-meta">{filtered.length} / {list.length}</span>
           </div>
 
-          <div className="tx-filter-panel">
-            <div className="tx-filter-top">
-              <div className="tx-filter-summary">
-                <Icons.filter size={13} />
-                <span>Tổng đang xem</span>
-                <b className="num">{fmt(filteredTotal)}</b>
-              </div>
-              <div className="tx-filter-actions">
-                <select className="select tx-sort-select" value={sortMode} onChange={e => setSortMode(e.target.value)}>
-                  <option value="date-desc">Mới nhất</option>
-                  <option value="date-asc">Cũ nhất</option>
-                  <option value="amount-desc">Tiền cao</option>
-                  <option value="amount-asc">Tiền thấp</option>
-                </select>
-                {hasListFilters && (
-                  <button className="tx-clear-filter" onClick={clearListFilters}>
-                    <Icons.x size={13} /> Xóa lọc
-                  </button>
-                )}
-              </div>
-            </div>
-            {mode === "expense" && categoryOptions.length > 0 && (
-              <div className="tx-category-chips">
-                <button
-                  className={"tx-filter-chip" + (categoryFilter === "all" ? " active" : "")}
-                  onClick={() => setCategoryFilter("all")}
-                >
-                  Tất cả <span>{expenseList.length}</span>
-                </button>
-                {categoryOptions.map(c => (
-                  <button
-                    key={c.name}
-                    className={"tx-filter-chip" + (categoryFilter === c.name ? " active" : "")}
-                    onClick={() => setCategoryFilter(c.name)}
-                  >
-                    <span className="tx-filter-emoji">{c.emoji}</span>
-                    {c.name}
-                    <span>{categoryCounts[c.name]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="card" style={{ padding: 18 }}>
+          <div className="card tx-list-card stagger stagger-3">
             {list.length === 0 ? (
               <Empty icon="inbox" title="Chưa có giao dịch"
                 text={`Thêm ${mode === "income" ? "thu nhập" : "chi tiêu"} đầu tiên ở panel bên trái`} />
@@ -1793,13 +2234,19 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
             ) : (
               grouped.map(([day, items], groupIdx) => {
                 const total = items.reduce((s, t) => s + t.amount, 0);
+                const barPct = maxDayTotal > 0 ? (total / maxDayTotal) * 100 : 0;
                 return (
                   <div key={day}>
-                    <div className="tx-day-label">
-                      <span>Ngày {fmtDate(day)}</span>
-                      <span className="num" style={{ color: mode === "income" ? "var(--c-green)" : "var(--text-3)" }}>
-                        {mode === "income" ? "+" : ""}{fmt(total)}
-                      </span>
+                    <div className={"tx-day-head" + (mode === "income" ? " income" : "")}>
+                      <div className="tx-day-label">
+                        <span className="tx-day-name">{txDayLabel(day)}</span>
+                        <span className={"num tx-day-total" + (mode === "income" ? " in" : "")}>
+                          {mode === "income" ? "+" : ""}{fmt(total)}
+                        </span>
+                      </div>
+                      <div className="tx-day-bar" aria-hidden="true">
+                        <span style={{ width: barPct + "%" }} />
+                      </div>
                     </div>
                     <div className="tx-list">
                       {items.map((t, itemIdx) => {
@@ -1807,16 +2254,19 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
                         const bg = catInfo ? catInfo.color + "20" : "rgba(52,199,89,0.15)";
                         const fg = catInfo ? catInfo.color : "var(--c-green)";
                         const isNew = justAdded && groupIdx === 0 && itemIdx === 0;
+                        const isEditing = editingTx && editingTx.id === t.id;
                         return (
-                          <div className={"tx-row" + (isNew ? " tx-row-new" : "")} key={t.id}>
+                          <div
+                            className={"tx-row" + (isNew ? " tx-row-new" : "") + (isEditing ? " is-editing" : "")}
+                            key={t.id}
+                            style={{ "--row-tint": catInfo ? catInfo.color + "14" : "rgba(52,199,89,0.10)" }}
+                          >
                             <div className="tx-icon" style={{ background: bg, color: fg }}>
                               {catInfo ? catInfo.emoji : "💰"}
                             </div>
                             <div className="tx-info">
                               <span className="tx-desc">{t.desc}</span>
-                              <span className="tx-meta">
-                                {catInfo ? catInfo.name : "Thu nhập"} · {fmtDate(t.date)}
-                              </span>
+                              <span className="tx-meta">{catInfo ? catInfo.name : "Thu nhập"}</span>
                             </div>
                             <span className={"tx-amount " + (mode === "income" ? "in" : "out")}>
                               {mode === "income" ? "+" : "−"}{fmt(t.amount)}
@@ -1842,10 +2292,25 @@ function Transactions({ transactions, onAddTransaction, onUpdateTransaction, onD
           </div>
         </div>
       </div>
+
+      {showCatModal && (
+        <CategoryManagerModal
+          usageCounts={catUsageCounts}
+          onSave={(list, renames, removed) => onSaveCategories && onSaveCategories(list, renames, removed)}
+          onClose={() => setShowCatModal(false)}
+        />
+      )}
+      {showTemplateModal && (
+        <QuickTemplateModal
+          templates={quickTemplates}
+          normalize={normalizeQuickTemplate}
+          onSave={setSavedQuickTemplates}
+          onClose={() => setShowTemplateModal(false)}
+        />
+      )}
     </div>
   );
 }
-
 // ============================================================
 // debts.jsx
 // ============================================================
@@ -2362,8 +2827,8 @@ function Notes({ notes = "", onSaveNotes }) {
 }
 
 // ============================================================
-// app.jsx — Root app
-// ============================================================
+// Root app — Firebase connection + state management
+// (useState, useEffect, useMemo, useRef, useCallback are globally declared in components.jsx)
 
 const _SEED = {
   transactions: [
@@ -2402,6 +2867,36 @@ const DEFAULT_GOALS = [
   { id: 1, emoji: "💻", color: "#0A84FF", name: "MacBook Air M4",       current: 3200000, target: 28000000, monthly: 500000 },
   { id: 2, emoji: "🏖️", color: "#FF9500", name: "Đi Đà Lạt cuối năm", current: 1100000, target: 3500000,  monthly: 600000 },
 ];
+
+const LOCAL_DATA_KEY = "fintrack-local-data-v1";
+
+function seedData() {
+  return {
+    transactions: _SEED.transactions,
+    debts: _SEED.debts,
+    budgets: [],
+    goals: DEFAULT_GOALS,
+    notes: "",
+  };
+}
+
+function readLocalData() {
+  try {
+    const raw = localStorage.getItem(LOCAL_DATA_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.warn("Local data unavailable:", err);
+    return null;
+  }
+}
+
+function saveLocalData(data) {
+  try {
+    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.warn("Local data save failed:", err);
+  }
+}
 
 function localDateKey(dateLike = new Date()) {
   const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
@@ -2482,18 +2977,13 @@ function App() {
   const [notes, setNotes]       = useState("");
   const [loaded, setLoaded]     = useState(false);
   const [page, setPage]         = useState("overview");
-  const [slideDir, setSlideDir] = useState("right");
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
-  const [monthOffset, setMonthOffset] = useState(0);
+  const [lang, setLang]         = useState(() => localStorage.getItem("hieu-lang") || "vi");
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
+  // Bumped whenever the shared CATEGORIES map is rebuilt so all pages re-render
+  const [, setCatsVersion] = useState(0);
 
-  const PAGE_ORDER = ['overview', 'transactions', 'debts', 'budget', 'notes'];
-  const navigateTo = useCallback((newPage) => {
-    const pi = PAGE_ORDER.indexOf(page);
-    const ni = PAGE_ORDER.indexOf(newPage);
-    setSlideDir(ni >= pi ? 'right' : 'left');
-    setPage(newPage);
-  }, [page]);
-
+  // Compute viewed month
   const now = new Date();
   const viewDate  = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
   const viewMonth = viewDate.getMonth();
@@ -2506,57 +2996,69 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    try { firebase.initializeApp(firebaseConfig); } catch (_) {}
+    localStorage.setItem("hieu-lang", lang);
+  }, [lang]);
+
+  useEffect(() => {
+    const hydrate = (data = {}) => {
+      setCategories(data.categories);
+      setCatsVersion(v => v + 1);
+      const { result, changed } = migrateCats(data.transactions || []);
+      const dbts = data.debts   || [];
+      const bdgs = data.budgets || [];
+      const gls  = data.goals   || DEFAULT_GOALS;
+      const nts  = data.notes   || "";
+      const openDebtSettlements = result.filter(t =>
+        dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt))
+      );
+      const cleanedResult = openDebtSettlements.length
+        ? result.filter(t => !dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt)))
+        : result;
+      const missingSettlementTxs = dbts
+        .filter(debt => debt.settled && debt.paidDate && !cleanedResult.some(t => isDebtSettlementTransactionForDebt(t, debt)))
+        .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
+      const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...cleanedResult] : cleanedResult;
+      setAllTransactions(txns);
+      setDebts(dbts);
+      setBudgets(bdgs);
+      setGoals(gls);
+      setNotes(nts);
+      setLoaded(true);
+      saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts });
+      return { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements };
+    };
+
+    try { firebase.initializeApp(firebaseConfig); } catch (_) { /* already initialized */ }
     const db = firebase.firestore();
     window._fsDoc = db.collection("fintrack").doc("hiewu");
 
     const unsub = window._fsDoc.onSnapshot(snap => {
       if (snap.exists) {
-        const d = snap.data();
-        const { result, changed } = migrateCats(d.transactions || []);
-        const dbts = d.debts   || [];
-        const bdgs = d.budgets || [];
-        const gls  = d.goals   || DEFAULT_GOALS;
-        const nts  = d.notes   || "";
-        const openDebtSettlements = result.filter(t =>
-          dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt))
-        );
-        const cleanedResult = openDebtSettlements.length
-          ? result.filter(t => !dbts.some(debt => !debt.settled && isDebtSettlementTransactionForDebt(t, debt)))
-          : result;
-        const missingSettlementTxs = dbts
-          .filter(debt => debt.settled && debt.paidDate && !cleanedResult.some(t => isDebtSettlementTransactionForDebt(t, debt)))
-          .map(debt => debtSettlementTransaction(debt, debt.paidDate, "settle-backfill"));
-        const txns = missingSettlementTxs.length ? [...missingSettlementTxs, ...cleanedResult] : cleanedResult;
-        setAllTransactions(txns);
-        setDebts(dbts);
-        setBudgets(bdgs);
-        setGoals(gls);
-        setNotes(nts);
-        setLoaded(true);
+        const { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements } = hydrate(snap.data());
         if (changed || missingSettlementTxs.length || openDebtSettlements.length) {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
-        setAllTransactions(_SEED.transactions);
-        setDebts(_SEED.debts);
-        setBudgets([]);
-        setGoals(DEFAULT_GOALS);
-        setNotes("");
-        setLoaded(true);
-        window._fsDoc.set({ transactions: _SEED.transactions, debts: _SEED.debts, budgets: [], goals: DEFAULT_GOALS, notes: "" });
+        const fallback = readLocalData() || seedData();
+        hydrate(fallback);
+        window._fsDoc.set(fallback);
       }
-    }, err => console.error("Firebase error:", err));
+    }, err => {
+      console.error("Firebase error:", err);
+      hydrate(readLocalData() || seedData());
+    });
 
     return () => unsub();
   }, []);
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes });
     if (window._fsDoc) {
       window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }, { merge: true }).catch(console.error);
     }
-  }, []);
+  }, [notes]);
 
+  // ── Transaction CRUD ──
   const addTransaction = useCallback((tx) => {
     const next = [{ ...tx, id: Date.now() }, ...allTransactions];
     setAllTransactions(next);
@@ -2577,6 +3079,7 @@ function App() {
     persist(next, debts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  // ── Debt CRUD ──
   const addDebt = useCallback((debt) => {
     const next = [...debts, { ...debt, id: Date.now() }];
     setDebts(next);
@@ -2647,6 +3150,7 @@ function App() {
     persist(nextTransactions, nextDebts, budgets, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  // ── Budget CRUD ──
   const saveBudget = useCallback((cat, cap) => {
     const exists = budgets.some(b => b.cat === cat);
     const next = exists
@@ -2662,6 +3166,7 @@ function App() {
     persist(allTransactions, debts, next, goals);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  // ── Goal CRUD ──
   const saveGoal = useCallback((goal) => {
     const exists = goals.some(g => g.id === goal.id);
     const next = exists
@@ -2677,13 +3182,56 @@ function App() {
     persist(allTransactions, debts, budgets, next);
   }, [allTransactions, debts, budgets, goals, persist]);
 
+  // ── Category management ──
+  // Applies the new list, renames categories on existing transactions/budgets,
+  // and reassigns transactions of deleted categories to "Khác".
+  const saveCategories = useCallback((nextList, renames = {}, removed = []) => {
+    const removedSet = new Set(removed);
+    const mapCat = (catName) => {
+      if (renames[catName]) return renames[catName];
+      if (removedSet.has(catName)) return "Khác";
+      return catName;
+    };
+
+    const needsMigration = Object.keys(renames).length > 0 || removedSet.size > 0;
+    const nextTransactions = needsMigration
+      ? allTransactions.map(t => {
+          if (!t.cat || t.cat === "Thu nhập") return t;
+          const mapped = mapCat(t.cat);
+          return mapped === t.cat ? t : { ...t, cat: mapped };
+        })
+      : allTransactions;
+
+    const nextBudgets = [];
+    budgets.forEach(b => {
+      if (removedSet.has(b.cat)) return;
+      const cat = renames[b.cat] || b.cat;
+      if (!nextBudgets.some(x => x.cat === cat)) nextBudgets.push({ ...b, cat });
+    });
+
+    setCategories(nextList);
+    setCatsVersion(v => v + 1);
+    setAllTransactions(nextTransactions);
+    setBudgets(nextBudgets);
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: nextTransactions, debts, budgets: nextBudgets, goals, notes });
+    if (window._fsDoc) {
+      window._fsDoc.set({
+        categories: Object.values(CATEGORIES),
+        transactions: nextTransactions,
+        budgets: nextBudgets,
+      }, { merge: true }).catch(console.error);
+    }
+  }, [allTransactions, budgets, debts, goals, notes]);
+
   const saveNotes = useCallback((nextNotes) => {
     setNotes(nextNotes);
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: allTransactions, debts, budgets, goals, notes: nextNotes });
     if (window._fsDoc) {
       window._fsDoc.set({ notes: nextNotes }, { merge: true }).catch(console.error);
     }
-  }, []);
+  }, [allTransactions, debts, budgets, goals]);
 
+  // Filter transactions for viewed month
   const monthTransactions = useMemo(() => {
     return allTransactions.filter(t => {
       const d = new Date(t.date + "T00:00:00");
@@ -2725,21 +3273,26 @@ function App() {
     onSaveGoal:          saveGoal,
     onDeleteGoal:        deleteGoal,
     onSaveNotes:         saveNotes,
-    onNavigate:          navigateTo,
+    onSaveCategories:    saveCategories,
+    onNavigate:          setPage,
   };
 
   return (
     <div className="app">
-      <Sidebar active={page} onChange={navigateTo} theme={theme} onTheme={setTheme} debts={debts} />
       <main className="main">
         <Toolbar
           activePage={page}
           month={monthLabel}
           onMonthChange={(d) => setMonthOffset(m => Math.max(0, m + d))}
+          closingBalance={monthlyBalance.closingBalance}
+          viewMonth={viewMonth}
+          viewYear={viewYear}
+          theme={theme}
+          onTheme={setTheme}
+          lang={lang}
+          onLang={setLang}
         />
-        <div key={page} className={"page-slide-" + slideDir}>
-          <PageEl {...pageProps} />
-        </div>
+        <PageEl key={page} {...pageProps} />
       </main>
     </div>
   );

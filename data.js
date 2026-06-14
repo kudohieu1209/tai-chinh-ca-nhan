@@ -1,7 +1,7 @@
 // Data layer — categories, helpers, benchmarks
 // All amounts in VND. No mock transaction data; real data lives in Firestore.
 
-const CATEGORIES = {
+const DEFAULT_CATEGORIES = {
   'Ăn uống':  { name: 'Ăn uống',  emoji: '🍜', color: '#FF9500' },
   'Đi lại':   { name: 'Đi lại',   emoji: '🛵', color: '#00C7BE' },
   'Thuê trọ': { name: 'Thuê trọ', emoji: '🏠', color: '#A2845E' },
@@ -14,6 +14,31 @@ const CATEGORIES = {
   'Trả nợ':   { name: 'Trả nợ',   emoji: '💳', color: '#FF3B30' },
   'Khác':     { name: 'Khác',     emoji: '📦', color: '#8E8E93' },
 };
+
+// Working category map — every page reads this global at render time.
+// User-defined categories from Firestore replace its contents via setCategories.
+const CATEGORIES = { ...DEFAULT_CATEGORIES };
+
+// "Khác" is the fallback target when a category is deleted; "Trả nợ" is
+// hardcoded into the debt settlement logic. Both must always exist.
+const SYSTEM_CATEGORIES = ['Khác', 'Trả nợ'];
+
+const setCategories = (list) => {
+  const entries = Array.isArray(list) && list.length
+    ? list
+    : Object.values(DEFAULT_CATEGORIES);
+  Object.keys(CATEGORIES).forEach(k => { delete CATEGORIES[k]; });
+  entries.forEach(c => {
+    const name = String(c.name || '').trim();
+    if (!name) return;
+    CATEGORIES[name] = { name, emoji: c.emoji || '📦', color: c.color || '#8E8E93' };
+  });
+  SYSTEM_CATEGORIES.forEach(name => {
+    if (!CATEGORIES[name]) CATEGORIES[name] = { ...DEFAULT_CATEGORIES[name] };
+  });
+};
+
+const CAT_PALETTE = ['#FF9500','#00C7BE','#A2845E','#FFCC00','#FF2D55','#30B0C7','#5AC8FA','#5856D6','#34C759','#FF3B30','#AF52DE','#0A84FF','#8E8E93'];
 
 // Anonymous peer benchmarks (Vietnamese students, same income tier)
 const CAT_BENCHMARKS = {
@@ -36,7 +61,7 @@ const debtColor = (id) => {
   return DEBT_PALETTE[Math.abs(n) % DEBT_PALETTE.length];
 };
 
-const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + '\u0111';
+const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' VND';
 const fmtShort = (n) => {
   if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'tỷ';
   if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'tr';
@@ -63,4 +88,4 @@ const migrateCats = (txs) => {
   return { result, changed };
 };
 
-Object.assign(window, { CATEGORIES, CAT_BENCHMARKS, DEBT_PALETTE, debtColor, fmt, fmtShort, fmtNum, fmtDate, migrateCats });
+Object.assign(window, { DEFAULT_CATEGORIES, CATEGORIES, SYSTEM_CATEGORIES, setCategories, CAT_PALETTE, CAT_BENCHMARKS, DEBT_PALETTE, debtColor, fmt, fmtShort, fmtNum, fmtDate, migrateCats });
