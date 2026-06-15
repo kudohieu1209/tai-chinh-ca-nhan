@@ -146,11 +146,19 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onSaveGoal, onDeleteGoal }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, onMonthChange, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveBudget, onSaveGoal, onDeleteGoal, theme, onTheme, lang, onLang }) {
   const [editingGoal, setEditingGoal] = useState(null);
   const [hoverCat, setHoverCat] = useState(null);
   const [pinnedCat, setPinnedCat] = useState(null);
+  const [hoverDebt, setHoverDebt] = useState(null);
+  const [editTx, setEditTx] = useState(null);
+  const [editDesc, setEditDesc] = useState("");
+  const [editAmount, setEditAmount] = useState(0);
+  const [editCat, setEditCat] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [chartView, setChartView] = useState("day");
   const [noteOpen, setNoteOpen] = useState(false);
+  const [debtModalOpen, setDebtModalOpen] = useState(false);
   const [noteText, setNoteText] = useState(notes);
   const [showAddTx, setShowAddTx] = useState(false);
   const [addTxType, setAddTxType] = useState("expense");
@@ -158,13 +166,64 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [addTxAmount, setAddTxAmount] = useState(0);
   const [addTxCat, setAddTxCat] = useState(() => Object.keys(CATEGORIES)[0] || "Ăn uống");
   const [addTxDate, setAddTxDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [showIncome, setShowIncome] = useState(false);
+  const [incDesc, setIncDesc] = useState("");
+  const [incAmount, setIncAmount] = useState(0);
+  const [incDate, setIncDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [incomeTab, setIncomeTab] = useState("add");
+  const [expenseTab, setExpenseTab] = useState("add");
+  const [heroSettingsOpen, setHeroSettingsOpen] = useState(false);
+  const [settingsBtnPos, setSettingsBtnPos] = useState(null);
+  const [selectedCat, setSelectedCat] = useState(null);
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+  const [addingBudget, setAddingBudget] = useState(false);
+  const [newBudgetCat, setNewBudgetCat] = useState("");
+  const [newBudgetCap, setNewBudgetCap] = useState(0);
+  const [quickTemplates, setQuickTemplates] = useState(() => {
+    try {
+      const raw = localStorage.getItem("fintrack-quick-templates-v1");
+      return raw ? JSON.parse(raw) : [
+        { desc: "Ăn trưa", amount: 35000, cat: "Ăn uống" },
+        { desc: "Nước", amount: 10000, cat: "Ăn uống" },
+        { desc: "Bánh mỳ", amount: 15000, cat: "Ăn uống" },
+      ];
+    } catch { return []; }
+  });
+  const [editingTemplates, setEditingTemplates] = useState(false);
+  const [newTplDesc, setNewTplDesc] = useState("");
+  const [newTplAmount, setNewTplAmount] = useState(0);
+  const heroSettingsRef = useRef(null);
+  const portalDropdownRef = useRef(null);
   const activeCat = hoverCat ?? pinnedCat;
   const togglePinnedCat = (id) => setPinnedCat(p => (p === id ? null : id));
+  const saveQuickTemplates = (tpls) => {
+    setQuickTemplates(tpls);
+    try { localStorage.setItem("fintrack-quick-templates-v1", JSON.stringify(tpls)); } catch (_) {}
+  };
+
+  const handleSettingsToggle = () => {
+    if (!heroSettingsOpen && heroSettingsRef.current) {
+      const r = heroSettingsRef.current.getBoundingClientRect();
+      setSettingsBtnPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+    }
+    setHeroSettingsOpen(o => !o);
+  };
 
   useEffect(() => {
     setHoverCat(null);
     setPinnedCat(null);
   }, [viewMonth, viewYear]);
+
+  useEffect(() => {
+    if (!heroSettingsOpen) return;
+    const handler = (e) => {
+      const inBtn = heroSettingsRef.current && heroSettingsRef.current.contains(e.target);
+      const inDrop = portalDropdownRef.current && portalDropdownRef.current.contains(e.target);
+      if (!inBtn && !inDrop) setHeroSettingsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [heroSettingsOpen]);
 
   const income = useMemo(() =>
     transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
@@ -250,6 +309,22 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openOwed  = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openDebts = debts.filter(d => !d.settled);
+  const debtRows = useMemo(() => {
+    const open = openDebts.filter(d => d.amount > 0);
+    const total = open.reduce((s, d) => s + d.amount, 0);
+    return open
+      .slice()
+      .sort((a, b) => b.amount - a.amount)
+      .map((d, i) => ({
+        id: d.id != null ? d.id : d.name + "-" + i,
+        name: d.name,
+        type: d.type,
+        color: debtColor(d.name),
+        amount: d.amount,
+        pct: total > 0 ? d.amount / total * 100 : 0,
+      }));
+  }, [debts]);
+  const debtTotal = debtRows.reduce((s, d) => s + d.amount, 0);
   const today = new Date();
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
@@ -284,6 +359,28 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const paceTone = projectedExpense > income && income > 0 ? "orange" : "indigo";
   const budgetTone = budgetWatch?.pct >= 100 ? "red" : budgetWatch ? "orange" : "green";
 
+  // Balance-card insight rows — fills the lower half of the hero balance card
+  const peakDay = useMemo(() => {
+    let best = null;
+    for (const f of dailyFlow) {
+      if ((f.exp || 0) > 0 && (!best || f.exp > best.exp)) best = f;
+    }
+    return best;
+  }, [dailyFlow]);
+  const avgDailySpend = daysElapsed > 0 ? expense / daysElapsed : 0;
+  const projectedEndBalance = openingBalance + income - projectedExpense;
+  const expenseMoM = previousMonthSummary && previousMonthSummary.exp > 0
+    ? (currentMonthSummary.exp - previousMonthSummary.exp) / previousMonthSummary.exp * 100
+    : null;
+  const balanceInsights = [
+    { key: "avg", icon: "clock", label: "TB chi mỗi ngày", value: fmtShort(avgDailySpend), tone: "plain" },
+    peakDay && { key: "peak", icon: "trendUp", label: "Ngày chi nhiều nhất", value: `${peakDay.d}/${viewMonth + 1} · ${fmtShort(peakDay.exp)}`, tone: "plain" },
+    isCurrentView
+      ? { key: "proj", icon: "sparkle", label: "Dự báo cuối tháng", value: fmtShort(projectedEndBalance), tone: projectedEndBalance < 0 ? "red" : "green" }
+      : { key: "final", icon: "wallet", label: "Số dư cuối tháng", value: fmtShort(finalBalance), tone: finalBalance < 0 ? "red" : "plain" },
+    expenseMoM != null && { key: "mom", icon: expenseMoM >= 0 ? "arrowUp" : "arrowDown", label: "Chi so tháng trước", value: `${expenseMoM >= 0 ? "+" : ""}${expenseMoM.toFixed(0)}%`, tone: expenseMoM > 0 ? "red" : "green" },
+  ].filter(Boolean);
+
   const handleAddQuickTx = () => {
     if (!addTxDesc.trim() || addTxAmount <= 0) return;
     if (onAddTransaction) {
@@ -302,28 +399,173 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
     setShowAddTx(false);
   };
 
+  const incomeTxns = useMemo(() =>
+    transactions
+      .filter(t => t.type === "income")
+      .slice()
+      .sort((a, b) => (b.date || "").localeCompare(a.date || "") || String(b.id).localeCompare(String(a.id))),
+    [transactions]
+  );
+
+  const expenseTxns = useMemo(() =>
+    transactions
+      .filter(t => t.type === "expense")
+      .slice()
+      .sort((a, b) => (b.date || "").localeCompare(a.date || "") || String(b.id).localeCompare(String(a.id))),
+    [transactions]
+  );
+
+  const handleAddIncome = () => {
+    if (!incDesc.trim() || incAmount <= 0) return;
+    if (onAddTransaction) {
+      onAddTransaction({
+        type: "income",
+        desc: incDesc.trim(),
+        amount: incAmount,
+        cat: "Thu nhập",
+        date: incDate,
+      });
+    }
+    setIncDesc("");
+    setIncAmount(0);
+    setIncDate(new Date().toISOString().slice(0, 10));
+  };
+
   const handleSaveGoal = (g) => {
     onSaveGoal(g);
     setEditingGoal(null);
   };
+
+  // ── Inline edit of a history transaction (floating panel beside the modal) ──
+  const openEditTx = (t) => {
+    setEditTx(t);
+    setEditDesc(t.desc || "");
+    setEditAmount(t.amount || 0);
+    setEditCat(t.cat || "");
+    setEditDate(t.date || new Date().toISOString().slice(0, 10));
+  };
+  const closeEditTx = () => setEditTx(null);
+  const saveEditTx = () => {
+    if (!editTx || !editDesc.trim() || editAmount <= 0) return;
+    onUpdateTransaction && onUpdateTransaction(editTx.id, {
+      desc: editDesc.trim(),
+      amount: editAmount,
+      cat: editTx.type === "expense" ? editCat : "Thu nhập",
+      date: editDate,
+    });
+    closeEditTx();
+  };
+  const deleteEditTx = () => {
+    if (!editTx) return;
+    onDeleteTransaction && onDeleteTransaction(editTx.id);
+    closeEditTx();
+  };
+  const editTxPanel = editTx ? (
+    <div className="tx-edit-panel" role="dialog" aria-label="Sửa giao dịch">
+      <div className="tx-edit-panel-head">
+        <div className="tx-edit-panel-title">
+          {editTx.type === "expense" ? "Sửa chi tiêu" : "Sửa thu nhập"}
+        </div>
+        <button className="modal-close" onClick={closeEditTx} aria-label="Đóng" title="Đóng">
+          <Icons.x size={14} />
+        </button>
+      </div>
+      <div className="tx-edit-panel-body">
+        <div className="field">
+          <span className="field-label">MÔ TẢ</span>
+          <input
+            className="input" type="text" value={editDesc}
+            onChange={e => setEditDesc(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && saveEditTx()}
+            autoFocus
+          />
+        </div>
+        <div className="field">
+          <span className="field-label">SỐ TIỀN</span>
+          <MoneyInput value={editAmount} onChange={setEditAmount} />
+        </div>
+        {editTx.type === "expense" && (
+          <div>
+            <div style={{ marginBottom: 8 }}><span className="field-label">DANH MỤC</span></div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {Object.values(CATEGORIES).map(c => (
+                <button
+                  key={c.name}
+                  onClick={() => setEditCat(c.name)}
+                  style={{
+                    padding: "6px 12px", borderRadius: 99, fontSize: 13,
+                    background: editCat === c.name ? c.color + "22" : "var(--surface-2)",
+                    color: editCat === c.name ? c.color : "var(--text)",
+                    border: editCat === c.name ? `1.5px solid ${c.color}` : "0.5px solid var(--border)",
+                    cursor: "pointer", fontWeight: editCat === c.name ? 600 : 400, whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.emoji} {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="field">
+          <span className="field-label">NGÀY</span>
+          <input className="input" type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+        </div>
+      </div>
+      <div className="tx-edit-panel-foot">
+        <button className="btn btn-secondary tx-edit-delete" onClick={deleteEditTx}>
+          <Icons.trash size={14} /> Xóa
+        </button>
+        <button className="btn" onClick={saveEditTx} disabled={!editDesc.trim() || editAmount <= 0}>
+          Lưu thay đổi
+        </button>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="page overview-page">
       <div className="overview-hero">
         <section className="hero-balance stagger stagger-1" aria-label={balanceLabel}>
           <div className="hero-bg" aria-hidden="true" />
-          <BalanceSparkline points={balanceSeries} totalDays={daysInMonth} />
           <div className="hero-balance-head">
-            <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
-            {income > 0 && (
-              <span className={"hero-pill" + (remaining < 0 ? " negative" : "")}>
-                {remaining < 0 ? "Chi vượt thu" : `Giữ lại ${savingsRate}% thu nhập`}
-              </span>
-            )}
+            <button className="hero-balance-nav" onClick={() => onNavigate && onNavigate("transactions")} aria-label="Đến giao dịch">
+              <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
+              <Icons.chevRight size={14} className="hero-nav-chevron" />
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {onMonthChange && (
+                <div className="hero-month-picker">
+                  <button onClick={() => onMonthChange(1)} aria-label="Tháng trước"><Icons.chevLeft size={13} /></button>
+                  <span className="hero-month-label">{monthLabel}</span>
+                  <button onClick={() => onMonthChange(-1)} aria-label="Tháng sau"><Icons.chevRight size={13} /></button>
+                </div>
+              )}
+              <button
+                ref={heroSettingsRef}
+                className={"toolbar-settings-btn" + (heroSettingsOpen ? " active" : "")}
+                onClick={handleSettingsToggle}
+                aria-label="Settings"
+                title="Cài đặt"
+              >
+                <Icons.gear size={15} />
+              </button>
+            </div>
           </div>
-          <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
-          <div className="hero-balance-sub">
-            {finalBalance >= 0 ? "Còn lại sau chi tiêu" : "Đang âm sau chi tiêu"} · {monthLabel}
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
+            <button
+              onClick={() => { setNoteText(notes); setNoteOpen(true); }}
+              title="Ghi chú tháng"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "none", cursor: "pointer", background: "none", padding: 0,
+                color: "var(--text-3)", transition: "color 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--text-3)"}
+            >
+              <Icons.pencil size={18} />
+            </button>
           </div>
           <div className="hero-chips">
             <div className="hero-chip">
@@ -331,8 +573,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               <span className="hero-chip-value num">{fmt(openingBalanceAnim)}</span>
               <span className="hero-chip-sub">Chuyển từ các tháng trước</span>
             </div>
-            <div className="hero-chip">
-              <span className="hero-chip-label"><Icons.arrowDownLeft size={12} /> Thu tháng này</span>
+            <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
+                 onClick={() => { setIncDate(new Date().toISOString().slice(0, 10)); setShowIncome(true); }}
+                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setIncDate(new Date().toISOString().slice(0, 10)), setShowIncome(true))}>
+              <span className="hero-chip-label">
+                <Icons.arrowDownLeft size={12} /> Thu tháng này
+                <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
+              </span>
               <span className="hero-chip-value num">{fmt(incomeAnim)}</span>
               <span className="hero-chip-sub">
                 {incomeCount} giao dịch · TB {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}/lần
@@ -351,34 +598,83 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               </span>
             </div>
           </div>
+          {balanceInsights.length > 0 && (
+            <div className="hero-insights">
+              {balanceInsights.map(it => {
+                const Icon = Icons[it.icon];
+                return (
+                  <div className="hero-insight-row" key={it.key}>
+                    <span className="hero-insight-label">{Icon && <Icon size={13} />} {it.label}</span>
+                    <span className={"hero-insight-value num tone-" + it.tone}>{it.value}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        <div className="overview-insights overview-hero-insights">
-        <div onClick={() => { setNoteText(notes); setNoteOpen(true); }} style={{ cursor: "pointer" }}>
-          <Insight tone="orange" icon="pencil" title="Note">
-            {notes ? "Đã có ghi chú. Nhấn để xem." : "Nhấn để thêm ghi chú tháng này…"}
-          </Insight>
-        </div>
-        <Insight tone={paceTone} icon="trendUp" title="Nhịp chi tiêu">
-          {expense > 0 ? (
-            <>Nếu giữ nhịp này, cuối tháng chi khoảng <b>{fmt(projectedExpense)}</b>.</>
+        <div className="card overview-debt-card overview-hero-debt stagger stagger-3">
+          <div className="card-header">
+            <div className="card-title">Nợ &amp; Cho Vay</div>
+            <button className="card-action" onClick={() => setDebtModalOpen(true)}>Quản lý</button>
+          </div>
+          <div className="hero-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }}>
+            <div className="hero-chip" style={{ cursor: "pointer", border: "1px solid var(--border)" }} onClick={() => setDebtModalOpen(true)}>
+              <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowUpRight size={12} style={{ marginRight: 2 }} /> Bạn đang nợ</span>
+              <span className="hero-chip-value num" style={{ color: "var(--text)" }}>{fmt(openOwe)}</span>
+              <span className="hero-chip-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</span>
+            </div>
+            <div className="hero-chip" style={{ cursor: "pointer", border: "1px solid var(--border)" }} onClick={() => setDebtModalOpen(true)}>
+              <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowDownLeft size={12} style={{ marginRight: 2 }} /> Người khác nợ bạn</span>
+              <span className="hero-chip-value num" style={{ color: "var(--text)" }}>{fmt(openOwed)}</span>
+              <span className="hero-chip-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</span>
+            </div>
+          </div>
+          {debtRows.length > 0 ? (
+            <div className="cat-donut-layout debt-donut-layout">
+              <DebtDonut
+                data={debtRows}
+                total={debtTotal}
+                activeId={hoverDebt}
+                onHover={setHoverDebt}
+                onSelect={() => setDebtModalOpen(true)}
+              />
+              <div className="cat-list debt-legend">
+                {debtRows.slice(0, 6).map(d => (
+                  <div
+                    className={"debt-legend-row" + (hoverDebt == null ? "" : hoverDebt === d.id ? " is-active" : " is-dimmed")}
+                    key={d.id}
+                    role="button"
+                    tabIndex={0}
+                    style={{ cursor: "pointer" }}
+                    onMouseEnter={() => setHoverDebt(d.id)}
+                    onMouseLeave={() => setHoverDebt(null)}
+                    onFocus={() => setHoverDebt(d.id)}
+                    onBlur={() => setHoverDebt(null)}
+                    onClick={() => setDebtModalOpen(true)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDebtModalOpen(true); } }}
+                  >
+                    <span className="debt-legend-dot" style={{ background: d.color }} aria-hidden="true" />
+                    <span className="debt-legend-name">{d.name}</span>
+                    <span className="debt-legend-pct">{d.pct.toFixed(0)}%</span>
+                    <span className="debt-legend-amount num" style={{ color: d.type === "owe" ? "var(--c-red)" : "var(--c-green)" }}>
+                      {d.type === "owe" ? "−" : "+"}{fmtShort(d.amount)}
+                    </span>
+                  </div>
+                ))}
+                {debtRows.length > 6 && (
+                  <button className="debt-legend-more" onClick={() => setDebtModalOpen(true)}>
+                    +{debtRows.length - 6} khoản khác
+                  </button>
+                )}
+              </div>
+            </div>
           ) : (
-            <>Chưa có chi tiêu để dự báo nhịp tháng này.</>
+            <div className="debt-donut-empty">
+              <Icons.check size={26} />
+              <span>Không có khoản nợ nào</span>
+            </div>
           )}
-        </Insight>
-        <div onClick={() => onNavigate && onNavigate("budget")} style={{ cursor: "pointer" }}>
-          <Insight tone={budgetTone} icon={budgetWatch ? "bell" : "check"} title={
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              Ngân sách <Icons.chevRight size={13} />
-            </span>
-          }>
-            {budgetWatch ? (
-              <><b>{budgetWatch.cat}</b> đã dùng {budgetWatch.pct.toFixed(0)}% hạn mức.</>
-            ) : (
-              <>Chưa có danh mục nào chạm ngưỡng 80%.</>
-            )}
-          </Insight>
-        </div>
         </div>
         {noteOpen && (
           <Modal
@@ -409,83 +705,700 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
             />
           </Modal>
         )}
+        {debtModalOpen && (
+          <Modal
+            title="Chi tiết Nợ & Cho Vay"
+            onClose={() => setDebtModalOpen(false)}
+            width={500}
+          >
+            <div className="debt-list" style={{ marginTop: -10 }}>
+              {openDebts.length === 0 ? (
+                <Empty icon="check" title="Sạch nợ!" text="Không có khoản nợ nào đang mở" />
+              ) : (
+                openDebts.map(d => {
+                  const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+                  const color = debtColor(d.name);
+                  return (
+                    <div className="debt-row" key={d.id}>
+                      <div className="debt-avatar" style={{ background: color }}>{initials}</div>
+                      <div className="debt-info">
+                        <span className="debt-name">{d.name}</span>
+                        <span className="debt-note">{d.note}</span>
+                      </div>
+                      <span className={"debt-amount num " + (d.type === "owe" ? "owe" : "owed")}>{fmt(d.amount)}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+               <button className="btn btn-secondary" onClick={() => { setDebtModalOpen(false); if (onNavigate) onNavigate("debts"); }}>Đi đến trang quản lý</button>
+            </div>
+          </Modal>
+        )}
         {showAddTx && (
           <Modal
             title="Thêm giao dịch"
-            subtitle="Ghi lại ngay để không quên"
-            onClose={() => setShowAddTx(false)}
-            width={400}
-            footer={
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <button className="btn btn-secondary" onClick={() => setShowAddTx(false)}>Hủy</button>
-                <button className="btn" onClick={handleAddQuickTx}
-                  disabled={!addTxDesc.trim() || addTxAmount <= 0}
-                  style={{ opacity: (!addTxDesc.trim() || addTxAmount <= 0) ? 0.5 : 1 }}>
-                  <Icons.plus size={14} /> Thêm giao dịch
-                </button>
-              </div>
-            }
+            onClose={() => { setShowAddTx(false); setEditingTemplates(false); setExpenseTab("add"); setEditTx(null); }}
+            width={440}
+            sidePanel={editTxPanel}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Tab toggle */}
+              <div style={{
+                display: "flex", background: "var(--surface-2)", borderRadius: 10,
+                padding: 4, gap: 4,
+              }}>
                 <button
-                  className={"btn" + (addTxType === "expense" ? "" : " btn-secondary")}
-                  style={{ flex: 1, height: 36, fontSize: 13 }}
-                  onClick={() => { setAddTxType("expense"); setAddTxCat(Object.keys(CATEGORIES)[0] || "Ăn uống"); }}
+                  onClick={() => setExpenseTab("add")}
+                  style={{
+                    flex: 1, height: 36, borderRadius: 8, border: "none",
+                    background: expenseTab === "add" ? "var(--surface)" : "transparent",
+                    color: expenseTab === "add" ? "var(--text)" : "var(--text-2)",
+                    fontWeight: expenseTab === "add" ? 600 : 400,
+                    fontSize: 14, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: expenseTab === "add" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                    transition: "all 0.15s",
+                  }}
                 >
                   <Icons.arrowUpRight size={13} /> Chi tiêu
                 </button>
                 <button
-                  className={"btn" + (addTxType === "income" ? "" : " btn-secondary")}
-                  style={{ flex: 1, height: 36, fontSize: 13 }}
-                  onClick={() => setAddTxType("income")}
+                  onClick={() => setExpenseTab("history")}
+                  style={{
+                    flex: 1, height: 36, borderRadius: 8, border: "none",
+                    background: expenseTab === "history" ? "var(--surface)" : "transparent",
+                    color: expenseTab === "history" ? "var(--text)" : "var(--text-2)",
+                    fontWeight: expenseTab === "history" ? 600 : 400,
+                    fontSize: 14, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: expenseTab === "history" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                    transition: "all 0.15s",
+                  }}
                 >
-                  <Icons.arrowDownLeft size={13} /> Thu nhập
+                  <Icons.clock size={13} /> Lịch sử
                 </button>
               </div>
-              <div className="field">
-                <span className="field-label">Mô tả</span>
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="VD: Ăn trưa, Cà phê…"
-                  value={addTxDesc}
-                  onChange={e => setAddTxDesc(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAddQuickTx()}
-                  autoFocus
-                />
-              </div>
-              <div className="field">
-                <span className="field-label">Số tiền</span>
-                <MoneyInput value={addTxAmount} onChange={setAddTxAmount} />
-              </div>
-              {addTxType === "expense" && (
-                <div className="field">
-                  <span className="field-label">Danh mục</span>
-                  <select
-                    className="input"
-                    value={addTxCat}
-                    onChange={e => setAddTxCat(e.target.value)}
-                    style={{ cursor: "pointer" }}
+
+              {expenseTab === "add" ? (
+                <>
+                  {/* MẪU NHANH */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span className="field-label">MẪU NHANH</span>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ height: 26, padding: "0 10px", fontSize: 12, gap: 4, minWidth: 0 }}
+                        onClick={() => { setEditingTemplates(e => !e); setNewTplDesc(""); setNewTplAmount(0); }}
+                      >
+                        <Icons.pencil size={11} /> {editingTemplates ? "Xong" : "Sửa"}
+                      </button>
+                    </div>
+                    {editingTemplates ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {quickTemplates.map((tpl, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--surface-2)", border: "0.5px solid var(--border)", borderRadius: "var(--r-md)" }}>
+                            <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>
+                              {tpl.desc} · <span className="num">{fmtShort(tpl.amount)}</span>
+                            </span>
+                            <button className="goal-action-btn danger" title="Xóa" onClick={() => saveQuickTemplates(quickTemplates.filter((_, j) => j !== i))}>
+                              <Icons.trash size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            className="input"
+                            type="text"
+                            placeholder="Tên mẫu…"
+                            value={newTplDesc}
+                            onChange={e => setNewTplDesc(e.target.value)}
+                            style={{ flex: 2 }}
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && newTplDesc.trim() && newTplAmount > 0) {
+                                saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount, cat: addTxCat }]);
+                                setNewTplDesc(""); setNewTplAmount(0);
+                              }
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <MoneyInput value={newTplAmount} onChange={setNewTplAmount} />
+                          </div>
+                          <button
+                            className="btn"
+                            style={{ height: 38, padding: "0 12px", flexShrink: 0 }}
+                            disabled={!newTplDesc.trim() || newTplAmount <= 0}
+                            onClick={() => {
+                              if (!newTplDesc.trim() || newTplAmount <= 0) return;
+                              saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount, cat: addTxCat }]);
+                              setNewTplDesc(""); setNewTplAmount(0);
+                            }}
+                          >
+                            <Icons.plus size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {quickTemplates.length === 0 ? (
+                          <span style={{ fontSize: 13, color: "var(--text-3)" }}>Nhấn Sửa để thêm mẫu nhanh.</span>
+                        ) : quickTemplates.map((tpl, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { setAddTxDesc(tpl.desc); setAddTxAmount(tpl.amount); if (tpl.cat && CATEGORIES[tpl.cat]) setAddTxCat(tpl.cat); }}
+                            style={{
+                              padding: "6px 12px", borderRadius: 99, fontSize: 13,
+                              background: "var(--surface-2)", color: "var(--text)",
+                              border: "0.5px solid var(--border)", cursor: "pointer", whiteSpace: "nowrap",
+                            }}
+                          >
+                            {tpl.desc} <span className="num" style={{ color: "var(--text-2)" }}>{fmtShort(tpl.amount)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* MÔ TẢ */}
+                  <div className="field">
+                    <span className="field-label">MÔ TẢ</span>
+                    <input
+                      className="input"
+                      type="text"
+                      placeholder="VD: Cơm tấm, Grab, sách…"
+                      value={addTxDesc}
+                      onChange={e => setAddTxDesc(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleAddQuickTx()}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* SỐ TIỀN */}
+                  <div className="field">
+                    <span className="field-label">SỐ TIỀN</span>
+                    <MoneyInput value={addTxAmount} onChange={setAddTxAmount} />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8 }}>
+                      {[10000, 20000, 50000, 100000].map(amt => (
+                        <button key={amt} className="btn btn-secondary" style={{ height: 34, fontSize: 13 }}
+                          onClick={() => setAddTxAmount(v => (v || 0) + amt)}>
+                          +{fmtShort(amt)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* DANH MỤC */}
+                  <div>
+                    <div style={{ marginBottom: 8 }}>
+                      <span className="field-label">DANH MỤC</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {Object.values(CATEGORIES).map(c => (
+                        <button
+                          key={c.name}
+                          onClick={() => setAddTxCat(c.name)}
+                          style={{
+                            padding: "6px 12px", borderRadius: 99, fontSize: 13,
+                            background: addTxCat === c.name ? c.color + "22" : "var(--surface-2)",
+                            color: addTxCat === c.name ? c.color : "var(--text)",
+                            border: addTxCat === c.name ? `1.5px solid ${c.color}` : "0.5px solid var(--border)",
+                            cursor: "pointer", fontWeight: addTxCat === c.name ? 600 : 400, whiteSpace: "nowrap",
+                          }}
+                        >
+                          {c.emoji} {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* NGÀY */}
+                  <div className="field">
+                    <span className="field-label">NGÀY</span>
+                    <input
+                      className="input"
+                      type="date"
+                      value={addTxDate}
+                      onChange={e => setAddTxDate(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Submit */}
+                  <button
+                    className="btn"
+                    onClick={handleAddQuickTx}
+                    disabled={!addTxDesc.trim() || addTxAmount <= 0}
+                    style={{ height: 50, fontSize: 16, fontWeight: 700, opacity: (!addTxDesc.trim() || addTxAmount <= 0) ? 0.5 : 1 }}
                   >
-                    {Object.values(CATEGORIES).map(c => (
-                      <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
-                    ))}
-                  </select>
+                    <Icons.plus size={16} /> Thêm giao dịch
+                  </button>
+                </>
+              ) : (
+                /* Lịch sử tab */
+                <div>
+                  {expenseTxns.length === 0 ? (
+                    <Empty icon="inbox" title="Chưa có chi tiêu" text="Thêm giao dịch đầu tiên của tháng" />
+                  ) : (() => {
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    const yest = new Date(); yest.setDate(yest.getDate() - 1);
+                    const yestStr = yest.toISOString().slice(0, 10);
+                    const dayLabel = (d) => {
+                      if (d === todayStr) return "HÔM NAY";
+                      if (d === yestStr) return "HÔM QUA";
+                      const dt = new Date(d + "T00:00:00");
+                      return ["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()] + ", " + dt.getDate() + "/" + (dt.getMonth()+1);
+                    };
+                    const groups = {};
+                    expenseTxns.forEach(t => { const d = t.date || todayStr; if (!groups[d]) groups[d] = []; groups[d].push(t); });
+                    return (
+                      <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                        {Object.keys(groups).sort((a,b) => b.localeCompare(a)).map(d => {
+                          const txs = groups[d];
+                          const dayTotal = txs.reduce((s,t) => s + t.amount, 0);
+                          return (
+                            <div key={d} style={{ marginBottom: 10 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom: 6, marginBottom: 6, borderBottom: "1px solid var(--border)" }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)", letterSpacing: "0.04em" }}>{dayLabel(d)}</span>
+                                <span className="num" style={{ fontSize: 11, color: "var(--text-3)" }}>{fmtShort(dayTotal)}</span>
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                {txs.map(t => {
+                                  const cat = CATEGORIES[t.cat] || CATEGORIES[Object.keys(CATEGORIES)[0]];
+                                  return (
+                                    <div key={t.id}
+                                      className={"tx-history-row" + (editTx && editTx.id === t.id ? " is-active" : "")}
+                                      role="button" tabIndex={0}
+                                      onClick={() => openEditTx(t)}
+                                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEditTx(t); } }}
+                                      style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", background:"var(--surface-2)", border:"0.5px solid var(--border)", borderRadius:"var(--r-md)" }}>
+                                      <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, flexShrink:0, borderRadius:"50%", background:(cat.color||"#888")+"22", fontSize:13 }}>{cat.emoji||"💸"}</span>
+                                      <div style={{ flex:1, minWidth:0 }}>
+                                        <div style={{ fontSize:13, fontWeight:500, color:"var(--text)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.desc||"Chi tiêu"}</div>
+                                        <div style={{ fontSize:11, color:"var(--text-2)" }}>{t.cat}</div>
+                                      </div>
+                                      <div className="num" style={{ fontSize:13, fontWeight:600, color:"var(--c-red)" }}>-{fmtShort(t.amount)}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
-              <div className="field">
-                <span className="field-label">Ngày</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={addTxDate}
-                  onChange={e => setAddTxDate(e.target.value)}
-                />
-              </div>
             </div>
           </Modal>
         )}
+        {showIncome && (
+          <Modal
+            title="Thêm giao dịch"
+            onClose={() => { setShowIncome(false); setIncomeTab("add"); setEditingTemplates(false); setEditTx(null); }}
+            width={440}
+            sidePanel={editTxPanel}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Tab toggle */}
+              <div style={{
+                display: "flex", background: "var(--surface-2)", borderRadius: 10,
+                padding: 4, gap: 4,
+              }}>
+                <button
+                  onClick={() => setIncomeTab("add")}
+                  style={{
+                    flex: 1, height: 36, borderRadius: 8, border: "none",
+                    background: incomeTab === "add" ? "var(--surface)" : "transparent",
+                    color: incomeTab === "add" ? "var(--text)" : "var(--text-2)",
+                    fontWeight: incomeTab === "add" ? 600 : 400,
+                    fontSize: 14, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: incomeTab === "add" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <Icons.arrowDownLeft size={13} /> Thu nhập
+                </button>
+                <button
+                  onClick={() => setIncomeTab("history")}
+                  style={{
+                    flex: 1, height: 36, borderRadius: 8, border: "none",
+                    background: incomeTab === "history" ? "var(--surface)" : "transparent",
+                    color: incomeTab === "history" ? "var(--text)" : "var(--text-2)",
+                    fontWeight: incomeTab === "history" ? 600 : 400,
+                    fontSize: 14, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: incomeTab === "history" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <Icons.clock size={13} /> Lịch sử
+                </button>
+              </div>
+
+              {incomeTab === "add" ? (
+                <>
+                  {/* MẪU NHANH */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span className="field-label">MẪU NHANH</span>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ height: 26, padding: "0 10px", fontSize: 12, gap: 4, minWidth: 0 }}
+                        onClick={() => { setEditingTemplates(e => !e); setNewTplDesc(""); setNewTplAmount(0); }}
+                      >
+                        <Icons.pencil size={11} /> {editingTemplates ? "Xong" : "Sửa"}
+                      </button>
+                    </div>
+                    {editingTemplates ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {quickTemplates.map((tpl, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--surface-2)", border: "0.5px solid var(--border)", borderRadius: "var(--r-md)" }}>
+                            <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>
+                              {tpl.desc} · <span className="num">{fmtShort(tpl.amount)}</span>
+                            </span>
+                            <button className="goal-action-btn danger" title="Xóa" onClick={() => saveQuickTemplates(quickTemplates.filter((_, j) => j !== i))}>
+                              <Icons.trash size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            className="input"
+                            type="text"
+                            placeholder="Tên mẫu…"
+                            value={newTplDesc}
+                            onChange={e => setNewTplDesc(e.target.value)}
+                            style={{ flex: 2 }}
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && newTplDesc.trim() && newTplAmount > 0) {
+                                saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount }]);
+                                setNewTplDesc(""); setNewTplAmount(0);
+                              }
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <MoneyInput value={newTplAmount} onChange={setNewTplAmount} />
+                          </div>
+                          <button
+                            className="btn"
+                            style={{ height: 38, padding: "0 12px", flexShrink: 0 }}
+                            disabled={!newTplDesc.trim() || newTplAmount <= 0}
+                            onClick={() => {
+                              if (!newTplDesc.trim() || newTplAmount <= 0) return;
+                              saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount }]);
+                              setNewTplDesc(""); setNewTplAmount(0);
+                            }}
+                          >
+                            <Icons.plus size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {quickTemplates.length === 0 ? (
+                          <span style={{ fontSize: 13, color: "var(--text-3)" }}>Nhấn Sửa để thêm mẫu nhanh.</span>
+                        ) : quickTemplates.map((tpl, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { setIncDesc(tpl.desc); setIncAmount(tpl.amount); }}
+                            style={{
+                              padding: "6px 12px", borderRadius: 99, fontSize: 13,
+                              background: "var(--surface-2)", color: "var(--text)",
+                              border: "0.5px solid var(--border)", cursor: "pointer", whiteSpace: "nowrap",
+                            }}
+                          >
+                            {tpl.desc} <span className="num" style={{ color: "var(--text-2)" }}>{fmtShort(tpl.amount)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* MÔ TẢ */}
+                  <div className="field">
+                    <span className="field-label">MÔ TẢ</span>
+                    <input
+                      className="input"
+                      type="text"
+                      placeholder="VD: Lương, mẹ chuyển…"
+                      value={incDesc}
+                      onChange={e => setIncDesc(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleAddIncome()}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* SỐ TIỀN */}
+                  <div className="field">
+                    <span className="field-label">SỐ TIỀN</span>
+                    <MoneyInput value={incAmount} onChange={setIncAmount} />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8 }}>
+                      {[10000, 20000, 50000, 100000].map(amt => (
+                        <button key={amt} className="btn btn-secondary" style={{ height: 34, fontSize: 13 }}
+                          onClick={() => setIncAmount(v => (v || 0) + amt)}>
+                          +{fmtShort(amt)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* NGÀY */}
+                  <div className="field">
+                    <span className="field-label">NGÀY</span>
+                    <input
+                      className="input"
+                      type="date"
+                      value={incDate}
+                      onChange={e => setIncDate(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Submit */}
+                  <button
+                    className="btn"
+                    onClick={handleAddIncome}
+                    disabled={!incDesc.trim() || incAmount <= 0}
+                    style={{ height: 50, fontSize: 16, fontWeight: 700, opacity: (!incDesc.trim() || incAmount <= 0) ? 0.5 : 1 }}
+                  >
+                    <Icons.plus size={16} /> Thêm giao dịch
+                  </button>
+                </>
+              ) : (
+                /* Lịch sử tab */
+                <div>
+                  {incomeTxns.length === 0 ? (
+                    <Empty icon="inbox" title="Chưa có thu nhập" text="Thêm khoản thu đầu tiên của tháng" />
+                  ) : (() => {
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    const yest = new Date(); yest.setDate(yest.getDate() - 1);
+                    const yestStr = yest.toISOString().slice(0, 10);
+                    const dayLabel = (d) => {
+                      if (d === todayStr) return "HÔM NAY";
+                      if (d === yestStr) return "HÔM QUA";
+                      const dt = new Date(d + "T00:00:00");
+                      return ["CN","T2","T3","T4","T5","T6","T7"][dt.getDay()] + ", " + dt.getDate() + "/" + (dt.getMonth()+1);
+                    };
+                    const groups = {};
+                    incomeTxns.forEach(t => { const d = t.date || todayStr; if (!groups[d]) groups[d] = []; groups[d].push(t); });
+                    return (
+                      <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                        {Object.keys(groups).sort((a,b) => b.localeCompare(a)).map(d => {
+                          const txs = groups[d];
+                          const dayTotal = txs.reduce((s,t) => s + t.amount, 0);
+                          return (
+                            <div key={d} style={{ marginBottom: 10 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom: 6, marginBottom: 6, borderBottom: "1px solid var(--border)" }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)", letterSpacing: "0.04em" }}>{dayLabel(d)}</span>
+                                <span className="num" style={{ fontSize: 11, color: "var(--text-3)" }}>{fmtShort(dayTotal)}</span>
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                {txs.map(t => (
+                                  <div key={t.id}
+                                    className={"tx-history-row" + (editTx && editTx.id === t.id ? " is-active" : "")}
+                                    role="button" tabIndex={0}
+                                    onClick={() => openEditTx(t)}
+                                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEditTx(t); } }}
+                                    style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", background:"var(--surface-2)", border:"0.5px solid var(--border)", borderRadius:"var(--r-md)" }}>
+                                    <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, flexShrink:0, borderRadius:"50%", background:"rgba(52,199,89,0.14)", color:"var(--c-green)" }}>
+                                      <Icons.arrowDownLeft size={13} />
+                                    </span>
+                                    <div style={{ flex:1, minWidth:0 }}>
+                                      <div style={{ fontSize:13, fontWeight:500, color:"var(--text)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.desc||"Thu nhập"}</div>
+                                      <div style={{ fontSize:11, color:"var(--text-2)" }}>Thu nhập</div>
+                                    </div>
+                                    <div className="num" style={{ fontSize:13, fontWeight:600, color:"var(--c-green)" }}>+{fmtShort(t.amount)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </Modal>
+        )}
+        {selectedCat && (() => {
+          const catTxns = transactions
+            .filter(t => t.type === "expense" && t.cat === selectedCat.id)
+            .slice()
+            .sort((a, b) => (b.date || "").localeCompare(a.date || "") || String(b.id).localeCompare(String(a.id)));
+          return (
+            <Modal
+              title={`${selectedCat.emoji} ${selectedCat.name}`}
+              subtitle={`${catTxns.length} giao dịch · ${fmt(selectedCat.amount)}`}
+              onClose={() => setSelectedCat(null)}
+              width={440}
+            >
+              {catTxns.length === 0 ? (
+                <Empty icon="inbox" title="Chưa có giao dịch" text="Không có giao dịch nào trong danh mục này" />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 420, overflowY: "auto" }}>
+                  {catTxns.map(t => (
+                    <div
+                      key={t.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "10px 12px",
+                        background: "var(--surface-2)", border: "0.5px solid var(--border)",
+                        borderRadius: "var(--r-md)",
+                      }}
+                    >
+                      <span style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 30, height: 30, flexShrink: 0, fontSize: 15,
+                        borderRadius: "50%", background: selectedCat.color + "26",
+                      }}>
+                        {selectedCat.emoji}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {t.desc || t.cat || "Chi tiêu"}
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--text-2)" }}>
+                          {new Date(t.date + "T00:00:00").toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                        </div>
+                      </div>
+                      <div className="num" style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+                        -{fmt(t.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Modal>
+          );
+        })()}
+      {budgetModalOpen && (() => {
+        const allBudgetRows = budgets.map(b => {
+          const actual = transactions
+            .filter(t => t.type === "expense" && t.cat === b.cat)
+            .reduce((s, t) => s + t.amount, 0);
+          const pct = b.cap > 0 ? (actual / b.cap) * 100 : 0;
+          const isFixed = FIXED_PACE_CATEGORIES.has(b.cat);
+          const dailyAvg = !isFixed && daysElapsed > 0 && actual > 0 ? actual / daysElapsed : null;
+          const weeklyAvg = dailyAvg != null ? dailyAvg * 7 : null;
+          return { ...b, actual, pct, isFixed, dailyAvg, weeklyAvg };
+        }).sort((a, b) => b.pct - a.pct);
+        const budgetedCats = new Set(budgets.map(b => b.cat));
+        const availableCats = Object.values(CATEGORIES).filter(c => !budgetedCats.has(c.name) && c.name !== "Trả nợ");
+        return (
+          <Modal
+            title="Ngân sách"
+            subtitle={monthLabel}
+            onClose={() => { setBudgetModalOpen(false); setAddingBudget(false); setNewBudgetCap(0); }}
+            width={480}
+            headerExtra={
+              <button
+                className="btn btn-secondary"
+                style={{ height: 30, padding: "0 12px", fontSize: 13, gap: 4 }}
+                onClick={() => {
+                  setAddingBudget(a => !a);
+                  setNewBudgetCap(0);
+                  if (availableCats.length > 0) setNewBudgetCat(availableCats[0].name);
+                }}
+                title="Thêm ngân sách"
+              >
+                <Icons.plus size={13} /> Thêm
+              </button>
+            }
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {addingBudget && (
+                <div style={{ padding: "14px 16px", background: "var(--surface-2)", border: "0.5px solid var(--border)", borderRadius: "var(--r-lg)", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Thêm ngân sách mới</div>
+                  {availableCats.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "var(--text-3)" }}>Tất cả danh mục đã có ngân sách.</div>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <div className="field" style={{ flex: 1 }}>
+                          <span className="field-label">Danh mục</span>
+                          <select className="input" value={newBudgetCat} onChange={e => setNewBudgetCat(e.target.value)} style={{ cursor: "pointer" }}>
+                            {availableCats.map(c => (
+                              <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field" style={{ flex: 1 }}>
+                          <span className="field-label">Hạn mức / tháng</span>
+                          <MoneyInput value={newBudgetCap} onChange={setNewBudgetCap} />
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button className="btn" style={{ flex: 1, height: 38 }}
+                          disabled={!newBudgetCat || newBudgetCap <= 0}
+                          onClick={() => {
+                            if (!newBudgetCat || newBudgetCap <= 0) return;
+                            onSaveBudget && onSaveBudget(newBudgetCat, newBudgetCap);
+                            setAddingBudget(false);
+                            setNewBudgetCap(0);
+                          }}>
+                          <Icons.check size={14} /> Lưu
+                        </button>
+                        <button className="btn btn-secondary" style={{ height: 38, padding: "0 14px" }} onClick={() => setAddingBudget(false)}>
+                          <Icons.x size={14} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              {allBudgetRows.length === 0 ? (
+                <Empty icon="inbox" title="Chưa có ngân sách" text="Nhấn + Thêm để đặt hạn mức chi tiêu" />
+              ) : (
+                allBudgetRows.map(b => {
+                  const cat = CATEGORIES[b.cat];
+                  const color = cat?.color || "#8E8E93";
+                  const barColor = b.pct >= 100 ? "var(--c-red)" : b.pct >= 80 ? "var(--c-orange)" : "var(--c-green)";
+                  const barWidth = Math.min(100, b.pct);
+                  return (
+                    <div key={b.cat} style={{ padding: "16px 18px", background: "var(--surface-2)", border: "0.5px solid var(--border)", borderRadius: "var(--r-lg)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, flexShrink: 0, fontSize: 20, borderRadius: "50%", background: color + "26" }}>
+                          {cat?.emoji || "📦"}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{b.cat}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-2)" }}>
+                            <span className="num">{fmt(b.actual)}</span> / <span className="num">{fmt(b.cap)}</span>
+                          </div>
+                        </div>
+                        <div className="num" style={{ fontSize: 20, fontWeight: 700, color: b.pct >= 100 ? "var(--c-red)" : b.pct >= 80 ? "var(--c-orange)" : "var(--text-2)" }}>
+                          {b.pct.toFixed(0)}%
+                        </div>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 99, background: "var(--surface-3, var(--border))", overflow: "hidden", marginBottom: 8 }}>
+                        <div style={{ height: "100%", width: barWidth + "%", background: barColor, borderRadius: 99, transition: "width 0.4s ease" }} />
+                      </div>
+                      {b.pct >= 80 && (
+                        <div style={{ fontSize: 12, color: b.pct >= 100 ? "var(--c-red)" : "var(--c-orange)", marginBottom: b.dailyAvg != null ? 6 : 0 }}>
+                          {b.pct >= 100 ? `Vượt hạn mức ${fmt(b.actual - b.cap)}` : `Còn ${fmt(b.cap - b.actual)} trước hạn mức`}
+                        </div>
+                      )}
+                      {b.dailyAvg != null && (
+                        <div style={{ display: "flex", gap: 16, marginTop: b.pct < 80 ? 4 : 0 }}>
+                          <span style={{ fontSize: 12, color: "var(--text-3)" }}>
+                            TB/ngày: <b className="num" style={{ color: "var(--text-2)" }}>{fmtShort(Math.round(b.dailyAvg))}</b>
+                          </span>
+                          <span style={{ fontSize: 12, color: "var(--text-3)" }}>
+                            TB/tuần: <b className="num" style={{ color: "var(--text-2)" }}>{fmtShort(Math.round(b.weeklyAvg))}</b>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
       </div>
 
       <div className="overview-dashboard-grid">
@@ -495,7 +1408,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               <div className="card-title">Chi tiêu theo danh mục</div>
               <div className="card-subtitle">{fmt(expense)} · {expenseCount} giao dịch</div>
             </div>
-            <button className="card-action" onClick={() => onNavigate && onNavigate("transactions")}>Xem tất cả</button>
+            <button className="card-action" onClick={() => setBudgetModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: 3, color: "var(--text)" }}>
+              Ngân sách <Icons.chevRight size={12} />
+            </button>
           </div>
           {catRows.length === 0 ? (
             <Empty icon="inbox" title="Chưa có chi tiêu" text="Thêm giao dịch để xem phân tích" />
@@ -520,11 +1435,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                     onMouseLeave={() => setHoverCat(null)}
                     onFocus={() => setHoverCat(c.id)}
                     onBlur={() => setHoverCat(null)}
-                    onClick={() => togglePinnedCat(c.id)}
+                    onClick={() => setSelectedCat(c)}
                     onKeyDown={e => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        togglePinnedCat(c.id);
+                        setSelectedCat(c);
                       }
                     }}
                   >
@@ -539,90 +1454,69 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
           )}
         </div>
 
-        <div className="card flow-card overview-area-flow stagger stagger-5">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Dòng tiền theo ngày</div>
-                <div className="card-subtitle">{monthLabel} · {incomeCount + expenseCount} giao dịch</div>
+        <div className="card overview-area-charts stagger stagger-5">
+          <div className="card-header">
+            <div>
+              <div className="card-title">
+                {chartView === "day" ? "Chi tiêu theo ngày" : "Chi tiêu theo tháng"}
+              </div>
+              <div className="card-subtitle">
+                {chartView === "day"
+                  ? `${monthLabel} · ${incomeCount + expenseCount} giao dịch`
+                  : "6 tháng gần nhất"}
               </div>
             </div>
-            {dailyFlow.length === 0 ? (
+            <div className="chart-view-toggle">
+              <button
+                className={"chart-toggle-btn" + (chartView === "day" ? " active" : "")}
+                onClick={() => setChartView("day")}
+              >Ngày</button>
+              <button
+                className={"chart-toggle-btn" + (chartView === "month" ? " active" : "")}
+                onClick={() => setChartView("month")}
+              >Tháng</button>
+            </div>
+          </div>
+          {chartView === "day" ? (
+            dailyFlow.length === 0 ? (
               <Empty icon="trendUp" title="Chưa có dữ liệu" text="Thêm giao dịch để xem dòng tiền" />
             ) : (
               <FlowChart data={dailyFlow} daysInMonth={daysInMonth} />
-            )}
-          </div>
-
-        <div className="card trend-card overview-area-trend stagger stagger-6">
-          <div className="card-header trend-header">
-            <div className="card-title">So sánh thu chi 6 tháng gần nhất</div>
-            <div className="trend-legend">
-              <span><i className="income" /> Thu</span>
-              <span><i className="expense" /> Chi</span>
-            </div>
-          </div>
-          <div className="trend-body">
-            <div className="trend-chart-panel">
-              <SixMonthBars data={sixMonths} currentLabel={currentLabel} />
-            </div>
-            <aside className="trend-insight">
-              <div className="trend-insight-label">Tỷ lệ chi tiêu</div>
-              <div className="trend-ratio num">{spendingRatioLabel}</div>
-              <div className="trend-ratio-caption">Chi / Thu tháng này</div>
-              <div className={"trend-progress " + spendingRatioTone} aria-hidden="true">
-                <span style={{ width: spendingProgress + "%" }} />
-              </div>
-              <div className="trend-message">{spendingRatioMessage}</div>
-              {(incomeChangeText || expenseChangeText) && (
-                <div className="trend-compare">
-                  <div className="trend-compare-title">So với tháng trước</div>
-                  {incomeChangeText && <div>{incomeChangeText}</div>}
-                  {expenseChangeText && <div>{expenseChangeText}</div>}
-                </div>
-              )}
-            </aside>
-          </div>
+            )
+          ) : (
+            <SixMonthBars data={sixMonths} currentLabel={currentLabel} />
+          )}
         </div>
 
-        <div className="card overview-debt-card overview-area-debt stagger stagger-7">
-          <div className="card-header">
-            <div className="card-title">Nợ &amp; Cho Vay</div>
-            <button className="card-action" onClick={() => onNavigate && onNavigate("debts")}>Quản lý</button>
-          </div>
-          <div className="debt-split">
-            <div className="debt-card owe">
-              <div className="debt-card-label"><Icons.arrowUpRight size={11} /> Bạn đang nợ</div>
-              <div className="debt-card-value num">{fmt(openOwe)}</div>
-              <div className="debt-card-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</div>
-            </div>
-            <div className="debt-card owed">
-              <div className="debt-card-label"><Icons.arrowDownLeft size={11} /> Người khác nợ bạn</div>
-              <div className="debt-card-value num">{fmt(openOwed)}</div>
-              <div className="debt-card-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</div>
-            </div>
-          </div>
-          <div className="debt-list overview-debt-list">
-            {openDebts.length === 0 ? (
-              <Empty icon="check" title="Sạch nợ!" text="Không có khoản nợ nào đang mở" />
-            ) : (
-              openDebts.map(d => {
-                const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-                const color = debtColor(d.id);
-                return (
-                  <div className="debt-row" key={d.id}>
-                    <div className="debt-avatar" style={{ background: color }}>{initials}</div>
-                    <div className="debt-info">
-                      <span className="debt-name">{d.name}</span>
-                      <span className="debt-note">{d.note}</span>
-                    </div>
-                    <span className={"debt-amount num " + (d.type === "owe" ? "owe" : "owed")}>{fmt(d.amount)}</span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
       </div>
+      {heroSettingsOpen && settingsBtnPos && ReactDOM.createPortal(
+        <div
+          ref={portalDropdownRef}
+          className="settings-dropdown"
+          style={{ position: "fixed", top: settingsBtnPos.top, right: settingsBtnPos.right, zIndex: 9999 }}
+        >
+          <div className="settings-section-label">Giao diện</div>
+          <div className="settings-row">
+            <button className={"settings-opt-btn" + (theme === "light" ? " active" : "")} onClick={() => onTheme("light")}>
+              <Icons.sun size={13} /> Sáng
+            </button>
+            <button className={"settings-opt-btn" + (theme === "dark" ? " active" : "")} onClick={() => onTheme("dark")}>
+              <Icons.moon size={13} /> Tối
+            </button>
+          </div>
+          <div className="settings-divider" />
+          <div className="settings-section-label">Ngôn ngữ</div>
+          <div className="settings-row">
+            <button className={"settings-opt-btn" + (lang === "vi" ? " active" : "")} onClick={() => onLang("vi")}>
+              🇻🇳 Tiếng Việt
+            </button>
+            <button className={"settings-opt-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")}>
+              🇺🇸 English
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

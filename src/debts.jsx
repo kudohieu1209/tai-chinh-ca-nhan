@@ -65,19 +65,16 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
 
       {/* === Hero stats === */}
       <div className="stat-grid">
-        <div className="stat" style={{ background: "linear-gradient(135deg, #FF3B30, #FF2D55)", color: "#fff", borderColor: "transparent" }}>
-          <div className="hero-bg" />
-          <div className="stat-label" style={{ color: "rgba(255,255,255,0.85)" }}>
+        <div className="stat">
+          <div className="stat-label">
             <Icons.arrowUpRight size={13} /> Bạn đang nợ
           </div>
           <div className="stat-value num">{fmt(openOwe)}</div>
-          <div className="stat-sub" style={{ color: "rgba(255,255,255,0.8)" }}>
-            {oweCount} khoản cần trả
-          </div>
+          <div className="stat-sub">{oweCount} khoản cần trả</div>
         </div>
 
         <div className="stat">
-          <div className="stat-label" style={{ color: "var(--c-green)" }}>
+          <div className="stat-label">
             <Icons.arrowDownLeft size={13} /> Người khác nợ bạn
           </div>
           <div className="stat-value num">{fmt(openOwed)}</div>
@@ -153,7 +150,7 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
           <div className="debt-list">
             {filtered.map(d => {
               const initials = d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-              const color = debtColor(d.id);
+              const color = debtColor(d.name);
               const isPaid = !!d.settled;
               const isEditing = editingDebt?.id === d.id;
               if (isEditing) {

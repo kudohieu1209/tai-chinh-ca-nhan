@@ -154,8 +154,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .input:focus-visible, .select:focus-visible, textarea:focus-visible {
   outline: none; /* these carry their own border + box-shadow ring */
 }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 .num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
@@ -166,6 +166,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .app {
   position: relative; z-index: 1;
   height: 100vh; width: 100vw;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
 }
 
 /* Settings dropdown */
@@ -210,6 +213,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 56px 14px 16px;
   display: flex; flex-direction: column; gap: 4px;
   overflow-y: auto;
+  width: 240px;
+  flex-shrink: 0;
+  height: 100%;
 }
 .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 18px; }
 .sidebar-brand-mark {
@@ -293,7 +299,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 /* ==========================================================================
    Main area
    ========================================================================== */
-.main { overflow-y: auto; position: relative; height: 100%; }
+.main { overflow-y: auto; position: relative; height: 100%; flex: 1 1 auto; min-width: 0; width: 100%; scrollbar-width: none; }
+.main::-webkit-scrollbar { display: none; }
 
 .toolbar {
   position: sticky; top: 0; z-index: 10;
@@ -375,7 +382,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 100;
-  display: flex;
+  display: none;
   align-items: stretch;
   background: var(--sidebar-bg);
   backdrop-filter: saturate(180%) blur(60px);
@@ -473,7 +480,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .hero-balance {
   position: relative; overflow: hidden;
   display: flex; flex-direction: column;
-  min-width: 0; min-height: 240px;
+  min-width: 0;
   padding: 26px 28px 22px;
   border-radius: var(--r-2xl);
   background: var(--surface);
@@ -556,7 +563,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 }
 .hero-chips {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px; margin-top: auto; padding-top: 22px;
+  gap: 10px; margin-top: 20px;
 }
 .hero-chip {
   display: flex; flex-direction: column; gap: 3px;
@@ -583,6 +590,32 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   font-size: 11px; color: var(--text-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* Insight rows filling the lower half of the hero balance card */
+.hero-insights {
+  flex: 1 1 auto;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--border);
+  display: flex; flex-direction: column;
+  justify-content: center;
+}
+.hero-insight-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 9px 2px;
+}
+.hero-insight-row + .hero-insight-row { border-top: 0.5px solid var(--divider); }
+.hero-insight-label {
+  display: flex; align-items: center; gap: 9px; min-width: 0;
+  font-size: 12.5px; font-weight: 500; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hero-insight-label svg { color: var(--text-4); flex-shrink: 0; }
+.hero-insight-value {
+  font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em;
+  white-space: nowrap; color: var(--text);
+}
+.hero-insight-value.tone-red   { color: var(--c-red); }
+.hero-insight-value.tone-green { color: var(--c-green); }
 .overview-hero .overview-hero-insights {
   display: flex; flex-direction: column;
   gap: var(--overview-gap); min-width: 0;
@@ -731,9 +764,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .overview-dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.85fr);
-  grid-template-areas:
-    "category flow"
-    "trend debt";
+  grid-template-areas: "category charts";
   gap: var(--overview-gap);
   align-items: stretch;
   margin-bottom: var(--overview-gap);
@@ -749,34 +780,94 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   box-shadow: var(--shadow-md);
 }
 .overview-area-category { grid-area: category; }
-.overview-area-flow {
-  grid-area: flow;
-  justify-content: center;
+.overview-area-charts {
+  grid-area: charts;
+  display: flex;
+  flex-direction: column;
 }
-.overview-area-trend {
-  grid-area: trend;
-}
-.overview-area-debt {
-  grid-area: debt;
-}
-.overview-area-flow .flow-chart {
+.overview-area-charts .flow-chart {
   height: 100%;
 }
-.overview-area-flow .flow-chart-wrap {
-  flex: 0 0 auto;
-  height: 290px;
-  max-height: 300px;
+.overview-area-charts .flow-chart-wrap {
+  flex: 1 1 auto;
+  min-height: 200px;
+  max-height: none;
   animation: chartSoftIn 520ms var(--spring-snappy) both;
   animation-delay: 0.28s;
 }
-.overview-area-trend .month-chart {
+.overview-area-charts .month-chart {
   animation: chartSoftIn 560ms var(--spring-snappy) both;
   animation-delay: 0.32s;
 }
-.overview-area-trend,
-.overview-area-debt {
-  height: 350px;
+/* Desktop: 4-card overview fills the screen symmetrically */
+@media (min-width: 1025px) {
+  .overview-page {
+    padding: 32px 32px; /* equal top/bottom — overrides mobile bottom-nav clearance */
+    min-height: 100%;    /* .main is 100vh; border-box keeps padding inside → equal top/bottom gap */
+    display: flex;
+    flex-direction: column;
+  }
+  .overview-hero { flex-shrink: 0; }
+  .overview-dashboard-grid {
+    flex: 1 1 0;
+    min-height: 260px;
+    margin-bottom: 0;
+  }
+}
+
+/* Mini debt list inside hero debt card */
+.overview-debt-mini-list {
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--border);
+}
+.overview-debt-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 6px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--dur-quick) var(--spring-crisp);
+}
+.overview-debt-mini-row:hover { background: var(--surface-2); }
+
+/* Chart day/month toggle */
+.chart-view-toggle {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.chart-toggle-btn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s var(--spring-crisp);
+  white-space: nowrap;
+}
+.chart-toggle-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+/* Debt card as right column of the hero grid */
+.overview-hero-debt .overview-debt-list {
+  max-height: 220px;
 }
 .category-flow-row {
   align-items: stretch;
@@ -886,6 +977,58 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .cat-row.is-active { background: var(--cat-tint); }
 .cat-row.is-dimmed { opacity: 0.45; }
 .cat-donut-seg:focus-visible { outline: none; }
+
+/* Debt donut + legend inside the hero debt card */
+.debt-donut-layout {
+  flex: 1;
+  margin-top: 18px;
+  align-items: center;
+}
+.debt-legend { gap: 2px; }
+.debt-legend-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) 38px auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--r-md);
+  background: none; border: none; width: 100%; text-align: left;
+  transition:
+    background var(--dur-quick) var(--spring-crisp),
+    opacity var(--dur-quick) var(--spring-crisp);
+}
+.debt-legend-row:hover { background: var(--surface-2); }
+.debt-legend-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.debt-legend-row.is-dimmed { opacity: 0.4; }
+.debt-legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+.debt-legend-name {
+  min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.debt-legend-pct {
+  justify-self: end;
+  font-size: 10.5px; line-height: 1; color: var(--text-4); font-weight: 600;
+}
+.debt-legend-amount {
+  justify-self: end;
+  font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em; white-space: nowrap;
+}
+.debt-legend-more {
+  margin-top: 2px; padding: 6px 8px;
+  background: none; border: none; cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: var(--text-3);
+  text-align: left; border-radius: var(--r-md);
+  transition: background var(--dur-quick) var(--spring-crisp), color var(--dur-quick) var(--spring-crisp);
+}
+.debt-legend-more:hover { background: var(--surface-2); color: var(--text); }
+.debt-donut-empty {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; color: var(--text-4);
+  font-size: 13px; font-weight: 500;
+}
 .cat-chip {
   width: 26px; height: 26px;
   border-radius: 8px;
@@ -970,12 +1113,9 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   transform: translateX(-50%);
 }
 .flow-grid line  { stroke: var(--divider); stroke-width: 0.5; }
-.flow-area-income  { fill: url(#gradGreen); opacity: 0.7; }
-.flow-area-expense { fill: url(#gradRed);   opacity: 0.7; }
-.flow-line-income  { stroke: var(--c-green); stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
-.flow-line-expense { stroke: var(--c-red);   stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
-.flow-dot-income   { fill: var(--c-green); }
-.flow-dot-expense  { fill: var(--c-red); }
+.flow-area-expense { fill: url(#gradDark); opacity: 1; }
+.flow-line-expense { stroke: #E84040; stroke-width: 1.5; fill: none; vector-effect: non-scaling-stroke; }
+.flow-dot-expense  { fill: #E84040; }
 .flow-hover-line {
   stroke: var(--text-3); stroke-width: 1;
   stroke-dasharray: 3 3;
@@ -1010,8 +1150,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .flow-tooltip-row span {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
-.flow-tooltip-row.income span  { background: var(--c-green); }
-.flow-tooltip-row.expense span { background: var(--c-red); }
+.flow-tooltip-row.expense span { background: #E84040; }
 .flow-tooltip-row b { margin-left: auto; font-weight: 600; color: var(--text); }
 .legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-3); margin-top: 8px; }
 .legend-item { display: flex; align-items: center; gap: 6px; }
@@ -1026,8 +1165,8 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
   color: var(--text-3); display: flex; align-items: center; gap: 5px;
 }
-.debt-card.owe .debt-card-label  { color: var(--c-red); }
-.debt-card.owed .debt-card-label { color: var(--c-green); }
+.debt-card.owe .debt-card-label  { color: var(--text-2); }
+.debt-card.owed .debt-card-label { color: var(--text-2); }
 .debt-card-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-top: 6px; }
 .debt-card-sub   { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
 
@@ -1092,8 +1231,8 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .debt-name  { font-size: 13.5px; font-weight: 600; }
 .debt-note  { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .debt-amount { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.debt-amount.owe  { color: var(--c-red); }
-.debt-amount.owed { color: var(--c-green); }
+.debt-amount.owe  { color: var(--text); }
+.debt-amount.owed { color: var(--text); }
 .debt-status-pill {
   font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--text-3);
@@ -1116,15 +1255,6 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .trend-legend .income { background: var(--c-green); }
 .trend-legend .expense { background: var(--c-orange); }
 
-.trend-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 22px;
-  align-items: stretch;
-  flex: 1;
-  min-height: 0;
-}
-.trend-chart-panel { min-width: 0; }
 .month-chart {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -1159,7 +1289,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .month-bars {
   position: relative; z-index: 1;
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 16px; height: 100%;
+  gap: 8px; height: 100%;
 }
 .mb-col {
   position: relative;
@@ -1167,7 +1297,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   min-width: 0;
 }
 .mb-bars-inner {
-  display: flex; align-items: end; justify-content: center; gap: 7px;
+  display: flex; align-items: end; justify-content: center; gap: 4px;
   padding-top: 4px;
 }
 .mb-bar  {
@@ -1201,58 +1331,11 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .mb-col.has-data:hover::after { opacity: 1; transform: translate(-50%, 0); }
 .mb-label {
   display: flex; align-items: end; justify-content: center;
-  font-size: 11.5px; color: var(--text-3); font-weight: 600;
+  font-size: 10px; color: var(--text-3); font-weight: 600;
+  overflow: hidden;
 }
 .mb-label.current { color: var(--text); font-weight: 700; }
 
-.trend-insight {
-  min-width: 0;
-  padding: 16px;
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 0.5px solid var(--border);
-  display: flex; flex-direction: column;
-  justify-content: center;
-}
-.trend-insight-label {
-  font-size: 12px; font-weight: 700; color: var(--text-3);
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.trend-ratio {
-  font-size: 34px; font-weight: 800; line-height: 1;
-  margin-top: 10px; color: var(--text);
-}
-.trend-ratio-caption {
-  margin-top: 5px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-3);
-}
-.trend-progress {
-  height: 9px; border-radius: var(--r-pill);
-  background: var(--surface-solid);
-  border: 0.5px solid var(--border);
-  overflow: hidden; margin-top: 14px;
-}
-.trend-progress span {
-  display: block; height: 100%; border-radius: inherit;
-  background: var(--c-green);
-}
-.trend-progress.medium span { background: #B7C83F; }
-.trend-progress.high span   { background: var(--c-orange); }
-.trend-progress.near span   { background: #E06F1F; }
-.trend-progress.over span   { background: #FF6B5F; }
-.trend-message {
-  margin-top: 12px;
-  font-size: 12.5px; line-height: 1.45; color: var(--text-2);
-}
-.trend-compare {
-  margin-top: 14px; padding-top: 12px;
-  border-top: 0.5px solid var(--divider);
-  display: flex; flex-direction: column; gap: 6px;
-  font-size: 12px; line-height: 1.4; color: var(--text-3);
-}
-.trend-compare-title { font-weight: 700; color: var(--text-2); }
 
 /* ==========================================================================
    Savings goals
@@ -1808,6 +1891,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 }
 .modal {
   width: 100%;
+  position: relative;
   background: var(--surface-solid);
   border: 0.5px solid var(--glass-border);
   border-radius: var(--r-xl);
@@ -1815,6 +1899,56 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   display: flex; flex-direction: column;
   max-height: min(800px, calc(100dvh - 40px));
   animation: modalPop var(--dur-reveal) var(--spring-snappy);
+}
+
+/* Floating edit panel beside a modal (history transaction edit) */
+.tx-history-row { cursor: pointer; transition: background var(--dur-quick) var(--spring-crisp), box-shadow var(--dur-quick) var(--spring-crisp); }
+.tx-history-row:hover { background: var(--surface-hover) !important; }
+.tx-history-row.is-active { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.tx-history-row:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.tx-edit-panel {
+  position: absolute;
+  top: 0; left: calc(100% + 14px);
+  width: 340px; max-width: 340px;
+  max-height: 100%;
+  background: var(--surface-solid);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--r-xl);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  display: flex; flex-direction: column;
+  animation: modalPop var(--dur-reveal) var(--spring-snappy);
+  z-index: 1;
+}
+.tx-edit-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 16px 18px 10px; flex-shrink: 0;
+}
+.tx-edit-panel-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.tx-edit-panel-body {
+  padding: 4px 18px 14px; overflow-y: auto; min-height: 0;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.tx-edit-panel-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px 16px;
+  border-top: 0.5px solid var(--divider); flex-shrink: 0;
+}
+.tx-edit-panel-foot .btn { flex: 1; }
+.tx-edit-delete {
+  flex: 0 0 auto !important;
+  color: var(--c-red);
+  display: flex; align-items: center; gap: 6px;
+}
+.tx-edit-delete:hover { background: rgba(255, 59, 48, 0.12); color: var(--c-red); }
+
+/* Narrow screens: drop the panel below the modal as a sheet */
+@media (max-width: 1200px) {
+  .tx-edit-panel {
+    position: fixed;
+    left: 12px; right: 12px; bottom: 12px; top: auto;
+    width: auto; max-width: none;
+    max-height: 70dvh;
+  }
 }
 .modal-head {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -2120,7 +2254,9 @@ button.hero-balance-nav:hover .hero-nav-chevron {
    Responsive
    ========================================================================== */
 @media (max-width: 1024px) {
-  .app { height: 100dvh; }
+  .app { height: 100dvh; display: block; }
+  .sidebar { display: none !important; }
+  .bottom-nav { display: flex; }
   .topnav { padding: 0 12px; gap: 2px; }
   .topnav-brand-name { display: none; }
   .topnav-item span { display: none; }
@@ -2143,9 +2279,9 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   .stat-grid { grid-template-columns: 1fr; }
   .overview-page { --overview-gap: 12px; }
   .overview-hero { grid-template-columns: 1fr; }
-  .hero-balance { padding: 20px 18px 16px; min-height: 0; }
+  .hero-balance { padding: 20px 18px 16px; }
   .hero-balance-value { font-size: clamp(34px, 9.5vw, 44px); }
-  .hero-chips { padding-top: 18px; }
+  .hero-chips { margin-top: 16px; }
   .overview-page .card { padding: 16px; }
   .overview-page .stat { padding: 18px; }
   .overview-page .stat-value { font-size: clamp(26px, 8vw, 34px); }
@@ -2153,20 +2289,16 @@ button.hero-balance-nav:hover .hero-nav-chevron {
     grid-template-columns: 1fr;
     grid-template-areas:
       "category"
-      "flow"
-      "trend"
-      "debt";
+      "charts";
   }
-  .overview-area-flow,
-  .overview-area-trend,
-  .overview-area-debt {
+  .overview-area-charts {
     height: auto;
     max-height: none;
   }
-  .overview-area-flow .flow-chart {
+  .overview-area-charts .flow-chart {
     height: 100%;
   }
-  .overview-area-flow .flow-chart-wrap {
+  .overview-area-charts .flow-chart-wrap {
     height: 240px;
     max-height: none;
   }
@@ -2248,13 +2380,11 @@ button.hero-balance-nav:hover .hero-nav-chevron {
     height: 240px;
     max-height: none;
   }
-  .trend-body { grid-template-columns: 1fr; gap: 16px; }
   .trend-header { align-items: flex-start; gap: 12px; }
   .month-chart { height: 230px; min-height: 230px; grid-template-columns: 34px minmax(0, 1fr); }
   .month-bars { gap: 8px; }
   .mb-bars-inner { gap: 4px; }
   .mb-bar { width: clamp(12px, 34%, 24px); }
-  .trend-insight { padding: 14px; }
   .overview-debt-list { max-height: 190px; }
   .debt-row {
     grid-template-columns: 34px minmax(0, 1fr);
@@ -2437,7 +2567,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   .hero-chips {
     grid-template-columns: 1fr;
     gap: 8px;
-    padding-top: 16px;
+    margin-top: 16px;
   }
   .hero-chip {
     display: grid;
@@ -2528,7 +2658,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   .flow-chart-wrap {
     margin-left: 0;
   }
-  .overview-area-flow .flow-chart-wrap,
+  .overview-area-charts .flow-chart-wrap,
   .category-flow-row .flow-chart-wrap {
     height: 210px;
   }

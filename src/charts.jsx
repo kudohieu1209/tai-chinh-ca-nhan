@@ -20,7 +20,7 @@ function FlowChart({ data, daysInMonth = 31 }) {
     return arr;
   }, [data, daysInMonth]);
 
-  const maxV = Math.max(...series.flatMap(s => [s.inc, s.exp]), 100);
+  const maxV = Math.max(...series.map(s => s.exp), 100);
   const niceMax = Math.ceil(maxV / 500000) * 500000;
 
   const xOf = (i) => PAD_L + innerW * i / (daysInMonth - 1);
@@ -37,9 +37,7 @@ function FlowChart({ data, daysInMonth = 31 }) {
     return path;
   };
 
-  const incPts = series.map((s, i) => ({ x: xOf(i), y: yOf(s.inc) }));
   const expPts = series.map((s, i) => ({ x: xOf(i), y: yOf(s.exp) }));
-  const incArea = smooth(incPts) + ` L ${xOf(daysInMonth - 1)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
   const expArea = smooth(expPts) + ` L ${xOf(daysInMonth - 1)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
   const xTicks = [1, 7, 14, 21, 28, daysInMonth];
 
@@ -65,13 +63,9 @@ function FlowChart({ data, daysInMonth = 31 }) {
         <svg viewBox={`0 0 ${W} ${H}`} className="flow-chart" preserveAspectRatio="none"
           onMouseMove={handleHoverMove} onMouseLeave={() => setHoverDay(null)}>
           <defs>
-            <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--c-green)" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="var(--c-green)" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--c-red)" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="var(--c-red)" stopOpacity="0" />
+            <linearGradient id="gradDark" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#E84040" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#E84040" stopOpacity="0" />
             </linearGradient>
           </defs>
           <g className="flow-grid">
@@ -85,13 +79,10 @@ function FlowChart({ data, daysInMonth = 31 }) {
             })}
           </g>
           <path d={expArea} className="flow-area-expense" />
-          <path d={incArea} className="flow-area-income" />
           <path d={smooth(expPts)} className="flow-line-expense" />
-          <path d={smooth(incPts)} className="flow-line-income" />
           {hovered && (
             <g className="flow-hover" aria-hidden="true">
               <line className="flow-hover-line" x1={xOf(hoverDay)} y1={PAD_T} x2={xOf(hoverDay)} y2={PAD_T + innerH} />
-              <circle cx={xOf(hoverDay)} cy={yOf(hovered.inc)} r="4.5" className="flow-dot-income" />
               <circle cx={xOf(hoverDay)} cy={yOf(hovered.exp)} r="4.5" className="flow-dot-expense" />
             </g>
           )}
@@ -107,18 +98,9 @@ function FlowChart({ data, daysInMonth = 31 }) {
             style={{ left: `${xOf(hoverDay) / W * 100}%` }}
           >
             <div className="flow-tooltip-day">Ngày {hovered.d}</div>
-            <div className="flow-tooltip-row income"><span />Thu <b className="num">{fmt(hovered.inc)}</b></div>
             <div className="flow-tooltip-row expense"><span />Chi <b className="num">{fmt(hovered.exp)}</b></div>
           </div>
         )}
-        </div>
-      </div>
-      <div className="legend">
-        <div className="legend-item">
-          <span className="legend-dot" style={{ background: "var(--c-green)" }} /> Thu nhập
-        </div>
-        <div className="legend-item">
-          <span className="legend-dot" style={{ background: "var(--c-red)" }} /> Chi tiêu
         </div>
       </div>
     </>
@@ -242,7 +224,7 @@ function BenchmarkBar({ value, benchmark, max }) {
 }
 
 // ====== BalanceSparkline — cumulative balance line inside the hero card ======
-function BalanceSparkline({ points, totalDays = 31 }) {
+function BalanceSparkline({ points, totalDays = 31, className = "hero-sparkline" }) {
   if (!points || points.length < 2) return null;
   const W = 600, H = 150, PAD = 12;
   const vals = points.map(p => p.v);
@@ -260,7 +242,7 @@ function BalanceSparkline({ points, totalDays = 31 }) {
   const last = pts[pts.length - 1];
   const area = line + ` L ${last.x} ${H} L ${pts[0].x} ${H} Z`;
   return (
-    <svg className="hero-sparkline" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+    <svg className={className} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="heroSparkFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.14" />
@@ -350,9 +332,76 @@ function CategoryDonut({ data, total, activeId, onHover, onSelect }) {
   );
 }
 
+// ====== DebtDonut — open-debt share ring for the overview debt card ======
+function DebtDonut({ data, total, activeId, onHover, onSelect }) {
+  const SIZE = 200, R = 78, STROKE = 22, STROKE_ACTIVE = 28;
+  const C = 2 * Math.PI * R;
+  const GAP = data.length > 1 ? 5 : 0;
+
+  const segments = useMemoC(() => {
+    if (!data.length || total <= 0) return [];
+    const MIN_LEN = 7;
+    const usable = C - GAP * data.length;
+    const raw = data.map(c => Math.max(MIN_LEN, usable * c.amount / total));
+    const scale = usable / raw.reduce((s, v) => s + v, 0);
+    let start = 0;
+    return data.map((c, i) => {
+      const len = raw[i] * scale;
+      const seg = { ...c, len, start };
+      start += len + GAP;
+      return seg;
+    });
+  }, [data, total]);
+
+  const active = activeId != null ? data.find(c => c.id === activeId) : null;
+
+  return (
+    <div className="cat-donut">
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="Tỷ trọng nợ theo khoản">
+        <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
+          {segments.map(s => (
+            <circle
+              key={s.id}
+              className={"cat-donut-seg" + (activeId == null ? "" : activeId === s.id ? " is-active" : " is-dimmed")}
+              cx={SIZE / 2} cy={SIZE / 2} r={R}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={activeId === s.id ? STROKE_ACTIVE : STROKE}
+              strokeDasharray={`${s.len} ${C - s.len}`}
+              strokeDashoffset={-s.start}
+              onMouseEnter={() => onHover && onHover(s.id)}
+              onMouseLeave={() => onHover && onHover(null)}
+              onClick={() => onSelect && onSelect(s.id)}
+              style={{ cursor: onSelect ? "pointer" : "default" }}
+            >
+              <title>{`${s.name} · ${s.pct.toFixed(0)}%`}</title>
+            </circle>
+          ))}
+        </g>
+      </svg>
+      <div className="cat-donut-center" aria-hidden="true">
+        {active ? (
+          <>
+            <span className="cat-donut-center-label">{active.name}</span>
+            <span className="cat-donut-center-value num" style={{ color: active.color }}>{fmtShort(active.amount)}</span>
+            <span className="cat-donut-center-sub">{active.pct.toFixed(0)}% · {active.type === "owe" ? "bạn nợ" : "nợ bạn"}</span>
+          </>
+        ) : (
+          <>
+            <span className="cat-donut-center-label">Tổng nợ</span>
+            <span className="cat-donut-center-value num">{fmtShort(total)}</span>
+            <span className="cat-donut-center-sub">{data.length} khoản</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
   FlowChart,
   CategoryDonut,
+  DebtDonut,
   SixMonthBars,
   BenchmarkBar,
   BalanceSparkline,

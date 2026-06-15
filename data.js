@@ -12,7 +12,7 @@ const DEFAULT_CATEGORIES = {
   'Du lịch':  { name: 'Du lịch',  emoji: '✈️', color: '#5856D6' },
   'Cầu lông':   { name: 'Cầu lông',   emoji: '🏸', color: '#34C759' },
   'Trả nợ':     { name: 'Trả nợ',     emoji: '💳', color: '#FF3B30' },
-  'AI':         { name: 'AI',         emoji: '✦', color: '#D97757' },
+  'AI':         { name: 'AI',         emoji: '✨', color: '#D97757' },
   'Khác':       { name: 'Khác',       emoji: '📦', color: '#8E8E93' },
 };
 

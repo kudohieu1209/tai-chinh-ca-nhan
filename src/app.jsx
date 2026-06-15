@@ -147,6 +147,9 @@ function App() {
   const [goals, setGoals]       = useState([]);
   const [notes, setNotes]       = useState("");
   const [loaded, setLoaded]     = useState(false);
+  // Where the currently shown data came from: "remote" (live Firestore),
+  // "local" (cached backup), or "seed" (built-in sample — DB unreachable).
+  const [dataSource, setDataSource] = useState("remote");
   const [page, setPage]         = useState("overview");
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
   const [lang, setLang]         = useState(() => localStorage.getItem("hieu-lang") || "vi");
@@ -171,7 +174,11 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
-    const hydrate = (data = {}) => {
+    // persistLocal: only cache to localStorage when the data is trustworthy
+    // (live remote data, or the user's own local backup). Never overwrite the
+    // local backup with built-in seed data — that would destroy the only
+    // surviving copy if the database is temporarily unreachable.
+    const hydrate = (data = {}, { persistLocal = true } = {}) => {
       setCategories(data.categories);
       setCatsVersion(v => v + 1);
       const { result, changed } = migrateCats(data.transactions || []);
@@ -195,7 +202,9 @@ function App() {
       setGoals(gls);
       setNotes(nts);
       setLoaded(true);
-      saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts });
+      if (persistLocal) {
+        saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts });
+      }
       return { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements };
     };
 
@@ -205,29 +214,43 @@ function App() {
 
     const unsub = window._fsDoc.onSnapshot(snap => {
       if (snap.exists) {
+        setDataSource("remote");
         const { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements } = hydrate(snap.data());
         if (changed || missingSettlementTxs.length || openDebtSettlements.length) {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
-        const fallback = readLocalData() || seedData();
-        hydrate(fallback);
+        // Document genuinely absent (first run). Seed from a local backup if
+        // one exists, otherwise from the built-in sample, and create the doc.
+        const local = readLocalData();
+        const fallback = local || seedData();
+        setDataSource(local ? "local" : "seed");
+        hydrate(fallback, { persistLocal: !!local });
         window._fsDoc.set(fallback);
       }
     }, err => {
+      // Database unreachable (often: Firestore security rules expired/blocked).
+      // Show the last good local copy if we have one, otherwise the sample —
+      // but NEVER write seed over the local backup or to Firestore here.
       console.error("Firebase error:", err);
-      hydrate(readLocalData() || seedData());
+      const local = readLocalData();
+      setDataSource(local ? "local" : "seed");
+      hydrate(local || seedData(), { persistLocal: false });
     });
 
     return () => unsub();
   }, []);
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
+    // While showing built-in sample data (database unreachable), do not write
+    // anything: persisting here would overwrite the real local backup — and
+    // the real remote data once the connection returns — with sample data.
+    if (dataSource === "seed") return;
     saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes });
     if (window._fsDoc) {
       window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }, { merge: true }).catch(console.error);
     }
-  }, [notes]);
+  }, [notes, dataSource]);
 
   // ── Transaction CRUD ──
   const addTransaction = useCallback((tx) => {
@@ -357,6 +380,7 @@ function App() {
   // Applies the new list, renames categories on existing transactions/budgets,
   // and reassigns transactions of deleted categories to "Khác".
   const saveCategories = useCallback((nextList, renames = {}, removed = []) => {
+    if (dataSource === "seed") return;
     const removedSet = new Set(removed);
     const mapCat = (catName) => {
       if (renames[catName]) return renames[catName];
@@ -392,15 +416,16 @@ function App() {
         budgets: nextBudgets,
       }, { merge: true }).catch(console.error);
     }
-  }, [allTransactions, budgets, debts, goals, notes]);
+  }, [allTransactions, budgets, debts, goals, notes, dataSource]);
 
   const saveNotes = useCallback((nextNotes) => {
     setNotes(nextNotes);
+    if (dataSource === "seed") return;
     saveLocalData({ categories: Object.values(CATEGORIES), transactions: allTransactions, debts, budgets, goals, notes: nextNotes });
     if (window._fsDoc) {
       window._fsDoc.set({ notes: nextNotes }, { merge: true }).catch(console.error);
     }
-  }, [allTransactions, debts, budgets, goals]);
+  }, [allTransactions, debts, budgets, goals, dataSource]);
 
   // Filter transactions for viewed month
   const monthTransactions = useMemo(() => {
@@ -428,6 +453,7 @@ function App() {
     viewMonth,
     viewYear,
     monthLabel,
+    onMonthChange:       (d) => setMonthOffset(m => Math.max(0, m + d)),
     openingBalance:      monthlyBalance.openingBalance,
     periodBalance:       monthlyBalance.periodBalance,
     closingBalance:      monthlyBalance.closingBalance,
@@ -446,11 +472,25 @@ function App() {
     onSaveNotes:         saveNotes,
     onSaveCategories:    saveCategories,
     onNavigate:          setPage,
+    theme,
+    onTheme:             setTheme,
+    lang,
+    onLang:              setLang,
   };
 
   return (
     <div className="app">
       <main className="main">
+        {dataSource !== "remote" && (
+          <div className="data-warning" role="alert">
+            <Icons.bell size={15} />
+            <span>
+              {dataSource === "seed"
+                ? "Chưa kết nối được cơ sở dữ liệu — đang hiển thị dữ liệu mẫu. ĐỪNG thêm/sửa giao dịch lúc này. Dữ liệu thật của bạn vẫn an toàn trên server; kiểm tra kết nối/Firestore rồi tải lại."
+                : "Chưa kết nối được cơ sở dữ liệu — đang hiển thị bản sao lưu cục bộ. Thay đổi sẽ không được đồng bộ cho tới khi kết nối lại."}
+            </span>
+          </div>
+        )}
         <Toolbar
           activePage={page}
           month={monthLabel}
@@ -465,7 +505,41 @@ function App() {
         />
         <PageEl key={page} {...pageProps} />
       </main>
+      <BottomNav activePage={page} onChange={setPage} debts={debts} lang={lang} />
     </div>
+  );
+}
+
+function BottomNav({ activePage, onChange, debts = [], lang = "vi" }) {
+  const openDebtCount = debts.filter(d => !d.settled).length;
+  const items = [
+    { id: "overview",     label: lang === "en" ? "Overview"     : "Tổng quan", icon: "squareGrid" },
+    { id: "transactions", label: lang === "en" ? "Transactions" : "Giao dịch", icon: "arrowLeftRight" },
+    { id: "debts",        label: lang === "en" ? "Debts"        : "Nợ vay",    icon: "creditCard", badge: openDebtCount > 0 ? openDebtCount : null },
+    { id: "budget",       label: lang === "en" ? "Budget"       : "Ngân sách", icon: "wallet" },
+    { id: "notes",        label: "Note",                                        icon: "pencil" },
+  ];
+  return (
+    <nav className="bottom-nav" aria-label="Page navigation">
+      {items.map(item => {
+        const Icon = Icons[item.icon];
+        const active = activePage === item.id;
+        return (
+          <button
+            key={item.id}
+            className={"bottom-nav-item" + (active ? " active" : "")}
+            onClick={() => onChange(item.id)}
+            aria-current={active ? "page" : undefined}
+          >
+            <span className="bottom-nav-icon-wrap">
+              <Icon size={20} />
+              {item.badge != null && <span className="bottom-nav-badge">{item.badge}</span>}
+            </span>
+            <span className="bottom-nav-label">{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 

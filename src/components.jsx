@@ -74,7 +74,7 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
   }, [settingsOpen]);
 
   const isOverview = activePage === "overview";
-  const showMonthPicker = activePage !== "notes";
+  const showMonthPicker = activePage !== "notes" && activePage !== "overview";
   const today = new Date();
   const isCurrentMonth = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentMonth
@@ -87,6 +87,8 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
     budget:       lang === "en" ? "Budget"       : "Ngân sách",
     notes:        "Note",
   };
+
+  if (isOverview) return null;
 
   return (
     <div className={"toolbar" + (isOverview ? " toolbar-overview" : "")}>
@@ -158,9 +160,6 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
               </div>
             </div>
           )}
-        </div>
-        <div className="toolbar-avatar">
-          <img src="avatar.jpg" alt="Kudo Hiếu" />
         </div>
       </div>
     </div>
@@ -248,7 +247,7 @@ function MoneyInput({ value, onChange, placeholder = "0" }) {
 // ====== Modal — centered dialog with overlay, Escape/backdrop close ======
 // Rendered through a portal: page-level entrance animations keep a transform
 // (fill-mode: forwards), which would otherwise trap position:fixed inside the page.
-function Modal({ title, subtitle, onClose, children, footer, headerExtra, width = 560 }) {
+function Modal({ title, subtitle, onClose, children, footer, headerExtra, sidePanel, width = 560 }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
@@ -272,6 +271,7 @@ function Modal({ title, subtitle, onClose, children, footer, headerExtra, width 
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
+        {sidePanel}
       </div>
     </div>,
     document.body
@@ -311,6 +311,77 @@ function TabBar({ tabs, active, onChange, style, className }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function Sidebar({ activePage, onChange, debts = [], theme, onTheme, lang, onLang }) {
+  const openDebtCount = debts.filter(d => !d.settled).length;
+  const items = [
+    { id: "overview",     label: lang === "en" ? "Overview" : "Tổng quan",      icon: Icons.squareGrid },
+    { id: "transactions", label: lang === "en" ? "Transactions" : "Giao dịch",  icon: Icons.arrowLeftRight },
+    { id: "debts",        label: lang === "en" ? "Debts" : "Nợ vay",            icon: Icons.creditCard,    badge: openDebtCount > 0 ? openDebtCount : null },
+    { id: "budget",       label: lang === "en" ? "Budget" : "Ngân sách",        icon: Icons.wallet },
+    { id: "notes",        label: "Note",                                        icon: Icons.pencil },
+  ];
+  const activeIndex = items.findIndex(item => item.id === activePage);
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-mark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="28" height="28">
+            <rect width="100" height="100" rx="22" fill="#007AFF" />
+            <text x="50" y="68" font-family="-apple-system,sans-serif" font-size="60" font-weight="700" fill="white" text-anchor="middle">đ</text>
+          </svg>
+        </div>
+        <div className="sidebar-brand-text">
+          <span className="sidebar-brand-name">FinTrack</span>
+          <span className="sidebar-brand-sub">Tài chính của Hiếu</span>
+        </div>
+      </div>
+
+      <div className="sidebar-section-label">{lang === "en" ? "Menu" : "Danh mục"}</div>
+      <nav className="nav-list" aria-label="Sidebar navigation">
+        <div className="nav-pill" style={activeIndex !== -1 ? { top: activeIndex * 40 } : { display: "none" }} />
+        {items.map(item => {
+          const Icon = item.icon;
+          const active = activePage === item.id;
+          return (
+            <button
+              key={item.id}
+              className={"nav-item" + (active ? " active" : "")}
+              onClick={() => onChange(item.id)}
+              aria-current={active ? "page" : undefined}
+            >
+              <Icon className="nav-icon" size={18} />
+              <span className="nav-label">{item.label}</span>
+              {item.badge != null && <span className="nav-badge">{item.badge}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">
+            <img src="avatar.jpg" alt="User avatar" />
+          </div>
+          <div className="sidebar-user-meta">
+            <span className="sidebar-user-name">Hieu Nguyen</span>
+            <span className="sidebar-user-role">{lang === "en" ? "Student" : "Sinh viên"}</span>
+          </div>
+        </div>
+
+        <div className="theme-toggle">
+          <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")}>
+            <Icons.sun size={12} /> {lang === "en" ? "Light" : "Sáng"}
+          </button>
+          <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")}>
+            <Icons.moon size={12} /> {lang === "en" ? "Dark" : "Tối"}
+          </button>
+        </div>
+      </div>
+    </aside>
   );
 }
 
