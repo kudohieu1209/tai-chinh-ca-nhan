@@ -360,20 +360,12 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const budgetTone = budgetWatch?.pct >= 100 ? "red" : budgetWatch ? "orange" : "green";
 
   // Balance-card insight rows — fills the lower half of the hero balance card
-  const peakDay = useMemo(() => {
-    let best = null;
-    for (const f of dailyFlow) {
-      if ((f.exp || 0) > 0 && (!best || f.exp > best.exp)) best = f;
-    }
-    return best;
-  }, [dailyFlow]);
   const avgDailySpend = daysElapsed > 0 ? expense / daysElapsed : 0;
   const expenseMoM = previousMonthSummary && previousMonthSummary.exp > 0
     ? (currentMonthSummary.exp - previousMonthSummary.exp) / previousMonthSummary.exp * 100
     : null;
   const balanceInsights = [
     { key: "avg", icon: "clock", label: "TB chi mỗi ngày", value: fmtShort(avgDailySpend), tone: "plain" },
-    peakDay && { key: "peak", icon: "trendUp", label: "Ngày chi nhiều nhất", value: `${peakDay.d}/${viewMonth + 1} · ${fmtShort(peakDay.exp)}`, tone: "plain" },
     isCurrentView
       ? { key: "proj", icon: "sparkle", label: "Dự chi cuối tháng", value: fmtShort(projectedExpense), tone: projectedExpense > income && income > 0 ? "orange" : "plain" }
       : { key: "final", icon: "wallet", label: "Số dư cuối tháng", value: fmtShort(finalBalance), tone: finalBalance < 0 ? "red" : "plain" },
