@@ -1326,11 +1326,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 border: "none", cursor: "pointer", background: "none", padding: 0,
-                color: notes ? "#FF9500" : "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.5)",
                 transition: "color 0.15s",
               }}
-              onMouseEnter={e => e.currentTarget.style.color = notes ? "#FFBB55" : "rgba(255,255,255,0.7)"}
-              onMouseLeave={e => e.currentTarget.style.color = notes ? "#FF9500" : "rgba(255,255,255,0.35)"}
+              onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.9)"}
+              onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
             >
               <Icons.pencil size={18} />
             </button>
