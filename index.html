@@ -1318,22 +1318,21 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               </button>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
             <button
               onClick={() => { setNoteText(notes); setNoteOpen(true); }}
               title="Ghi chú tháng"
               style={{
-                flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                width: 36, height: 36, borderRadius: "50%", border: "none", cursor: "pointer",
-                background: notes ? "rgba(255,149,0,0.18)" : "rgba(255,255,255,0.1)",
-                color: notes ? "#FF9500" : "rgba(255,255,255,0.5)",
-                transition: "all 0.15s",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "none", cursor: "pointer", background: "none", padding: 0,
+                color: notes ? "#FF9500" : "rgba(255,255,255,0.35)",
+                transition: "color 0.15s",
               }}
-              onMouseEnter={e => e.currentTarget.style.background = notes ? "rgba(255,149,0,0.28)" : "rgba(255,255,255,0.18)"}
-              onMouseLeave={e => e.currentTarget.style.background = notes ? "rgba(255,149,0,0.18)" : "rgba(255,255,255,0.1)"}
+              onMouseEnter={e => e.currentTarget.style.color = notes ? "#FFBB55" : "rgba(255,255,255,0.7)"}
+              onMouseLeave={e => e.currentTarget.style.color = notes ? "#FF9500" : "rgba(255,255,255,0.35)"}
             >
-              <Icons.pencil size={16} />
+              <Icons.pencil size={18} />
             </button>
           </div>
           <div className="hero-chips">
