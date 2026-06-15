@@ -1813,7 +1813,7 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   border-radius: var(--r-xl);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
   display: flex; flex-direction: column;
-  max-height: min(680px, calc(100dvh - 40px));
+  max-height: min(800px, calc(100dvh - 40px));
   animation: modalPop var(--dur-reveal) var(--spring-snappy);
 }
 .modal-head {
