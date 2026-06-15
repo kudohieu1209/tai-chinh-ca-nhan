@@ -64,10 +64,13 @@ const debtColor = (id) => {
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' VND';
 const fmtShort = (n) => {
-  if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'tỷ';
-  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-  return String(n);
+  const value = Math.round(Number(n) || 0);
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  if (abs >= 1e9) return sign + (abs / 1e9).toFixed(1).replace(/\.0$/, '') + 'tỷ';
+  if (abs >= 1e6) return sign + (abs / 1e6).toFixed(abs >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (abs >= 1e3) return sign + (abs / 1e3).toFixed(0) + 'K';
+  return sign + String(abs);
 };
 const fmtNum = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
 
