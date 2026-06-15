@@ -10,9 +10,10 @@ const DEFAULT_CATEGORIES = {
   'Sức khỏe': { name: 'Sức khỏe', emoji: '💊', color: '#30B0C7' },
   'Học tập':  { name: 'Học tập',  emoji: '📚', color: '#5AC8FA' },
   'Du lịch':  { name: 'Du lịch',  emoji: '✈️', color: '#5856D6' },
-  'Cầu lông': { name: 'Cầu lông', emoji: '🏸', color: '#34C759' },
-  'Trả nợ':   { name: 'Trả nợ',   emoji: '💳', color: '#FF3B30' },
-  'Khác':     { name: 'Khác',     emoji: '📦', color: '#8E8E93' },
+  'Cầu lông':   { name: 'Cầu lông',   emoji: '🏸', color: '#34C759' },
+  'Trả nợ':     { name: 'Trả nợ',     emoji: '💳', color: '#FF3B30' },
+  'AI Package': { name: 'AI Package', emoji: '✦', color: '#D97757' },
+  'Khác':       { name: 'Khác',       emoji: '📦', color: '#8E8E93' },
 };
 
 // Working category map — every page reads this global at render time.
@@ -64,8 +65,8 @@ const debtColor = (id) => {
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' VND';
 const fmtShort = (n) => {
   if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'tỷ';
-  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'tr';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'k';
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
   return String(n);
 };
 const fmtNum = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
