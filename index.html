@@ -1346,7 +1346,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               </span>
               <span className="hero-chip-value num">{fmt(expenseAnim)}</span>
               <span className="hero-chip-sub">
-                {expenseCount} giao dịch · {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}/lần
+                Dự cuối tháng tổng chi {projectedExpense > 0 ? fmtShort(projectedExpense) : "—"}
               </span>
             </div>
           </div>
