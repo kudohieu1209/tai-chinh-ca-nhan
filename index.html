@@ -187,7 +187,7 @@ function ClaudeAsterisk({ size = 18, color = "currentColor" }) {
 
 // Renders category icon — SVG for special categories, emoji otherwise
 function CatIcon({ name, emoji, color, size = 26 }) {
-  if (name === "AI Package") {
+  if (name === "AI") {
     return <ClaudeAsterisk size={Math.round(size * 0.58)} color={color || "#D97757"} />;
   }
   return <span style={{ fontSize: size * 0.54, lineHeight: 1 }}>{emoji}</span>;
@@ -868,7 +868,7 @@ function TabBar({ tabs, active, onChange, style, className }) {
 // ============================================================
 
 const GOAL_COLORS = ["#0A84FF","#FF9500","#34C759","#FF2D55","#5856D6","#AF52DE","#FF3B30","#00C7BE","#FFCC00","#A2845E"];
-const FIXED_PACE_CATEGORIES = new Set(["Thuê trọ", "Trả nợ", "AI Package"]);
+const FIXED_PACE_CATEGORIES = new Set(["Thuê trọ", "Trả nợ", "AI"]);
 const GOAL_EMOJIS = ["🎯","💻","🏖️","🚗","📚","🏠","✈️","💍","🎓","📱","💪","🏋️","🎸","🌍","🐶"];
 
 function GoalForm({ goal, onSave, onCancel }) {
