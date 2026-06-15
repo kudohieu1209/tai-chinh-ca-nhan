@@ -1318,7 +1318,24 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               </button>
             </div>
           </div>
-          <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
+            <button
+              onClick={() => { setNoteText(notes); setNoteOpen(true); }}
+              title="Ghi chú tháng"
+              style={{
+                flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                width: 36, height: 36, borderRadius: "50%", border: "none", cursor: "pointer",
+                background: notes ? "rgba(255,149,0,0.18)" : "rgba(255,255,255,0.1)",
+                color: notes ? "#FF9500" : "rgba(255,255,255,0.5)",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = notes ? "rgba(255,149,0,0.28)" : "rgba(255,255,255,0.18)"}
+              onMouseLeave={e => e.currentTarget.style.background = notes ? "rgba(255,149,0,0.18)" : "rgba(255,255,255,0.1)"}
+            >
+              <Icons.pencil size={16} />
+            </button>
+          </div>
           <div className="hero-chips">
             <div className="hero-chip">
               <span className="hero-chip-label"><Icons.wallet size={12} /> Dư đầu tháng</span>
