@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Tài chính của Hiếu</title>
-  <link rel="stylesheet" href="style.css?v=20260610-notes" />
+  <link rel="stylesheet" href="style.css?v=20260617-auth" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23007AFF'/%3E%3Ctext x='50' y='68' font-family='-apple-system,sans-serif' font-size='60' font-weight='700' fill='white' text-anchor='middle'%3E%C4%91%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
@@ -12,6 +12,7 @@
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
   <!-- React + Babel from CDN -->
@@ -1536,18 +1537,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               </button>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div className="hero-balance-main">
             <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
             <button
+              className="hero-note-btn"
               onClick={() => { setNoteText(notes); setNoteOpen(true); }}
               title="Ghi chú tháng"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                border: "none", cursor: "pointer", background: "none", padding: 0,
-                color: "var(--text-3)", transition: "color 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
-              onMouseLeave={e => e.currentTarget.style.color = "var(--text-3)"}
+              aria-label="Ghi chú tháng"
             >
               <Icons.pencil size={18} />
             </button>
@@ -3867,6 +3863,143 @@ const DEFAULT_GOALS = [
 
 const LOCAL_DATA_KEY = "fintrack-local-data-v1";
 
+function getFirebaseApp() {
+  try {
+    return firebase.app();
+  } catch (_) {
+    return firebase.initializeApp(firebaseConfig);
+  }
+}
+
+function authErrorMessage(err) {
+  const code = err?.code || "";
+  if (code.includes("invalid-email")) return "Email chưa đúng định dạng.";
+  if (code.includes("user-not-found") || code.includes("wrong-password") || code.includes("invalid-credential")) {
+    return "Email hoặc mật khẩu chưa đúng.";
+  }
+  if (code.includes("email-already-in-use")) return "Email này đã có tài khoản rồi.";
+  if (code.includes("weak-password")) return "Mật khẩu nên có ít nhất 6 ký tự.";
+  if (code.includes("popup-closed")) return "Bạn đã đóng cửa sổ đăng nhập.";
+  if (code.includes("operation-not-allowed")) return "Provider đăng nhập này chưa được bật trong Firebase.";
+  return err?.message || "Không đăng nhập được, thử lại giúp mình.";
+}
+
+function AuthGate({ theme, onTheme }) {
+  const [mode, setMode] = useState("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const isSignup = mode === "signup";
+
+  const submitEmail = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const auth = firebase.auth();
+      if (isSignup) {
+        const cred = await auth.createUserWithEmailAndPassword(email.trim(), password);
+        if (displayName.trim()) await cred.user.updateProfile({ displayName: displayName.trim() });
+      } else {
+        await auth.signInWithEmailAndPassword(email.trim(), password);
+      }
+    } catch (err) {
+      setError(authErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      await firebase.auth().signInWithPopup(provider);
+    } catch (err) {
+      setError(authErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!email.trim()) {
+      setError("Nhập email trước rồi mình gửi link đặt lại mật khẩu.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await firebase.auth().sendPasswordResetEmail(email.trim());
+      setError("Đã gửi email đặt lại mật khẩu nếu tài khoản tồn tại.");
+    } catch (err) {
+      setError(authErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <section className="auth-card">
+        <div className="auth-head">
+          <div>
+            <p className="auth-kicker">FinTrack</p>
+            <h1>{isSignup ? "Tạo tài khoản" : "Đăng nhập"}</h1>
+            <p>{isSignup ? "Dữ liệu sẽ được lưu theo tài khoản riêng của bạn." : "Vào tài khoản để đồng bộ dữ liệu tài chính."}</p>
+          </div>
+          <button
+            className="auth-theme-btn"
+            type="button"
+            onClick={() => onTheme(theme === "dark" ? "light" : "dark")}
+            aria-label="Đổi giao diện"
+            title="Đổi giao diện"
+          >
+            {theme === "dark" ? <Icons.sun size={18} /> : <Icons.moon size={18} />}
+          </button>
+        </div>
+
+        <form className="auth-form" onSubmit={submitEmail}>
+          {isSignup && (
+            <label className="field">
+              <span className="field-label">Tên hiển thị</span>
+              <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} autoComplete="name" placeholder="Hiếu" />
+            </label>
+          )}
+          <label className="field">
+            <span className="field-label">Email</span>
+            <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" placeholder="you@example.com" required />
+          </label>
+          <label className="field">
+            <span className="field-label">Mật khẩu</span>
+            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete={isSignup ? "new-password" : "current-password"} placeholder="Tối thiểu 6 ký tự" required />
+          </label>
+          {error && <div className="auth-error" role="status">{error}</div>}
+          <button className="btn auth-submit" type="submit" disabled={busy}>
+            {busy ? "Đang xử lý..." : isSignup ? "Tạo tài khoản" : "Đăng nhập"}
+          </button>
+        </form>
+
+        <button className="auth-google" type="button" onClick={signInWithGoogle} disabled={busy}>
+          <span>G</span>
+          Đăng nhập bằng Google
+        </button>
+
+        <div className="auth-foot">
+          <button type="button" onClick={() => { setMode(isSignup ? "signin" : "signup"); setError(""); }}>
+            {isSignup ? "Đã có tài khoản? Đăng nhập" : "Chưa có tài khoản? Tạo mới"}
+          </button>
+          {!isSignup && <button type="button" onClick={resetPassword}>Quên mật khẩu</button>}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function seedData() {
   return {
     transactions: _SEED.transactions,
@@ -3973,6 +4106,8 @@ function App() {
   const [goals, setGoals]       = useState([]);
   const [notes, setNotes]       = useState("");
   const [loaded, setLoaded]     = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
   // Where the currently shown data came from: "remote" (live Firestore),
   // "local" (cached backup), or "seed" (built-in sample — DB unreachable).
   const [dataSource, setDataSource] = useState("remote");
@@ -4000,6 +4135,22 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
+    getFirebaseApp();
+    const auth = firebase.auth();
+    auth.languageCode = lang === "vi" ? "vi" : "en";
+    return auth.onAuthStateChanged(user => {
+      setAuthUser(user);
+      setAuthReady(true);
+      if (!user) {
+        window._fsDoc = null;
+        setLoaded(false);
+      }
+    });
+  }, [lang]);
+
+  useEffect(() => {
+    if (!authReady || !authUser) return undefined;
+    setLoaded(false);
     // persistLocal: only cache to localStorage when the data is trustworthy
     // (live remote data, or the user's own local backup). Never overwrite the
     // local backup with built-in seed data — that would destroy the only
@@ -4034,11 +4185,11 @@ function App() {
       return { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements };
     };
 
-    try { firebase.initializeApp(firebaseConfig); } catch (_) { /* already initialized */ }
+    getFirebaseApp();
     const db = firebase.firestore();
-    window._fsDoc = db.collection("fintrack").doc("hiewu");
+    window._fsDoc = db.collection("fintrackUsers").doc(authUser.uid);
 
-    const unsub = window._fsDoc.onSnapshot(snap => {
+    const unsub = window._fsDoc.onSnapshot(async snap => {
       if (snap.exists) {
         setDataSource("remote");
         const { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements } = hydrate(snap.data());
@@ -4046,13 +4197,28 @@ function App() {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
-        // Document genuinely absent (first run). Seed from a local backup if
-        // one exists, otherwise from the built-in sample, and create the doc.
+        // First login after auth rollout: copy the old shared document into the
+        // user's private document before falling back to local backup/sample data.
+        const legacySnap = await db.collection("fintrack").doc("hiewu").get().catch(err => {
+          console.warn("Legacy data migration skipped:", err);
+          return null;
+        });
         const local = readLocalData();
-        const fallback = local || seedData();
-        setDataSource(local ? "local" : "seed");
-        hydrate(fallback, { persistLocal: !!local });
-        window._fsDoc.set(fallback);
+        const fallback = legacySnap?.exists ? legacySnap.data() : local || seedData();
+        setDataSource(legacySnap?.exists ? "remote" : local ? "local" : "seed");
+        const { txns, dbts, bdgs, gls, nts } = hydrate(fallback, { persistLocal: legacySnap?.exists || !!local });
+        window._fsDoc.set({
+          categories: Object.values(CATEGORIES),
+          transactions: txns,
+          debts: dbts,
+          budgets: bdgs,
+          goals: gls,
+          notes: nts,
+          ownerUid: authUser.uid,
+          ownerEmail: authUser.email || "",
+          migratedFrom: legacySnap?.exists ? "fintrack/hiewu" : local ? "localStorage" : "seed",
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
       }
     }, err => {
       // Database unreachable (often: Firestore security rules expired/blocked).
@@ -4065,7 +4231,7 @@ function App() {
     });
 
     return () => unsub();
-  }, []);
+  }, [authReady, authUser?.uid]);
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
     // While showing built-in sample data (database unreachable), do not write
@@ -4265,7 +4431,12 @@ function App() {
     getMonthlyBalance(allTransactions, viewYear, viewMonth)
   ), [allTransactions, viewYear, viewMonth]);
 
+  if (!authReady) return <AppSkeleton />;
+  if (!authUser) return <AuthGate theme={theme} onTheme={setTheme} />;
   if (!loaded) return <AppSkeleton />;
+
+  const userLabel = authUser.displayName || authUser.email || "Tài khoản";
+  const userInitial = (userLabel.trim()[0] || "U").toUpperCase();
 
   const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget, notes: Notes };
   const PageEl = PageComponents[page];
@@ -4307,6 +4478,17 @@ function App() {
   return (
     <div className="app">
       <main className="main">
+        <div className="auth-session">
+          <div className="auth-session-user" title={authUser.email || userLabel}>
+            {authUser.photoURL
+              ? <img src={authUser.photoURL} alt="" />
+              : <span>{userInitial}</span>}
+            <strong>{userLabel}</strong>
+          </div>
+          <button type="button" onClick={() => firebase.auth().signOut()}>
+            Đăng xuất
+          </button>
+        </div>
         {dataSource !== "remote" && (
           <div className="data-warning" role="alert">
             <Icons.bell size={15} />

@@ -542,18 +542,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               </button>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div className="hero-balance-main">
             <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
             <button
+              className="hero-note-btn"
               onClick={() => { setNoteText(notes); setNoteOpen(true); }}
               title="Ghi chú tháng"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                border: "none", cursor: "pointer", background: "none", padding: 0,
-                color: "var(--text-3)", transition: "color 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
-              onMouseLeave={e => e.currentTarget.style.color = "var(--text-3)"}
+              aria-label="Ghi chú tháng"
             >
               <Icons.pencil size={18} />
             </button>
