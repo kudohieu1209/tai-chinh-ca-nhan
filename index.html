@@ -3862,6 +3862,19 @@ const DEFAULT_GOALS = [
 ];
 
 const LOCAL_DATA_KEY = "fintrack-local-data-v1";
+const OWNER_EMAIL = "kudohieu1209@gmail.com";
+
+function normalizedEmail(user) {
+  return String(user?.email || "").trim().toLowerCase();
+}
+
+function isOwnerUser(user) {
+  return normalizedEmail(user) === OWNER_EMAIL;
+}
+
+function localDataKey(user) {
+  return user?.uid ? `${LOCAL_DATA_KEY}:${user.uid}` : LOCAL_DATA_KEY;
+}
 
 function getFirebaseApp() {
   try {
@@ -4000,6 +4013,25 @@ function AuthGate({ theme, onTheme }) {
   );
 }
 
+function AccessDenied({ user }) {
+  return (
+    <div className="auth-page">
+      <section className="auth-card">
+        <div className="auth-head">
+          <div>
+            <p className="auth-kicker">FinTrack</p>
+            <h1>Không có quyền truy cập</h1>
+            <p>Tài khoản {user?.email || "này"} không được phép mở dữ liệu tài chính này.</p>
+          </div>
+        </div>
+        <button className="btn auth-submit" type="button" onClick={() => firebase.auth().signOut()}>
+          Đăng xuất
+        </button>
+      </section>
+    </div>
+  );
+}
+
 function seedData() {
   return {
     transactions: _SEED.transactions,
@@ -4010,19 +4042,38 @@ function seedData() {
   };
 }
 
-function readLocalData() {
+function blankData() {
+  return {
+    transactions: [],
+    debts: [],
+    budgets: [],
+    goals: [],
+    notes: "",
+  };
+}
+
+function readLocalData(user, { allowLegacy = false } = {}) {
   try {
-    const raw = localStorage.getItem(LOCAL_DATA_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = localStorage.getItem(localDataKey(user));
+    if (raw) return JSON.parse(raw);
+
+    if (allowLegacy) {
+      const legacyRaw = localStorage.getItem(LOCAL_DATA_KEY);
+      return legacyRaw ? JSON.parse(legacyRaw) : null;
+    }
+    return null;
   } catch (err) {
     console.warn("Local data unavailable:", err);
     return null;
   }
 }
 
-function saveLocalData(data) {
+function saveLocalData(data, user) {
   try {
-    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
+    localStorage.setItem(localDataKey(user), JSON.stringify(data));
+    if (isOwnerUser(user)) {
+      localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
+    }
   } catch (err) {
     console.warn("Local data save failed:", err);
   }
@@ -4149,7 +4200,7 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
-    if (!authReady || !authUser) return undefined;
+    if (!authReady || !authUser || !isOwnerUser(authUser)) return undefined;
     setLoaded(false);
     // persistLocal: only cache to localStorage when the data is trustworthy
     // (live remote data, or the user's own local backup). Never overwrite the
@@ -4180,7 +4231,7 @@ function App() {
       setNotes(nts);
       setLoaded(true);
       if (persistLocal) {
-        saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts });
+        saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, authUser);
       }
       return { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements };
     };
@@ -4197,15 +4248,18 @@ function App() {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
-        // First login after auth rollout: copy the old shared document into the
-        // user's private document before falling back to local backup/sample data.
-        const legacySnap = await db.collection("fintrack").doc("hiewu").get().catch(err => {
-          console.warn("Legacy data migration skipped:", err);
-          return null;
-        });
-        const local = readLocalData();
-        const fallback = legacySnap?.exists ? legacySnap.data() : local || seedData();
-        setDataSource(legacySnap?.exists ? "remote" : local ? "local" : "seed");
+        // Only the owner account may migrate the old shared document or old
+        // browser cache. Other accounts start with a private blank document.
+        const canMigrateLegacy = isOwnerUser(authUser);
+        const legacySnap = canMigrateLegacy
+          ? await db.collection("fintrack").doc("hiewu").get().catch(err => {
+              console.warn("Legacy data migration skipped:", err);
+              return null;
+            })
+          : null;
+        const local = readLocalData(authUser, { allowLegacy: canMigrateLegacy });
+        const fallback = legacySnap?.exists ? legacySnap.data() : local || blankData();
+        setDataSource(legacySnap?.exists ? "remote" : local ? "local" : "remote");
         const { txns, dbts, bdgs, gls, nts } = hydrate(fallback, { persistLocal: legacySnap?.exists || !!local });
         window._fsDoc.set({
           categories: Object.values(CATEGORIES),
@@ -4216,7 +4270,7 @@ function App() {
           notes: nts,
           ownerUid: authUser.uid,
           ownerEmail: authUser.email || "",
-          migratedFrom: legacySnap?.exists ? "fintrack/hiewu" : local ? "localStorage" : "seed",
+          migratedFrom: legacySnap?.exists ? "fintrack/hiewu" : local ? "localStorage" : "blank",
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
       }
@@ -4225,24 +4279,25 @@ function App() {
       // Show the last good local copy if we have one, otherwise the sample —
       // but NEVER write seed over the local backup or to Firestore here.
       console.error("Firebase error:", err);
-      const local = readLocalData();
+      const local = readLocalData(authUser, { allowLegacy: isOwnerUser(authUser) });
+      const fallback = local || (isOwnerUser(authUser) ? seedData() : blankData());
       setDataSource(local ? "local" : "seed");
-      hydrate(local || seedData(), { persistLocal: false });
+      hydrate(fallback, { persistLocal: false });
     });
 
     return () => unsub();
-  }, [authReady, authUser?.uid]);
+  }, [authReady, authUser?.uid, authUser?.email]);
 
   const persist = useCallback((txns, dbts, bdgs, gls) => {
     // While showing built-in sample data (database unreachable), do not write
     // anything: persisting here would overwrite the real local backup — and
     // the real remote data once the connection returns — with sample data.
     if (dataSource === "seed") return;
-    saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes });
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes }, authUser);
     if (window._fsDoc) {
       window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls }, { merge: true }).catch(console.error);
     }
-  }, [notes, dataSource]);
+  }, [notes, dataSource, authUser?.uid]);
 
   // ── Transaction CRUD ──
   const addTransaction = useCallback((tx) => {
@@ -4400,7 +4455,7 @@ function App() {
     setCatsVersion(v => v + 1);
     setAllTransactions(nextTransactions);
     setBudgets(nextBudgets);
-    saveLocalData({ categories: Object.values(CATEGORIES), transactions: nextTransactions, debts, budgets: nextBudgets, goals, notes });
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: nextTransactions, debts, budgets: nextBudgets, goals, notes }, authUser);
     if (window._fsDoc) {
       window._fsDoc.set({
         categories: Object.values(CATEGORIES),
@@ -4408,16 +4463,16 @@ function App() {
         budgets: nextBudgets,
       }, { merge: true }).catch(console.error);
     }
-  }, [allTransactions, budgets, debts, goals, notes, dataSource]);
+  }, [allTransactions, budgets, debts, goals, notes, dataSource, authUser?.uid]);
 
   const saveNotes = useCallback((nextNotes) => {
     setNotes(nextNotes);
     if (dataSource === "seed") return;
-    saveLocalData({ categories: Object.values(CATEGORIES), transactions: allTransactions, debts, budgets, goals, notes: nextNotes });
+    saveLocalData({ categories: Object.values(CATEGORIES), transactions: allTransactions, debts, budgets, goals, notes: nextNotes }, authUser);
     if (window._fsDoc) {
       window._fsDoc.set({ notes: nextNotes }, { merge: true }).catch(console.error);
     }
-  }, [allTransactions, debts, budgets, goals, dataSource]);
+  }, [allTransactions, debts, budgets, goals, dataSource, authUser?.uid]);
 
   // Filter transactions for viewed month
   const monthTransactions = useMemo(() => {
@@ -4433,6 +4488,7 @@ function App() {
 
   if (!authReady) return <AppSkeleton />;
   if (!authUser) return <AuthGate theme={theme} onTheme={setTheme} />;
+  if (!isOwnerUser(authUser)) return <AccessDenied user={authUser} />;
   if (!loaded) return <AppSkeleton />;
 
   const userLabel = authUser.displayName || authUser.email || "Tài khoản";
