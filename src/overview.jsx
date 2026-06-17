@@ -585,7 +585,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
             <div className="card-title">Nợ &amp; Cho Vay</div>
             <button className="card-action" onClick={() => setDebtModalOpen(true)}>Quản lý</button>
           </div>
-          <div className="hero-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }}>
+          <div className="hero-chips overview-debt-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }}>
             <div className="hero-chip" style={{ cursor: "pointer", border: "1px solid var(--border)" }} onClick={() => setDebtModalOpen(true)}>
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowUpRight size={12} style={{ marginRight: 2 }} /> Bạn đang nợ</span>
               <span className="hero-chip-value num" style={{ color: "var(--text)" }}>{fmt(openOwe)}</span>
