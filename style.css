@@ -2199,7 +2199,46 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 }
 
 /* Floating edit panel beside a modal (history transaction edit) */
-.tx-history-row { cursor: pointer; transition: background var(--dur-quick) var(--spring-crisp), box-shadow var(--dur-quick) var(--spring-crisp); }
+.quick-history-panel {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 12px;
+}
+.quick-history-scroll {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.quick-history-scroll::-webkit-scrollbar { width: 4px; }
+.quick-history-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--r-pill); }
+.quick-history-day { margin-bottom: 12px; }
+.quick-history-day:last-child { margin-bottom: 0; }
+.quick-history-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 7px;
+  margin-bottom: 7px;
+  border-bottom: 0.5px solid var(--border);
+}
+.quick-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tx-history-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--dur-quick) var(--spring-crisp), box-shadow var(--dur-quick) var(--spring-crisp), transform var(--dur-quick) var(--spring-snappy);
+}
 .tx-history-row:hover { background: var(--surface-hover) !important; }
 .tx-history-row.is-active { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .tx-history-row:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent); }

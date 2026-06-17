@@ -1884,7 +1884,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                 </>
               ) : (
                 /* Lịch sử tab */
-                <div>
+                <div className="quick-history-panel">
                   {expenseTxns.length === 0 ? (
                     <Empty icon="inbox" title="Chưa có chi tiêu" text="Thêm giao dịch đầu tiên của tháng" />
                   ) : (() => {
@@ -1900,17 +1900,17 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                     const groups = {};
                     expenseTxns.forEach(t => { const d = t.date || todayStr; if (!groups[d]) groups[d] = []; groups[d].push(t); });
                     return (
-                      <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                      <div className="quick-history-scroll">
                         {Object.keys(groups).sort((a,b) => b.localeCompare(a)).map(d => {
                           const txs = groups[d];
                           const dayTotal = txs.reduce((s,t) => s + t.amount, 0);
                           return (
-                            <div key={d} style={{ marginBottom: 10 }}>
-                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom: 6, marginBottom: 6, borderBottom: "1px solid var(--border)" }}>
+                            <div className="quick-history-day" key={d}>
+                              <div className="quick-history-day-head">
                                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)", letterSpacing: "0.04em" }}>{dayLabel(d)}</span>
                                 <span className="num" style={{ fontSize: 11, color: "var(--text-3)" }}>{fmtShort(dayTotal)}</span>
                               </div>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              <div className="quick-history-list">
                                 {txs.map(t => {
                                   const cat = CATEGORIES[t.cat] || CATEGORIES[Object.keys(CATEGORIES)[0]];
                                   return (
@@ -1919,7 +1919,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                                       role="button" tabIndex={0}
                                       onClick={() => openEditTx(t)}
                                       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEditTx(t); } }}
-                                      style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", background:"var(--surface-2)", border:"0.5px solid var(--border)", borderRadius:"var(--r-md)" }}>
+                                    >
                                       <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, flexShrink:0, borderRadius:"50%", background:(cat.color||"#888")+"22", fontSize:13 }}>{cat.emoji||"💸"}</span>
                                       <div style={{ flex:1, minWidth:0 }}>
                                         <div style={{ fontSize:13, fontWeight:500, color:"var(--text)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.desc||"Chi tiêu"}</div>
