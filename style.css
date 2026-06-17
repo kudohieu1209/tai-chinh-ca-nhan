@@ -1299,8 +1299,17 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .debt-legend-row.is-dimmed { opacity: 0.4; }
 .debt-legend-dot { width: 9px; height: 9px; border-radius: 50%; }
 .debt-legend-name {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+}
+.debt-legend-name-text {
   min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.debt-legend-count {
+  flex: 0 0 auto;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0;
+  color: var(--text-3); background: var(--surface-2);
+  padding: 1px 6px; border-radius: var(--r-pill);
 }
 .debt-legend-pct {
   justify-self: end;

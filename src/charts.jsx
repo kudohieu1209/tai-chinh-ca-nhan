@@ -333,7 +333,7 @@ function CategoryDonut({ data, total, activeId, onHover, onSelect }) {
 }
 
 // ====== DebtDonut — open-debt share ring for the overview debt card ======
-function DebtDonut({ data, total, activeId, onHover, onSelect }) {
+function DebtDonut({ data, total, activeId, onHover, onSelect, centerLabel = "Tổng nợ", centerCount }) {
   const SIZE = 200, R = 78, STROKE = 22, STROKE_ACTIVE = 28;
   const C = 2 * Math.PI * R;
   const GAP = data.length > 1 ? 5 : 0;
@@ -384,13 +384,13 @@ function DebtDonut({ data, total, activeId, onHover, onSelect }) {
           <>
             <span className="cat-donut-center-label">{active.name}</span>
             <span className="cat-donut-center-value num" style={{ color: active.color }}>{fmtShort(active.amount)}</span>
-            <span className="cat-donut-center-sub">{active.pct.toFixed(0)}% · {active.type === "owe" ? "bạn nợ" : "nợ bạn"}</span>
+            <span className="cat-donut-center-sub">{active.pct.toFixed(0)}%{active.count > 1 ? ` · ${active.count} khoản` : ""}</span>
           </>
         ) : (
           <>
-            <span className="cat-donut-center-label">Tổng nợ</span>
+            <span className="cat-donut-center-label">{centerLabel}</span>
             <span className="cat-donut-center-value num">{fmtShort(total)}</span>
-            <span className="cat-donut-center-sub">{data.length} khoản</span>
+            <span className="cat-donut-center-sub">{centerCount != null ? centerCount : data.length} khoản</span>
           </>
         )}
       </div>

@@ -56,7 +56,10 @@ const CAT_BENCHMARKS = {
   'Khác':      150000,
 };
 
-const DEBT_PALETTE = ['#FF9500','#5856D6','#34C759','#FF2D55','#5AC8FA','#FFCC00','#AF52DE','#00C7BE','#A2845E','#FF3B30'];
+// No green/red here: those are reserved as semantic colours in the debt card
+// (green = money owed to you, red = money you owe). Lender slice colours must
+// stay categorical so a slice never reads as a direction.
+const DEBT_PALETTE = ['#FF9500','#5856D6','#007AFF','#AF52DE','#FFCC00','#00C7BE','#A2845E','#5AC8FA','#BF5AF2','#FF6FB5'];
 const debtColor = (id) => {
   const n = String(id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return DEBT_PALETTE[Math.abs(n) % DEBT_PALETTE.length];
