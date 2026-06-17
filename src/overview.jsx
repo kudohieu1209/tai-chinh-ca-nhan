@@ -172,8 +172,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [incDate, setIncDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [incomeTab, setIncomeTab] = useState("add");
   const [expenseTab, setExpenseTab] = useState("add");
-  const [heroSettingsOpen, setHeroSettingsOpen] = useState(false);
-  const [settingsBtnPos, setSettingsBtnPos] = useState(null);
   const [selectedCat, setSelectedCat] = useState(null);
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [addingBudget, setAddingBudget] = useState(false);
@@ -192,8 +190,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [editingTemplates, setEditingTemplates] = useState(false);
   const [newTplDesc, setNewTplDesc] = useState("");
   const [newTplAmount, setNewTplAmount] = useState(0);
-  const heroSettingsRef = useRef(null);
-  const portalDropdownRef = useRef(null);
   const activeCat = hoverCat ?? pinnedCat;
   const togglePinnedCat = (id) => setPinnedCat(p => (p === id ? null : id));
   const saveQuickTemplates = (tpls) => {
@@ -201,29 +197,10 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
     try { localStorage.setItem("fintrack-quick-templates-v1", JSON.stringify(tpls)); } catch (_) {}
   };
 
-  const handleSettingsToggle = () => {
-    if (!heroSettingsOpen && heroSettingsRef.current) {
-      const r = heroSettingsRef.current.getBoundingClientRect();
-      setSettingsBtnPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
-    }
-    setHeroSettingsOpen(o => !o);
-  };
-
   useEffect(() => {
     setHoverCat(null);
     setPinnedCat(null);
   }, [viewMonth, viewYear]);
-
-  useEffect(() => {
-    if (!heroSettingsOpen) return;
-    const handler = (e) => {
-      const inBtn = heroSettingsRef.current && heroSettingsRef.current.contains(e.target);
-      const inDrop = portalDropdownRef.current && portalDropdownRef.current.contains(e.target);
-      if (!inBtn && !inDrop) setHeroSettingsOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [heroSettingsOpen]);
 
   const income = useMemo(() =>
     transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
@@ -531,15 +508,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                   <button onClick={() => onMonthChange(-1)} aria-label="Tháng sau"><Icons.chevRight size={13} /></button>
                 </div>
               )}
-              <button
-                ref={heroSettingsRef}
-                className={"toolbar-settings-btn" + (heroSettingsOpen ? " active" : "")}
-                onClick={handleSettingsToggle}
-                aria-label="Settings"
-                title="Cài đặt"
-              >
-                <Icons.gear size={15} />
-              </button>
             </div>
           </div>
           <div className="hero-balance-main">
@@ -1475,34 +1443,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
         </div>
 
       </div>
-      {heroSettingsOpen && settingsBtnPos && ReactDOM.createPortal(
-        <div
-          ref={portalDropdownRef}
-          className="settings-dropdown"
-          style={{ position: "fixed", top: settingsBtnPos.top, right: settingsBtnPos.right, zIndex: 9999 }}
-        >
-          <div className="settings-section-label">Giao diện</div>
-          <div className="settings-row">
-            <button className={"settings-opt-btn" + (theme === "light" ? " active" : "")} onClick={() => onTheme("light")}>
-              <Icons.sun size={13} /> Sáng
-            </button>
-            <button className={"settings-opt-btn" + (theme === "dark" ? " active" : "")} onClick={() => onTheme("dark")}>
-              <Icons.moon size={13} /> Tối
-            </button>
-          </div>
-          <div className="settings-divider" />
-          <div className="settings-section-label">Ngôn ngữ</div>
-          <div className="settings-row">
-            <button className={"settings-opt-btn" + (lang === "vi" ? " active" : "")} onClick={() => onLang("vi")}>
-              🇻🇳 Tiếng Việt
-            </button>
-            <button className={"settings-opt-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")}>
-              🇺🇸 English
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }

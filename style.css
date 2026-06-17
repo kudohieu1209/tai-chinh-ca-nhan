@@ -377,7 +377,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 236px;
+  width: 248px;
   background: var(--surface-solid);
   border: 0.5px solid var(--border);
   border-radius: 14px;

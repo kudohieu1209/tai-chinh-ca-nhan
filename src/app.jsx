@@ -724,6 +724,38 @@ function App() {
             </button>
             {accountMenuOpen && (
               <div className="account-settings-menu">
+                <div className="settings-section-label">Giao diện</div>
+                <div className="settings-row">
+                  <button
+                    className={"settings-opt-btn" + (theme === "light" ? " active" : "")}
+                    onClick={() => setTheme("light")}
+                  >
+                    <Icons.sun size={13} /> Sáng
+                  </button>
+                  <button
+                    className={"settings-opt-btn" + (theme === "dark" ? " active" : "")}
+                    onClick={() => setTheme("dark")}
+                  >
+                    <Icons.moon size={13} /> Tối
+                  </button>
+                </div>
+                <div className="settings-divider" />
+                <div className="settings-section-label">Ngôn ngữ</div>
+                <div className="settings-row">
+                  <button
+                    className={"settings-opt-btn" + (lang === "vi" ? " active" : "")}
+                    onClick={() => setLang("vi")}
+                  >
+                    VN Tiếng Việt
+                  </button>
+                  <button
+                    className={"settings-opt-btn" + (lang === "en" ? " active" : "")}
+                    onClick={() => setLang("en")}
+                  >
+                    US English
+                  </button>
+                </div>
+                <div className="settings-divider" />
                 <div className="settings-section-label">Tài khoản</div>
                 <div className="account-settings-user">
                   <strong>{userLabel}</strong>
