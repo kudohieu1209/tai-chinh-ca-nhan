@@ -325,6 +325,8 @@ function App() {
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
   const [lang, setLang]         = useState(() => localStorage.getItem("hieu-lang") || "vi");
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
   // Bumped whenever the shared CATEGORIES map is rebuilt so all pages re-render
   const [, setCatsVersion] = useState(0);
 
@@ -343,6 +345,17 @@ function App() {
   useEffect(() => {
     localStorage.setItem("hieu-lang", lang);
   }, [lang]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const handler = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [accountMenuOpen]);
 
   useEffect(() => {
     getFirebaseApp();
@@ -692,16 +705,41 @@ function App() {
   return (
     <div className="app">
       <main className="main">
-        <div className="auth-session">
+        <div className="auth-session" ref={accountMenuRef}>
           <div className="auth-session-user" title={authUser.email || userLabel}>
             {authUser.photoURL
               ? <img src={authUser.photoURL} alt="" />
               : <span>{userInitial}</span>}
             <strong>{userLabel}</strong>
           </div>
-          <button type="button" onClick={() => firebase.auth().signOut()}>
-            Đăng xuất
-          </button>
+          <div className="account-settings-wrap">
+            <button
+              type="button"
+              className={"account-settings-btn" + (accountMenuOpen ? " active" : "")}
+              onClick={() => setAccountMenuOpen(o => !o)}
+              aria-label="Cài đặt tài khoản"
+              title="Cài đặt"
+            >
+              <Icons.gear size={16} />
+            </button>
+            {accountMenuOpen && (
+              <div className="account-settings-menu">
+                <div className="settings-section-label">Tài khoản</div>
+                <div className="account-settings-user">
+                  <strong>{userLabel}</strong>
+                  <span>{authUser.email || ""}</span>
+                </div>
+                <div className="settings-divider" />
+                <button
+                  type="button"
+                  className="account-logout-btn"
+                  onClick={() => firebase.auth().signOut()}
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         {dataSource !== "remote" && (
           <div className="data-warning" role="alert">
