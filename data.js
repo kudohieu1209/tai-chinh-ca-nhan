@@ -10,8 +10,8 @@ const DEFAULT_CATEGORIES = {
   'Sức khỏe': { name: 'Sức khỏe', emoji: '💊', color: '#30B0C7' },
   'Học tập':  { name: 'Học tập',  emoji: '📚', color: '#5AC8FA' },
   'Du lịch':  { name: 'Du lịch',  emoji: '✈️', color: '#5856D6' },
-  'Cầu lông':   { name: 'Cầu lông',   emoji: '🏸', color: '#34C759' },
-  'Trả nợ':     { name: 'Trả nợ',     emoji: '💳', color: '#FF3B30' },
+  'Cầu lông':   { name: 'Cầu lông',   emoji: '🏸', color: '#AF52DE' },
+  'Trả nợ':     { name: 'Trả nợ',     emoji: '💳', color: '#0A84FF' },
   'AI':         { name: 'AI',         emoji: '✨', color: '#D97757' },
   'Khác':       { name: 'Khác',       emoji: '📦', color: '#8E8E93' },
 };
@@ -24,6 +24,11 @@ const CATEGORIES = { ...DEFAULT_CATEGORIES };
 // hardcoded into the debt settlement logic. Both must always exist.
 const SYSTEM_CATEGORIES = ['Khác', 'Trả nợ'];
 
+// Old semantic colours that built-in categories used to carry; now reserved,
+// so any stored category still holding them is migrated to its refreshed
+// default colour. Covers both light and dark variants of green/red.
+const RESERVED_CAT_COLORS = ['#34C759', '#FF3B30', '#30D158', '#FF453A'];
+
 const setCategories = (list) => {
   const entries = Array.isArray(list) && list.length
     ? list
@@ -32,14 +37,27 @@ const setCategories = (list) => {
   entries.forEach(c => {
     const name = String(c.name || '').trim();
     if (!name) return;
-    CATEGORIES[name] = { name, emoji: c.emoji || '📦', color: c.color || '#8E8E93' };
+    const def = DEFAULT_CATEGORIES[name];
+    // Backfill the emoji from the built-in default when a known category lost
+    // it and falls back to the generic box — e.g. "AI" shows ✨, not 📦.
+    const emoji = (c.emoji && c.emoji !== '📦') ? c.emoji : (def ? def.emoji : '📦');
+    // Keep stored colours, but migrate a built-in category still holding a
+    // now-reserved semantic green/red to its refreshed default colour.
+    const stored = c.color || (def ? def.color : '#8E8E93');
+    const color = (def && RESERVED_CAT_COLORS.includes(String(c.color || '').toUpperCase()))
+      ? def.color
+      : stored;
+    CATEGORIES[name] = { name, emoji, color };
   });
   SYSTEM_CATEGORIES.forEach(name => {
     if (!CATEGORIES[name]) CATEGORIES[name] = { ...DEFAULT_CATEGORIES[name] };
   });
 };
 
-const CAT_PALETTE = ['#FF9500','#00C7BE','#A2845E','#FFCC00','#FF2D55','#30B0C7','#5AC8FA','#5856D6','#34C759','#FF3B30','#AF52DE','#0A84FF','#8E8E93'];
+// Green (#34C759) and red (#FF3B30) are reserved as semantic colours app-wide
+// (green = money owed to you, red = money you owe), so they're kept out of the
+// category palette to avoid a spending slice reading as a direction.
+const CAT_PALETTE = ['#FF9500','#00C7BE','#A2845E','#FFCC00','#FF2D55','#30B0C7','#5AC8FA','#5856D6','#AF52DE','#0A84FF','#BF5AF2','#D97757','#8E8E93'];
 
 // Anonymous peer benchmarks (Vietnamese students, same income tier)
 const CAT_BENCHMARKS = {
