@@ -2838,11 +2838,24 @@ button.hero-balance-nav:hover .hero-nav-chevron {
     flex-direction: column;
     align-items: flex-start;
   }
+  /* On mobile the floating account chip used to sit position:fixed and overlap
+     scrolled content (it covered the donut centre on the overview). Promote it
+     to a full-width sticky app bar so content scrolls cleanly beneath it. */
   .auth-session {
-    top: 8px;
-    right: 10px;
-    padding: 0;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: auto;
+    width: 100%;
+    z-index: 60;
     justify-content: space-between;
+    gap: 10px;
+    padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+    background: var(--sidebar-bg);
+    backdrop-filter: saturate(180%) blur(40px);
+    -webkit-backdrop-filter: saturate(180%) blur(40px);
+    border-bottom: 0.5px solid var(--border);
+    pointer-events: auto;
   }
   .auth-session-user {
     max-width: calc(100vw - 72px);
@@ -2858,6 +2871,8 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   }
 
   .toolbar {
+    /* sit just below the sticky account bar (chip 34px + 16px padding) */
+    top: calc(50px + env(safe-area-inset-top));
     padding: 10px 12px;
     gap: 10px;
   }
