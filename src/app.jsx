@@ -191,25 +191,6 @@ function AuthGate({ theme, onTheme }) {
   );
 }
 
-function AccessDenied({ user }) {
-  return (
-    <div className="auth-page">
-      <section className="auth-card">
-        <div className="auth-head">
-          <div>
-            <p className="auth-kicker">FinTrack</p>
-            <h1>Không có quyền truy cập</h1>
-            <p>Tài khoản {user?.email || "này"} không được phép mở dữ liệu tài chính này.</p>
-          </div>
-        </div>
-        <button className="btn auth-submit" type="button" onClick={() => firebase.auth().signOut()}>
-          Đăng xuất
-        </button>
-      </section>
-    </div>
-  );
-}
-
 function seedData() {
   return {
     transactions: _SEED.transactions,
@@ -378,7 +359,7 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
-    if (!authReady || !authUser || !isOwnerUser(authUser)) return undefined;
+    if (!authReady || !authUser) return undefined;
     setLoaded(false);
     // persistLocal: only cache to localStorage when the data is trustworthy
     // (live remote data, or the user's own local backup). Never overwrite the
@@ -666,7 +647,6 @@ function App() {
 
   if (!authReady) return <AppSkeleton />;
   if (!authUser) return <AuthGate theme={theme} onTheme={setTheme} />;
-  if (!isOwnerUser(authUser)) return <AccessDenied user={authUser} />;
   if (!loaded) return <AppSkeleton />;
 
   const userLabel = authUser.displayName || authUser.email || "Tài khoản";

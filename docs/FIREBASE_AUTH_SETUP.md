@@ -1,6 +1,6 @@
 # Firebase Auth setup
 
-FinTrack now uses Firebase Authentication and stores your account's data in:
+FinTrack now uses Firebase Authentication and stores each user's data in:
 
 ```txt
 fintrackUsers/{uid}
@@ -17,7 +17,7 @@ In Firebase Console:
 
 ## Firestore rules
 
-Use rules like this so only your Google account can read the old shared document and its private FinTrack document:
+Use rules like this so every signed-in user can read and write only their own FinTrack document. Your account can also read the old shared document once for migration.
 
 ```js
 rules_version = '2';
@@ -35,7 +35,7 @@ service cloud.firestore {
     }
 
     match /fintrackUsers/{userId} {
-      allow read, write: if isOwner() && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
@@ -57,4 +57,4 @@ On the first login with `kudohieu1209@gmail.com`, if the private document does n
 
 The migration writes a new private copy to `fintrackUsers/{uid}` and marks it with `migratedFrom`, but it does not delete or overwrite the old shared document.
 
-Other accounts are blocked by the app and by these rules. If another account was used before this fix, delete that account's copied document under `fintrackUsers` in Firestore, or keep these owner-only rules published so it cannot read it.
+Other accounts do not read or copy `fintrack/hiewu`. Their first login creates an empty private document at `fintrackUsers/{uid}`, then their own transactions, budgets, debts, goals, and notes are saved there.
