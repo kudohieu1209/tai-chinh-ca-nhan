@@ -366,6 +366,7 @@ function DebtDonut({ data, total, activeId, onHover, onSelect, centerLabel = "Tá
               cx={SIZE / 2} cy={SIZE / 2} r={R}
               fill="none"
               stroke={s.color}
+              strokeOpacity={s.shade != null ? s.shade : 1}
               strokeWidth={activeId === s.id ? STROKE_ACTIVE : STROKE}
               strokeDasharray={`${s.len} ${C - s.len}`}
               strokeDashoffset={-s.start}

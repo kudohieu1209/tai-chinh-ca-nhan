@@ -151,6 +151,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [hoverCat, setHoverCat] = useState(null);
   const [pinnedCat, setPinnedCat] = useState(null);
   const [hoverDebt, setHoverDebt] = useState(null);
+  const [debtView, setDebtView] = useState("owe");
   const [editTx, setEditTx] = useState(null);
   const [editDesc, setEditDesc] = useState("");
   const [editAmount, setEditAmount] = useState(0);
@@ -286,35 +287,49 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const openOwe   = debts.filter(d => d.type === "owe"  && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openOwed  = debts.filter(d => d.type === "lend" && !d.settled).reduce((s, d) => s + d.amount, 0);
   const openDebts = debts.filter(d => !d.settled);
-  // The overview ring shows ONE honest quantity: what you owe. Money owed to
-  // you is the opposite direction and lives in the green chip above — mixing
-  // both into one "total" double-counts and misleads. Group by lender so three
-  // Shopee instalments read as one "Shopee Easy · 3 khoản" slice, not three
-  // identical-looking rows. Individual debts are still listed in the modal.
-  const debtRows = useMemo(() => {
-    const open = debts.filter(d => d.type === "owe" && !d.settled && d.amount > 0);
+  // Each ring shows ONE honest direction. "owe" (what you owe) and "lend"
+  // (what others owe you) are opposites — mixing them into one total
+  // double-counts and misleads, so the segmented control flips between them
+  // instead. Group by counterparty so three Shopee instalments read as one
+  // "Shopee Easy · 3 khoản" slice. Individual debts stay listed in the modal.
+  const groupDebts = (type) => {
+    const open = debts.filter(d => d.type === type && !d.settled && d.amount > 0);
     const total = open.reduce((s, d) => s + d.amount, 0);
+    // One meaningful hue per direction (red = you owe, green = owed to you);
+    // slices are shades of that hue, not unrelated colours. Largest = strongest.
+    const base = type === "lend" ? "var(--c-green)" : "var(--c-red)";
     const byName = new Map();
     open.forEach(d => {
-      const g = byName.get(d.name) || { name: d.name, type: "owe", color: debtColor(d.name), amount: 0, count: 0 };
+      const g = byName.get(d.name) || { name: d.name, type, amount: 0, count: 0 };
       g.amount += d.amount;
       g.count += 1;
       byName.set(d.name, g);
     });
-    return [...byName.values()]
+    const rows = [...byName.values()]
       .sort((a, b) => b.amount - a.amount)
       .map((g, i) => ({
-        id: g.name + "-" + i,
+        id: type + "-" + g.name + "-" + i,
         name: g.name,
-        type: "owe",
-        color: g.color,
+        type,
+        color: base,
+        shade: Math.max(0.4, 1 - i * 0.2),
         amount: g.amount,
         count: g.count,
         pct: total > 0 ? g.amount / total * 100 : 0,
       }));
-  }, [debts]);
-  const debtTotal = debtRows.reduce((s, d) => s + d.amount, 0);
-  const debtAccountCount = debts.filter(d => d.type === "owe" && !d.settled && d.amount > 0).length;
+    return { rows, total, accountCount: open.length };
+  };
+  const oweGroup  = useMemo(() => groupDebts("owe"),  [debts]);
+  const lendGroup = useMemo(() => groupDebts("lend"), [debts]);
+  const activeDebtView = debtView === "lend" && lendGroup.rows.length > 0 ? "lend"
+    : (oweGroup.rows.length > 0 ? "owe" : (lendGroup.rows.length > 0 ? "lend" : "owe"));
+  const activeGroup = activeDebtView === "lend" ? lendGroup : oweGroup;
+  const debtRows = activeGroup.rows;
+  const debtTotal = activeGroup.total;
+  const debtAccountCount = activeGroup.accountCount;
+  const debtCenterLabel = activeDebtView === "lend" ? "Người khác nợ bạn" : "Bạn đang nợ";
+  const debtAmountColor = activeDebtView === "lend" ? "var(--c-green)" : "var(--c-red)";
+  const debtAmountSign  = activeDebtView === "lend" ? "+" : "−";
   const today = new Date();
   const isCurrentView = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentView ? "Số dư hiện tại" : "Số dư cuối tháng";
@@ -585,24 +600,38 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
             <div className="card-title">Nợ &amp; Cho Vay</div>
             <button className="card-action" onClick={() => setDebtModalOpen(true)}>Quản lý</button>
           </div>
-          <div className="hero-chips overview-debt-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }}>
-            <div className="hero-chip" style={{ cursor: "pointer", border: "1px solid var(--border)" }} onClick={() => setDebtModalOpen(true)}>
+          <div className="hero-chips overview-debt-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }} role="tablist" aria-label="Chiều nợ">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeDebtView === "owe"}
+              className={"hero-chip debt-toggle-chip" + (activeDebtView === "owe" ? " is-active" : "")}
+              style={{ border: "1px solid var(--border)", boxShadow: activeDebtView === "owe" ? "inset 0 0 0 1.5px var(--c-red)" : "none" }}
+              onClick={() => setDebtView("owe")}
+            >
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowUpRight size={12} style={{ marginRight: 2 }} /> Bạn đang nợ</span>
               <span className="hero-chip-value num" style={{ color: "var(--text)" }}>{fmt(openOwe)}</span>
-              <span className="hero-chip-sub">{debts.filter(d => d.type === "owe" && !d.settled).length} khoản đang nợ</span>
-            </div>
-            <div className="hero-chip" style={{ cursor: "pointer", border: "1px solid var(--border)" }} onClick={() => setDebtModalOpen(true)}>
+              <span className="hero-chip-sub">{oweGroup.accountCount} khoản đang nợ</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeDebtView === "lend"}
+              className={"hero-chip debt-toggle-chip" + (activeDebtView === "lend" ? " is-active" : "")}
+              style={{ border: "1px solid var(--border)", boxShadow: activeDebtView === "lend" ? "inset 0 0 0 1.5px var(--c-green)" : "none" }}
+              onClick={() => setDebtView("lend")}
+            >
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowDownLeft size={12} style={{ marginRight: 2 }} /> Người khác nợ bạn</span>
               <span className="hero-chip-value num" style={{ color: "var(--text)" }}>{fmt(openOwed)}</span>
-              <span className="hero-chip-sub">{debts.filter(d => d.type === "lend" && !d.settled).length} khoản chưa thu</span>
-            </div>
+              <span className="hero-chip-sub">{lendGroup.accountCount} khoản chưa thu</span>
+            </button>
           </div>
           {debtRows.length > 0 ? (
             <div className="cat-donut-layout debt-donut-layout">
               <DebtDonut
                 data={debtRows}
                 total={debtTotal}
-                centerLabel="Bạn đang nợ"
+                centerLabel={debtCenterLabel}
                 centerCount={debtAccountCount}
                 activeId={hoverDebt}
                 onHover={setHoverDebt}
@@ -623,20 +652,20 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                     onClick={() => setDebtModalOpen(true)}
                     onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDebtModalOpen(true); } }}
                   >
-                    <span className="debt-legend-dot" style={{ background: d.color }} aria-hidden="true" />
+                    <span className="debt-legend-dot" style={{ background: d.color, opacity: d.shade != null ? d.shade : 1 }} aria-hidden="true" />
                     <span className="debt-legend-name">
                       <span className="debt-legend-name-text">{d.name}</span>
                       {d.count > 1 && <span className="debt-legend-count">{d.count} khoản</span>}
                     </span>
                     <span className="debt-legend-pct">{d.pct.toFixed(0)}%</span>
-                    <span className="debt-legend-amount num" style={{ color: "var(--c-red)" }}>
-                      −{fmtShort(d.amount)}
+                    <span className="debt-legend-amount num" style={{ color: debtAmountColor }}>
+                      {debtAmountSign}{fmtShort(d.amount)}
                     </span>
                   </div>
                 ))}
                 {debtRows.length > 6 && (
                   <button className="debt-legend-more" onClick={() => setDebtModalOpen(true)}>
-                    +{debtRows.length - 6} chủ nợ khác
+                    +{debtRows.length - 6} {activeDebtView === "lend" ? "người khác" : "chủ nợ khác"}
                   </button>
                 )}
               </div>
@@ -644,7 +673,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
           ) : (
             <div className="debt-donut-empty">
               <Icons.check size={26} />
-              <span>{openOwed > 0 ? "Bạn không nợ ai cả" : "Không có khoản nợ nào"}</span>
+              <span>{activeDebtView === "lend" ? "Chưa có ai nợ bạn" : "Bạn không nợ ai cả"}</span>
             </div>
           )}
         </div>
