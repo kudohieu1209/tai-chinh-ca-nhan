@@ -1099,8 +1099,11 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   animation: chartSoftIn 560ms var(--spring-snappy) both;
   animation-delay: 0.32s;
 }
-/* Desktop: 4-card overview fills the screen symmetrically */
-@media (min-width: 1025px) {
+/* Desktop: 4-card overview fills the screen symmetrically.
+   Gated on height too — on shorter laptops there isn't room for hero + grid,
+   so we skip the height lock and let .main scroll instead of clipping the
+   bottom cards (and the bottom padding) at the viewport edge. */
+@media (min-width: 1025px) and (min-height: 800px) {
   .main:has(.overview-page) {
     overflow: hidden;
   }
