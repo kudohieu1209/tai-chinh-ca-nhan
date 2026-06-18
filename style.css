@@ -1099,11 +1099,8 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   animation: chartSoftIn 560ms var(--spring-snappy) both;
   animation-delay: 0.32s;
 }
-/* Desktop: 4-card overview fills the screen symmetrically.
-   Gated on height too — on shorter laptops there isn't room for hero + grid,
-   so we skip the height lock and let .main scroll instead of clipping the
-   bottom cards (and the bottom padding) at the viewport edge. */
-@media (min-width: 1025px) and (min-height: 800px) {
+/* Desktop & laptop: 4-card overview fills the screen symmetrically on one page. */
+@media (min-width: 1025px) {
   .main:has(.overview-page) {
     overflow: hidden;
   }
@@ -1120,6 +1117,18 @@ button.hero-balance-nav:hover .hero-nav-chevron {
     flex: 1 1 0;
     min-height: 260px;
     margin-bottom: 0;
+  }
+}
+
+/* Laptop (shorter viewport): scale the whole overview down to ~90% so the full
+   4-card layout fits on one screen without clipping the bottom — the same result
+   the user gets by zooming the browser to 90%. Bigger/taller PC monitors
+   (>= 800px tall) stay at 100% and are untouched.
+   height is compensated by /0.9 so the zoomed page still fills the viewport. */
+@media (min-width: 1025px) and (max-height: 799px) {
+  .overview-page {
+    zoom: 0.9;
+    height: calc(100% / 0.9);
   }
 }
 
