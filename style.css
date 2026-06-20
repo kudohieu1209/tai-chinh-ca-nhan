@@ -117,6 +117,45 @@
   --c-brown:  #AC8E68;
 }
 
+[data-theme="glass"] {
+  --bg: #eef6f8;
+  --bg-gradient:
+    radial-gradient(circle at 12% 18%, rgba(100, 210, 255, 0.28) 0%, transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(255, 159, 10, 0.20) 0%, transparent 30%),
+    radial-gradient(circle at 72% 82%, rgba(255, 55, 95, 0.14) 0%, transparent 36%),
+    linear-gradient(135deg, #f8fbff 0%, #eef7f2 52%, #f7f4ff 100%);
+  --surface:       rgba(255, 255, 255, 0.46);
+  --surface-solid: rgba(255, 255, 255, 0.68);
+  --surface-2:     rgba(255, 255, 255, 0.26);
+  --surface-hover: rgba(255, 255, 255, 0.44);
+  --sidebar-bg:    rgba(255, 255, 255, 0.34);
+
+  --border:        rgba(255, 255, 255, 0.42);
+  --border-strong: rgba(29, 29, 31, 0.16);
+  --divider:       rgba(29, 29, 31, 0.08);
+
+  --text:   #172026;
+  --text-2: #34424d;
+  --text-3: rgba(52, 66, 77, 0.68);
+  --text-4: rgba(52, 66, 77, 0.36);
+
+  --shadow-sm: 0 14px 34px rgba(42, 73, 92, 0.12), inset 0 1px 0 rgba(255,255,255,0.38);
+  --shadow-md: 0 22px 48px rgba(42, 73, 92, 0.16), inset 0 1px 0 rgba(255,255,255,0.44);
+  --shadow-lg: 0 28px 70px rgba(42, 73, 92, 0.20), inset 0 1px 0 rgba(255,255,255,0.52);
+
+  --glass-blur: 34px;
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -1px 0 rgba(255,255,255,0.22);
+  --glass-inset-soft: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(255,255,255,0.16);
+  --glass-border: rgba(255, 255, 255, 0.52);
+  --glass-sheen:
+    linear-gradient(135deg, rgba(255,255,255,0.56) 0%, rgba(255,255,255,0.12) 28%, transparent 52%),
+    linear-gradient(315deg, rgba(255,255,255,0.28), transparent 42%);
+
+  --accent:       #007AFF;
+  --accent-hover: #006ee6;
+  --accent-tint:  rgba(0, 122, 255, 0.14);
+}
+
 /* ==========================================================================
    Reset & base
    ========================================================================== */
@@ -141,6 +180,39 @@ body {
 
 /* Ambient blobs — removed: Apple keeps the canvas flat and lets content breathe */
 body::before, body::after { content: none; }
+
+[data-theme="glass"] body::before,
+[data-theme="glass"] body::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(8px);
+  opacity: 0.9;
+}
+[data-theme="glass"] body::before {
+  width: 42vw;
+  height: 42vw;
+  min-width: 360px;
+  min-height: 360px;
+  left: -14vw;
+  top: -16vw;
+  background:
+    radial-gradient(circle at 48% 44%, rgba(100, 210, 255, 0.24), transparent 62%),
+    radial-gradient(circle at 68% 68%, rgba(52, 199, 89, 0.16), transparent 58%);
+}
+[data-theme="glass"] body::after {
+  width: 46vw;
+  height: 46vw;
+  min-width: 400px;
+  min-height: 400px;
+  right: -16vw;
+  bottom: -18vw;
+  background:
+    radial-gradient(circle at 40% 52%, rgba(255, 149, 0, 0.16), transparent 62%),
+    radial-gradient(circle at 70% 36%, rgba(255, 45, 85, 0.13), transparent 58%);
+}
 
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 input, select, textarea { font-family: inherit; color: inherit; }
@@ -441,7 +513,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 /* Settings dropdown */
 .settings-dropdown {
   position: absolute; top: calc(100% + 8px); right: 0;
-  width: 210px;
+  width: 248px;
   background: var(--surface-solid);
   border: 0.5px solid var(--border);
   border-radius: 14px;
@@ -455,7 +527,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 .settings-row { display: flex; gap: 6px; }
 .settings-opt-btn {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px;
   padding: 7px 8px; border-radius: 8px;
   font-size: 12px; font-weight: 500;
   color: var(--text-2); background: var(--surface-2);
@@ -727,6 +799,112 @@ input, select, textarea { font-family: inherit; color: inherit; }
   border: 0.5px solid var(--glass-border);
   border-radius: var(--r-xl); padding: 22px;
   box-shadow: var(--shadow-sm);
+}
+
+[data-theme="glass"] .auth-card,
+[data-theme="glass"] .auth-session-user,
+[data-theme="glass"] .account-settings-menu,
+[data-theme="glass"] .settings-dropdown,
+[data-theme="glass"] .sidebar,
+[data-theme="glass"] .toolbar,
+[data-theme="glass"] .bottom-nav,
+[data-theme="glass"] .card,
+[data-theme="glass"] .stat,
+[data-theme="glass"] .hero-balance,
+[data-theme="glass"] .insight,
+[data-theme="glass"] .modal,
+[data-theme="glass"] .month-picker,
+[data-theme="glass"] .theme-toggle,
+[data-theme="glass"] .chart-view-toggle,
+[data-theme="glass"] .input,
+[data-theme="glass"] .select,
+[data-theme="glass"] .note-save-status {
+  border-color: var(--glass-border);
+  box-shadow: var(--shadow-sm), var(--glass-inset-soft);
+  backdrop-filter: saturate(170%) blur(var(--glass-blur));
+  -webkit-backdrop-filter: saturate(170%) blur(var(--glass-blur));
+}
+
+[data-theme="glass"] .auth-card,
+[data-theme="glass"] .account-settings-menu,
+[data-theme="glass"] .settings-dropdown,
+[data-theme="glass"] .card,
+[data-theme="glass"] .stat,
+[data-theme="glass"] .hero-balance,
+[data-theme="glass"] .insight,
+[data-theme="glass"] .modal {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="glass"] .auth-card::before,
+[data-theme="glass"] .account-settings-menu::before,
+[data-theme="glass"] .settings-dropdown::before,
+[data-theme="glass"] .card::before,
+[data-theme="glass"] .stat::before,
+[data-theme="glass"] .hero-balance::before,
+[data-theme="glass"] .insight::before,
+[data-theme="glass"] .modal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-sheen);
+  opacity: 0.9;
+  z-index: 0;
+}
+
+[data-theme="glass"] .auth-card > *,
+[data-theme="glass"] .account-settings-menu > *,
+[data-theme="glass"] .settings-dropdown > *,
+[data-theme="glass"] .card > *,
+[data-theme="glass"] .stat > *,
+[data-theme="glass"] .hero-balance > *,
+[data-theme="glass"] .insight > *,
+[data-theme="glass"] .modal > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="glass"] .toolbar,
+[data-theme="glass"] .sidebar,
+[data-theme="glass"] .bottom-nav,
+[data-theme="glass"] .auth-session-user {
+  box-shadow: var(--shadow-md), var(--glass-inset);
+}
+
+[data-theme="glass"] .nav-pill {
+  background:
+    linear-gradient(135deg, rgba(0,122,255,0.78), rgba(100,210,255,0.58)),
+    rgba(255,255,255,0.22);
+  border: 0.5px solid rgba(255,255,255,0.38);
+  box-shadow: 0 10px 26px rgba(0,122,255,0.24), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+[data-theme="glass"] .settings-dropdown,
+[data-theme="glass"] .account-settings-menu {
+  width: 276px;
+}
+
+[data-theme="glass"] .settings-opt-btn.active,
+[data-theme="glass"] .theme-toggle button.active,
+[data-theme="glass"] .chart-toggle-btn.active {
+  background: rgba(255,255,255,0.54);
+  box-shadow: var(--glass-inset-soft), 0 8px 22px rgba(42, 73, 92, 0.10);
+}
+
+[data-theme="glass"] .input,
+[data-theme="glass"] .select,
+[data-theme="glass"] .note-textarea {
+  background: rgba(255,255,255,0.34);
+}
+
+[data-theme="glass"] .data-warning {
+  background: rgba(255, 244, 229, 0.68);
+  border-bottom-color: rgba(240, 201, 138, 0.7);
+  backdrop-filter: saturate(170%) blur(24px);
+  -webkit-backdrop-filter: saturate(170%) blur(24px);
 }
 .card-solid { background: var(--surface-solid); }
 .card-header {

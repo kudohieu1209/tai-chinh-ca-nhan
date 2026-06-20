@@ -742,6 +742,12 @@ function App() {
                   >
                     <Icons.moon size={13} /> Tối
                   </button>
+                  <button
+                    className={"settings-opt-btn" + (theme === "glass" ? " active" : "")}
+                    onClick={() => setTheme("glass")}
+                  >
+                    <Icons.sparkle size={13} /> Liquid
+                  </button>
                 </div>
                 <div className="settings-divider" />
                 <div className="settings-section-label">Ngôn ngữ</div>

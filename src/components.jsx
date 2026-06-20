@@ -139,6 +139,12 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
                 >
                   <Icons.moon size={13} /> {lang === "en" ? "Dark" : "Tối"}
                 </button>
+                <button
+                  className={"settings-opt-btn" + (theme === "glass" ? " active" : "")}
+                  onClick={() => onTheme("glass")}
+                >
+                  <Icons.sparkle size={13} /> Liquid
+                </button>
               </div>
               <div className="settings-divider" />
               <div className="settings-section-label">
@@ -378,6 +384,9 @@ function Sidebar({ activePage, onChange, debts = [], theme, onTheme, lang, onLan
           </button>
           <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")}>
             <Icons.moon size={12} /> {lang === "en" ? "Dark" : "Tối"}
+          </button>
+          <button className={theme === "glass" ? "active" : ""} onClick={() => onTheme("glass")}>
+            <Icons.sparkle size={12} /> Liquid
           </button>
         </div>
       </div>
