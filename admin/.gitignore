@@ -1,0 +1,6 @@
+# NEVER commit the service account key — it grants full admin access to the project.
+serviceAccountKey.json
+*.serviceAccount*.json
+
+# Local deps
+node_modules/

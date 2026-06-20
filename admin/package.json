@@ -1,0 +1,16 @@
+{
+  "name": "fintrack-admin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local admin CLI for managing FinTrack Firebase Auth users (run on your machine only).",
+  "bin": {
+    "fintrack-admin": "./users.mjs"
+  },
+  "scripts": {
+    "users": "node users.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
