@@ -82,6 +82,7 @@ function AuthGate({ theme, onTheme }) {
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const isSignup = mode === "signup";
 
   const submitEmail = async (e) => {
@@ -139,19 +140,10 @@ function AuthGate({ theme, onTheme }) {
       <section className="auth-card">
         <div className="auth-head">
           <div>
-            <p className="auth-kicker">FinTrack</p>
+            <p className="auth-kicker">Hiewu</p>
             <h1>{isSignup ? "Tạo tài khoản" : "Đăng nhập"}</h1>
-            <p>{isSignup ? "Dữ liệu sẽ được lưu theo tài khoản riêng của bạn." : "Vào tài khoản để đồng bộ dữ liệu tài chính."}</p>
+            <p>{isSignup ? "Dữ liệu sẽ được lưu theo tài khoản riêng của bạn." : "Quản lý chi tiêu, ngân sách và dữ liệu tài chính của bạn."}</p>
           </div>
-          <button
-            className="auth-theme-btn"
-            type="button"
-            onClick={() => onTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Đổi giao diện"
-            title="Đổi giao diện"
-          >
-            {theme === "dark" ? <Icons.sun size={18} /> : <Icons.moon size={18} />}
-          </button>
         </div>
 
         <form className="auth-form" onSubmit={submitEmail}>
@@ -167,7 +159,19 @@ function AuthGate({ theme, onTheme }) {
           </label>
           <label className="field">
             <span className="field-label">Mật khẩu</span>
-            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete={isSignup ? "new-password" : "current-password"} placeholder="Tối thiểu 6 ký tự" required />
+            <div className="input-password">
+              <input className="input" type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} autoComplete={isSignup ? "new-password" : "current-password"} placeholder="Tối thiểu 6 ký tự" required />
+              <button
+                type="button"
+                className="input-password-toggle"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                tabIndex={-1}
+              >
+                {showPassword ? <Icons.eyeOff size={18} /> : <Icons.eye size={18} />}
+              </button>
+            </div>
           </label>
           {error && <div className="auth-error" role="status">{error}</div>}
           <button className="btn auth-submit" type="submit" disabled={busy}>
@@ -182,7 +186,7 @@ function AuthGate({ theme, onTheme }) {
 
         <div className="auth-foot">
           <button type="button" onClick={() => { setMode(isSignup ? "signin" : "signup"); setError(""); }}>
-            {isSignup ? "Đã có tài khoản? Đăng nhập" : "Chưa có tài khoản? Tạo mới"}
+            {isSignup ? "Đã có tài khoản? Đăng nhập" : "Tạo mới"}
           </button>
           {!isSignup && <button type="button" onClick={resetPassword}>Quên mật khẩu</button>}
         </div>

@@ -183,12 +183,12 @@ input, select, textarea { font-family: inherit; color: inherit; }
   background: var(--bg);
 }
 .auth-card {
-  width: min(100%, 420px);
+  width: min(100%, 468px);
   background: var(--surface);
   border: 0.5px solid var(--glass-border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
-  padding: 24px;
+  padding: 36px 34px;
 }
 .auth-head {
   display: flex;
@@ -234,6 +234,23 @@ input, select, textarea { font-family: inherit; color: inherit; }
   flex-direction: column;
   gap: 14px;
 }
+.input-password { position: relative; display: block; width: 100%; min-width: 0; }
+.input-password .input { width: 100%; padding-right: 44px; }
+.input-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  color: var(--text-4);
+  background: transparent;
+  transition: color var(--dur-quick) var(--spring-crisp), background var(--dur-quick) var(--spring-crisp);
+}
+.input-password-toggle:hover { color: var(--text-2); background: var(--surface-hover); }
 .auth-error {
   padding: 10px 12px;
   border-radius: var(--r-md);
