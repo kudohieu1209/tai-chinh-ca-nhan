@@ -118,17 +118,17 @@
 }
 
 [data-theme="glass"] {
-  --bg: #eef6f8;
+  --bg: #fbf6ea;
   --bg-gradient:
-    radial-gradient(circle at 12% 18%, rgba(100, 210, 255, 0.28) 0%, transparent 34%),
-    radial-gradient(circle at 88% 12%, rgba(255, 159, 10, 0.20) 0%, transparent 30%),
-    radial-gradient(circle at 72% 82%, rgba(255, 55, 95, 0.14) 0%, transparent 36%),
-    linear-gradient(135deg, #f8fbff 0%, #eef7f2 52%, #f7f4ff 100%);
-  --surface:       rgba(255, 255, 255, 0.46);
-  --surface-solid: rgba(255, 255, 255, 0.68);
-  --surface-2:     rgba(255, 255, 255, 0.26);
-  --surface-hover: rgba(255, 255, 255, 0.44);
-  --sidebar-bg:    rgba(255, 255, 255, 0.34);
+    radial-gradient(circle at 14% 18%, rgba(255, 244, 214, 0.52) 0%, transparent 34%),
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.56) 0%, transparent 30%),
+    radial-gradient(circle at 74% 84%, rgba(239, 219, 185, 0.30) 0%, transparent 38%),
+    linear-gradient(135deg, #fffdf7 0%, #fbf6ea 48%, #f5eddc 100%);
+  --surface:       rgba(255, 253, 247, 0.48);
+  --surface-solid: rgba(255, 253, 247, 0.70);
+  --surface-2:     rgba(255, 253, 247, 0.30);
+  --surface-hover: rgba(255, 253, 247, 0.48);
+  --sidebar-bg:    rgba(255, 253, 247, 0.36);
 
   --border:        rgba(255, 255, 255, 0.42);
   --border-strong: rgba(29, 29, 31, 0.16);
@@ -199,8 +199,8 @@ body::before, body::after { content: none; }
   left: -14vw;
   top: -16vw;
   background:
-    radial-gradient(circle at 48% 44%, rgba(100, 210, 255, 0.24), transparent 62%),
-    radial-gradient(circle at 68% 68%, rgba(52, 199, 89, 0.16), transparent 58%);
+    radial-gradient(circle at 48% 44%, rgba(255, 248, 224, 0.46), transparent 62%),
+    radial-gradient(circle at 68% 68%, rgba(232, 214, 180, 0.22), transparent 58%);
 }
 [data-theme="glass"] body::after {
   width: 46vw;
@@ -210,8 +210,8 @@ body::before, body::after { content: none; }
   right: -16vw;
   bottom: -18vw;
   background:
-    radial-gradient(circle at 40% 52%, rgba(255, 149, 0, 0.16), transparent 62%),
-    radial-gradient(circle at 70% 36%, rgba(255, 45, 85, 0.13), transparent 58%);
+    radial-gradient(circle at 40% 52%, rgba(239, 219, 185, 0.28), transparent 62%),
+    radial-gradient(circle at 70% 36%, rgba(255, 255, 255, 0.34), transparent 58%);
 }
 
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
