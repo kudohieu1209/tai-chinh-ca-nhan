@@ -1,12 +1,9 @@
- /* ==========================================================================
-   Tài chính của Hiếu — macOS Sonoma-inspired design system
-   ========================================================================== */
-
+ /* Tài chính của Hiếu */
 :root {
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", sans-serif;
   --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
 
-  /* Apple system colors */
+  /* System colors */
   --c-blue:   #007AFF;
   --c-green:  #34C759;
   --c-indigo: #5856D6;
@@ -232,9 +229,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 
 .num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
-/* ==========================================================================
-   App shell
-   ========================================================================== */
+/* App shell */
 .app {
   position: relative; z-index: 1;
   height: 100vh; width: 100vw;
@@ -414,6 +409,16 @@ input, select, textarea { font-family: inherit; color: inherit; }
   border: 0.5px solid var(--border);
   backdrop-filter: saturate(180%) blur(30px);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
+  transition:
+    opacity var(--dur-quick) var(--spring-crisp),
+    transform var(--dur-quick) var(--spring-crisp),
+    visibility var(--dur-quick) var(--spring-crisp);
+}
+.auth-session.is-menu-open .auth-session-user {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(8px) scale(0.96);
+  pointer-events: none;
 }
 .auth-session-user img,
 .auth-session-user span {
@@ -3556,4 +3561,86 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   .amount-quick-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================
+   Admin — owner-only account management dashboard
+   ============================================================ */
+.admin-refresh {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.admin-stat {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+.admin-stat-value { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; color: var(--text); }
+.admin-stat-label { font-size: 12.5px; color: var(--text-3); }
+.admin-stat-positive .admin-stat-value { color: var(--c-green); }
+.admin-stat-negative .admin-stat-value { color: var(--c-red); }
+
+.admin-table-card { padding: 0; overflow: hidden; }
+.admin-table-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-bottom: 0.5px solid var(--border);
+}
+.admin-search {
+  position: relative; display: flex; align-items: center; gap: 8px; flex: 1; max-width: 360px;
+  color: var(--text-3);
+}
+.admin-search .input { padding-left: 34px; height: 38px; }
+.admin-search svg { position: absolute; left: 11px; pointer-events: none; }
+.admin-count { font-size: 12.5px; color: var(--text-3); white-space: nowrap; }
+
+.admin-table-scroll { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.admin-table th {
+  text-align: left; font-weight: 550; color: var(--text-3); font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 12px 16px; border-bottom: 0.5px solid var(--border); white-space: nowrap;
+}
+.admin-table th.num, .admin-table td.num { text-align: right; }
+.admin-table td { padding: 13px 16px; border-bottom: 0.5px solid var(--border); color: var(--text-2); white-space: nowrap; }
+.admin-table tbody tr:last-child td { border-bottom: none; }
+.admin-table tbody tr:hover { background: var(--surface-hover); }
+.admin-table td.negative { color: var(--c-red); }
+.admin-row-owner { background: var(--accent-tint); }
+.admin-row-owner:hover { background: var(--accent-tint); }
+
+.admin-user { display: flex; flex-direction: column; gap: 2px; }
+.admin-user-email { font-weight: 550; color: var(--text); }
+.admin-user-uid { font-size: 11px; color: var(--text-4); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.admin-badge {
+  align-self: flex-start; margin-top: 1px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--accent); background: var(--accent-tint);
+  padding: 1px 7px; border-radius: 99px;
+}
+.admin-date { color: var(--text-3); }
+
+.admin-loading { color: var(--text-3); text-align: center; padding: 40px; }
+
+.admin-error { border-color: var(--c-red); }
+.admin-error-title { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--c-red); margin-bottom: 8px; }
+.admin-error-text { color: var(--text-2); font-size: 14px; line-height: 1.5; margin-bottom: 12px; }
+.admin-rule {
+  background: var(--surface-2); border: 0.5px solid var(--border); border-radius: var(--r-md);
+  padding: 14px 16px; font-size: 12.5px; line-height: 1.5; overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
+}
+.admin-error-code { margin-top: 10px; font-size: 12px; color: var(--text-3); }
+
+@media (max-width: 720px) {
+  .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }

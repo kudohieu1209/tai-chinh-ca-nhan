@@ -669,8 +669,10 @@ function App() {
   const userLabel = authUser.displayName || authUser.email || "Tài khoản";
   const userInitial = (userLabel.trim()[0] || "U").toUpperCase();
 
+  const isOwner = isOwnerUser(authUser);
   const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget, notes: Notes };
-  const PageEl = PageComponents[page];
+  if (isOwner) PageComponents.admin = AdminPanel;
+  const PageEl = PageComponents[page] || Overview;
   const pageProps = {
     transactions:     monthTransactions,
     allTransactions,
@@ -709,7 +711,7 @@ function App() {
   return (
     <div className="app">
       <main className="main">
-        <div className="auth-session" ref={accountMenuRef}>
+        <div className={"auth-session" + (accountMenuOpen ? " is-menu-open" : "")} ref={accountMenuRef}>
           <div className="auth-session-user" title={authUser.email || userLabel}>
             {authUser.photoURL
               ? <img src={authUser.photoURL} alt="" />
@@ -807,12 +809,12 @@ function App() {
         />
         <PageEl key={page} {...pageProps} />
       </main>
-      <BottomNav activePage={page} onChange={setPage} debts={debts} lang={lang} />
+      <BottomNav activePage={page} onChange={setPage} debts={debts} lang={lang} showAdmin={isOwner} />
     </div>
   );
 }
 
-function BottomNav({ activePage, onChange, debts = [], lang = "vi" }) {
+function BottomNav({ activePage, onChange, debts = [], lang = "vi", showAdmin = false }) {
   const openDebtCount = debts.filter(d => !d.settled).length;
   const items = [
     { id: "overview",     label: lang === "en" ? "Overview"     : "Tổng quan", icon: "squareGrid" },
@@ -820,6 +822,7 @@ function BottomNav({ activePage, onChange, debts = [], lang = "vi" }) {
     { id: "debts",        label: lang === "en" ? "Debts"        : "Nợ vay",    icon: "creditCard", badge: openDebtCount > 0 ? openDebtCount : null },
     { id: "budget",       label: lang === "en" ? "Budget"       : "Ngân sách", icon: "wallet" },
     { id: "notes",        label: "Note",                                        icon: "pencil" },
+    ...(showAdmin ? [{ id: "admin", label: "Admin", icon: "users" }] : []),
   ];
   return (
     <nav className="bottom-nav" aria-label="Page navigation">

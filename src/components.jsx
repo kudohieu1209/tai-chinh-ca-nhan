@@ -74,7 +74,7 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
   }, [settingsOpen]);
 
   const isOverview = activePage === "overview";
-  const showMonthPicker = activePage !== "notes" && activePage !== "overview";
+  const showMonthPicker = activePage !== "notes" && activePage !== "overview" && activePage !== "admin";
   const today = new Date();
   const isCurrentMonth = today.getMonth() === viewMonth && today.getFullYear() === viewYear;
   const balanceLabel = isCurrentMonth
@@ -86,6 +86,7 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
     debts:        lang === "en" ? "Debts"        : "Nợ vay",
     budget:       lang === "en" ? "Budget"       : "Ngân sách",
     notes:        "Note",
+    admin:        lang === "en" ? "Account management" : "Quản lý tài khoản",
   };
 
   if (isOverview) return null;

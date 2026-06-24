@@ -29,6 +29,7 @@ FinTrack/
     components.jsx
     debts.jsx
     icons.jsx
+    notes.jsx
     overview.jsx
     transactions.jsx
 
@@ -36,18 +37,21 @@ FinTrack/
     APPLE_DESIGN_STYLE.md
     CLAUDE.md
 
-  archive/
-    app.js
-    TaiChinh_Hiewu.html
-    package-lock.json
+  sync.py
 ```
 
 ## Quy ước phát triển
 
 `src/*.jsx` là bản source tách theo module để dễ đọc và chỉnh sửa. Vì app vẫn ưu tiên chạy trực tiếp bằng `index.html`, khi sửa JSX cần đồng bộ thay đổi vào block inline tương ứng trong `index.html`.
 
-`archive/` chứa bản cũ hoặc file không còn được runtime hiện tại dùng. Không sửa tính năng mới trong thư mục này.
+Để đồng bộ tự động, chạy:
+
+```bash
+python sync.py
+```
+
+Script này ghép toàn bộ `src/*.jsx` (theo thứ tự phụ thuộc) rồi ghi đè vào khối `<script type="text/babel">` trong `index.html`. Lưu ý: đây là one-way (`src/` → `index.html`), nên đừng sửa trực tiếp trong khối inline của `index.html` — lần chạy sync tiếp theo sẽ ghi đè.
 
 ## Ghi chú
 
-Chưa có pipeline build tự động. Nếu app tiếp tục lớn lên, bước nâng cấp hợp lý tiếp theo là thêm script nhỏ để ghép `src/*.jsx` vào `index.html`, tránh phải đồng bộ thủ công.
+Pipeline build hiện tại chỉ là `sync.py` (ghép văn bản thuần, không lint/test). Nếu app tiếp tục lớn lên, bước nâng cấp hợp lý tiếp theo là chuyển sang bundler thật (Vite/esbuild) để có build, kiểm tra kiểu và tách file đúng nghĩa.

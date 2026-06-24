@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Firebase / secrets — NEVER commit (defense in depth; admin/ also ignores these)
+serviceAccountKey.json
+*.serviceAccount*.json
+.env
+.env.*
+*.key
+*.pem
+
+# Python (sync.py)
+__pycache__/
+*.py[cod]
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+
+# Logs / temp
+*.log
+*.tmp
