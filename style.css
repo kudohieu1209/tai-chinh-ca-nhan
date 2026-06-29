@@ -1330,6 +1330,24 @@ button.hero-balance-nav:hover .hero-nav-chevron {
     min-height: 260px;
     margin-bottom: 0;
   }
+  /* Category list can outgrow the card on short laptop screens — scroll it
+     internally instead of letting .overview-page's overflow:hidden clip it. */
+  .category-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .cat-donut-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: flex-start;
+  }
+  .cat-list {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 4px;
+    padding-bottom: 4px;
+  }
 }
 
 /* Laptop (shorter viewport): scale the whole overview down to ~90% so the full

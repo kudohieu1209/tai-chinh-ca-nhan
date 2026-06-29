@@ -11,7 +11,7 @@ Các file cần nằm ở root để app chạy trực tiếp:
 - `index.html`: bản chạy trực tiếp, chứa JSX đã gộp inline.
 - `style.css`: toàn bộ giao diện.
 - `data.js`: dữ liệu seed/cấu hình phụ.
-- `avatar.jpg`: ảnh dùng trong sidebar.
+- `avatar.jpg` (tùy chọn): ảnh cá nhân hiển thị trong sidebar, không commit lên git — thiếu file này chỉ vỡ ảnh, không ảnh hưởng chức năng.
 
 ## Cấu trúc thư mục
 
@@ -20,7 +20,7 @@ FinTrack/
   index.html
   style.css
   data.js
-  avatar.jpg
+  avatar.jpg        (local, không commit)
 
   src/
     app.jsx
@@ -33,9 +33,14 @@ FinTrack/
     overview.jsx
     transactions.jsx
 
+  admin/             # CLI quản lý tài khoản người dùng (Firebase Auth), xem admin/README.md
+    users.mjs
+
   docs/
     APPLE_DESIGN_STYLE.md
     CLAUDE.md
+    FIREBASE_AUTH_SETUP.md
+    FIRESTORE_RULES.md
 
   sync.py
 ```
