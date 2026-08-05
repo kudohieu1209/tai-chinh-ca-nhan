@@ -1,5 +1,10 @@
 # Dependencies
 node_modules/
+package-lock.json
+package.json
+
+# Temporary / legacy app artifacts
+legacy/
 
 # Firebase / secrets — NEVER commit (defense in depth; admin/ also ignores these)
 serviceAccountKey.json

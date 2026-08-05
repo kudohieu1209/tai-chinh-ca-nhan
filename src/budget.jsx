@@ -120,7 +120,7 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
             </button>
           )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+        <div className="budget-form-grid">
           <div className="field">
             <span className="field-label">Danh mục</span>
             <select className="select" value={editCat} onChange={e => setEditCat(e.target.value)}>

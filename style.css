@@ -1000,6 +1000,15 @@ input, select, textarea { font-family: inherit; color: inherit; }
 @media (max-width: 1024px) {
   .hero-sparkline { width: 38%; height: 64px; top: 46px; right: 18px; }
 }
+@media (max-width: 720px) {
+  .budget-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .budget-form-grid .btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
 @media (max-width: 640px) {
   .hero-sparkline { display: none; }
 }
