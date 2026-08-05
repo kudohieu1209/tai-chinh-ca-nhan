@@ -3213,8 +3213,9 @@ button.hero-balance-nav:hover .hero-nav-chevron {
   .amount-quick-chip { min-height: 40px; }
   .cat-grid-chip { min-height: 38px; padding: 6px 12px; }
   .budget-head {
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
   .budget-right {
     width: 100%;
@@ -3222,7 +3223,6 @@ button.hero-balance-nav:hover .hero-nav-chevron {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 4px;
   }
   .budget-actions {
     opacity: 1;
