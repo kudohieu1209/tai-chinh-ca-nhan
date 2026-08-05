@@ -6,13 +6,13 @@ const DEFAULT_CATEGORIES = {
   'Đi lại':   { name: 'Đi lại',   emoji: '🛵', color: '#00C7BE' },
   'Thuê trọ': { name: 'Thuê trọ', emoji: '🏠', color: '#A2845E' },
   'Mua sắm':  { name: 'Mua sắm',  emoji: '🛍️', color: '#FFCC00' },
+  'AI':         { name: 'AI',         emoji: '✨', color: '#D97757' },
   'Giải trí': { name: 'Giải trí', emoji: '🎮', color: '#FF2D55' },
   'Sức khỏe': { name: 'Sức khỏe', emoji: '💊', color: '#30B0C7' },
   'Học tập':  { name: 'Học tập',  emoji: '📚', color: '#5AC8FA' },
   'Du lịch':  { name: 'Du lịch',  emoji: '✈️', color: '#5856D6' },
   'Cầu lông':   { name: 'Cầu lông',   emoji: '🏸', color: '#AF52DE' },
   'Trả nợ':     { name: 'Trả nợ',     emoji: '💳', color: '#0A84FF' },
-  'AI':         { name: 'AI',         emoji: '✨', color: '#D97757' },
   'Khác':       { name: 'Khác',       emoji: '📦', color: '#8E8E93' },
 };
 
@@ -30,25 +30,37 @@ const SYSTEM_CATEGORIES = ['Khác', 'Trả nợ'];
 const RESERVED_CAT_COLORS = ['#34C759', '#FF3B30', '#30D158', '#FF453A'];
 
 const setCategories = (list) => {
-  const entries = Array.isArray(list) && list.length
+  let entries = Array.isArray(list) && list.length
     ? list
     : Object.values(DEFAULT_CATEGORIES);
   Object.keys(CATEGORIES).forEach(k => { delete CATEGORIES[k]; });
-  entries.forEach(c => {
+  
+  entries = entries.map(c => {
     const name = String(c.name || '').trim();
-    if (!name) return;
+    if (!name) return null;
     const def = DEFAULT_CATEGORIES[name];
-    // Backfill the emoji from the built-in default when a known category lost
-    // it and falls back to the generic box — e.g. "AI" shows ✨, not 📦.
     const emoji = (c.emoji && c.emoji !== '📦') ? c.emoji : (def ? def.emoji : '📦');
-    // Keep stored colours, but migrate a built-in category still holding a
-    // now-reserved semantic green/red to its refreshed default colour.
     const stored = c.color || (def ? def.color : '#8E8E93');
     const color = (def && RESERVED_CAT_COLORS.includes(String(c.color || '').toUpperCase()))
       ? def.color
       : stored;
-    CATEGORIES[name] = { name, emoji, color };
+    return { name, emoji, color };
+  }).filter(Boolean);
+
+  const defaultKeys = Object.keys(DEFAULT_CATEGORIES);
+  entries.sort((a, b) => {
+    const idxA = defaultKeys.indexOf(a.name);
+    const idxB = defaultKeys.indexOf(b.name);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return 0;
   });
+
+  entries.forEach(c => {
+    CATEGORIES[c.name] = c;
+  });
+  
   SYSTEM_CATEGORIES.forEach(name => {
     if (!CATEGORIES[name]) CATEGORIES[name] = { ...DEFAULT_CATEGORIES[name] };
   });

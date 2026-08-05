@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Tài chính của Hiếu</title>
-  <link rel="stylesheet" href="style.css?v=20260629-catlist-scroll" />
+  <link rel="stylesheet" href="style.css?v=20260805-09" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23007AFF'/%3E%3Ctext x='50' y='68' font-family='-apple-system,sans-serif' font-size='60' font-weight='700' fill='white' text-anchor='middle'%3E%C4%91%3C/text%3E%3C/svg%3E" />
+
 </head>
 <body>
   <div id="root"></div>
@@ -21,10 +22,12 @@
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
   <!-- Data layer (plain JS — no CORS issue) -->
-  <script src="data.js"></script>
+  <script src="data.js?v=20260805-09"></script>
 
   <!-- All JSX inlined — avoids file:// CORS block on Babel XHR -->
   <script type="text/babel" data-presets="react">
+
+
 // ============================================================
 // icons.jsx — Apple SF Symbols-inspired SVG icon set
 // ============================================================
@@ -262,8 +265,8 @@ function FlowChart({ data, daysInMonth = 31 }) {
           onMouseMove={handleHoverMove} onMouseLeave={() => setHoverDay(null)}>
           <defs>
             <linearGradient id="gradDark" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#E84040" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#E84040" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--flow-chart-color, #E84040)" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--flow-chart-color, #E84040)" stopOpacity="0" />
             </linearGradient>
           </defs>
           <g className="flow-grid">
@@ -722,7 +725,8 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
     admin:        lang === "en" ? "Account management" : "Quản lý tài khoản",
   };
 
-  if (isOverview) return null;
+  const hideToolbar = activePage === "overview" || activePage === "transactions";
+  if (hideToolbar) return null;
 
   return (
     <div className={"toolbar" + (isOverview ? " toolbar-overview" : "")}>
@@ -778,6 +782,12 @@ function Toolbar({ activePage, month, onMonthChange, closingBalance = 0, viewMon
                   onClick={() => onTheme("glass")}
                 >
                   <Icons.sparkle size={13} /> Liquid
+                </button>
+                <button
+                  className={"settings-opt-btn" + (theme === "codex" ? " active" : "")}
+                  onClick={() => onTheme("codex")}
+                >
+                  <Icons.squareGrid size={13} /> Codex
                 </button>
               </div>
               <div className="settings-divider" />
@@ -938,19 +948,22 @@ function TabBar({ tabs, active, onChange, style, className }) {
   return (
     <div className={"tx-tabs " + (className || "")} ref={barRef} style={style}>
       <div className="tab-indicator" ref={indicRef} style={{ opacity: 0 }} />
-      {tabs.map(t => (
-        <button
-          key={t.id}
-          data-tab={t.id}
-          className={"tx-tab" + (active === t.id ? " active" : "") + (t.cls ? " " + t.cls : "")}
-          onClick={() => onChange(t.id)}
-          style={t.btnStyle}
-        >
-          {t.icon && <t.icon size={13} />}
-          {t.label}
-          {t.count != null && <span className="tx-tab-count">{t.count}</span>}
-        </button>
-      ))}
+      {tabs.map(t => {
+        const Icon = t.icon;
+        return (
+          <button
+            key={t.id}
+            data-tab={t.id}
+            className={"tx-tab" + (active === t.id ? " active" : "") + (t.cls ? " " + t.cls : "")}
+            onClick={() => onChange(t.id)}
+            style={t.btnStyle}
+          >
+            {Icon && <Icon size={13} />}
+            {t.label}
+            {t.count != null && <span className="tx-tab-count">{t.count}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1022,6 +1035,9 @@ function Sidebar({ activePage, onChange, debts = [], theme, onTheme, lang, onLan
           </button>
           <button className={theme === "glass" ? "active" : ""} onClick={() => onTheme("glass")}>
             <Icons.sparkle size={12} /> Liquid
+          </button>
+          <button className={theme === "codex" ? "active" : ""} onClick={() => onTheme("codex")}>
+            <Icons.squareGrid size={12} /> Codex
           </button>
         </div>
       </div>
@@ -1183,7 +1199,7 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, onMonthChange, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveBudget, onSaveGoal, onDeleteGoal, theme, onTheme, lang, onLang }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, onMonthChange, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveBudget, onSaveGoal, onDeleteGoal, theme, onTheme, lang, onLang, catsVersion }) {
   const tr = (vi, en) => (lang === "en" ? en : vi);
   const [editingGoal, setEditingGoal] = useState(null);
   const [hoverCat, setHoverCat] = useState(null);
@@ -1274,7 +1290,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
         pct: expense > 0 ? (amount / expense) * 100 : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [transactions, expense]);
+  }, [transactions, expense, catsVersion]);
 
   const dailyFlow = useMemo(() => {
     const flow = {};
@@ -1430,7 +1446,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
     setAddTxAmount(0);
     setAddTxCat(Object.keys(CATEGORIES)[0] || "Ăn uống");
     setAddTxDate(new Date().toISOString().slice(0, 10));
-    setShowAddTx(false);
+    // setShowAddTx(false);
   };
 
   const incomeTxns = useMemo(() =>
@@ -1558,6 +1574,15 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
 
   return (
     <div className="page overview-page">
+      {onMonthChange && (
+        <div className="overview-sticky-bar">
+          <div className="hero-month-picker">
+            <button onClick={() => onMonthChange(1)} aria-label={tr("Tháng trước", "Previous month")}><Icons.chevLeft size={13} /></button>
+            <span className="hero-month-label">{monthLabel}</span>
+            <button onClick={() => onMonthChange(-1)} aria-label={tr("Tháng sau", "Next month")}><Icons.chevRight size={13} /></button>
+          </div>
+        </div>
+      )}
       <div className="overview-hero">
         <section className="hero-balance stagger stagger-1" aria-label={balanceLabel}>
           <div className="hero-bg" aria-hidden="true" />
@@ -1566,15 +1591,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
               <Icons.chevRight size={14} className="hero-nav-chevron" />
             </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {onMonthChange && (
-                <div className="hero-month-picker">
-                  <button onClick={() => onMonthChange(1)} aria-label={tr("Tháng trước", "Previous month")}><Icons.chevLeft size={13} /></button>
-                  <span className="hero-month-label">{monthLabel}</span>
-                  <button onClick={() => onMonthChange(-1)} aria-label={tr("Tháng sau", "Next month")}><Icons.chevRight size={13} /></button>
-                </div>
-              )}
-            </div>
           </div>
           <div className="hero-balance-main">
             <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
@@ -1591,30 +1607,30 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
             <div className="hero-chip">
               <span className="hero-chip-label"><Icons.wallet size={12} /> {tr("Dư đầu tháng", "Opening balance")}</span>
               <span className="hero-chip-value num">{fmt(openingBalanceAnim)}</span>
-              <span className="hero-chip-sub">{tr("Chuyển từ các tháng trước", "Carried from previous months")}</span>
+
             </div>
             <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
                  onClick={() => { setIncDate(new Date().toISOString().slice(0, 10)); setShowIncome(true); }}
                  onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setIncDate(new Date().toISOString().slice(0, 10)), setShowIncome(true))}>
               <span className="hero-chip-label">
-                <Icons.arrowDownLeft size={12} /> {tr("Thu tháng này", "Income this month")}
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-green)", display: "inline-block", marginRight: 4 }} /> {tr("Thu tháng này", "Income this month")}
                 <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
               </span>
               <span className="hero-chip-value num">{fmt(incomeAnim)}</span>
               <span className="hero-chip-sub">
-                {incomeCount} {tr("giao dịch", "txns")} · {tr("TB", "avg")} {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}{tr("/lần", "/ea")}
+                {incomeCount} {tr("giao dịch", "txns")} · {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}{tr("/lần", "/ea")}
               </span>
             </div>
             <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
                  onClick={() => { setAddTxType("expense"); setAddTxDate(new Date().toISOString().slice(0, 10)); setShowAddTx(true); }}
                  onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setAddTxType("expense"), setShowAddTx(true))}>
               <span className="hero-chip-label">
-                <Icons.arrowUpRight size={12} /> {tr("Chi tháng này", "Spending this month")}
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-red)", display: "inline-block", marginRight: 4 }} /> {tr("Chi tháng này", "Spending this month")}
                 <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
               </span>
               <span className="hero-chip-value num">{fmt(expenseAnim)}</span>
               <span className="hero-chip-sub">
-                {expenseCount} {tr("giao dịch", "txns")} · {tr("TB", "avg")} {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}{tr("/lần", "/ea")}
+                {expenseCount} {tr("giao dịch", "txns")} · {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}{tr("/lần", "/ea")}
               </span>
             </div>
           </div>
@@ -1636,7 +1652,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
         <div className="card overview-debt-card overview-hero-debt stagger stagger-3">
           <div className="card-header">
             <div className="card-title">{tr("Nợ & Cho Vay", "Debts & Loans")}</div>
-            <button className="card-action" onClick={() => setDebtModalOpen(true)}>{tr("Quản lý", "Manage")}</button>
+
           </div>
           <div className="hero-chips overview-debt-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }} role="tablist" aria-label={tr("Chiều nợ", "Debt direction")}>
             <button
@@ -1644,7 +1660,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               role="tab"
               aria-selected={activeDebtView === "owe"}
               className={"hero-chip debt-toggle-chip" + (activeDebtView === "owe" ? " is-active" : "")}
-              style={{ border: "1px solid var(--border)", boxShadow: activeDebtView === "owe" ? "inset 0 0 0 1.5px var(--c-red)" : "none" }}
+              style={{ border: "1px solid var(--border)" }}
               onClick={() => setDebtView("owe")}
             >
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowUpRight size={12} style={{ marginRight: 2 }} /> {tr("Bạn đang nợ", "You owe")}</span>
@@ -1656,7 +1672,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               role="tab"
               aria-selected={activeDebtView === "lend"}
               className={"hero-chip debt-toggle-chip" + (activeDebtView === "lend" ? " is-active" : "")}
-              style={{ border: "1px solid var(--border)", boxShadow: activeDebtView === "lend" ? "inset 0 0 0 1.5px var(--c-green)" : "none" }}
+              style={{ border: "1px solid var(--border)" }}
               onClick={() => setDebtView("lend")}
             >
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowDownLeft size={12} style={{ marginRight: 2 }} /> {tr("Người khác nợ bạn", "Owed to you")}</span>
@@ -1823,7 +1839,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               {expenseTab === "add" ? (
                 <>
                   {/* MẪU NHANH */}
-                  <div>
+                  <div className="mobile-hide-templates">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                       <span className="field-label">{tr("MẪU NHANH", "QUICK TEMPLATES")}</span>
                       <button
@@ -1909,7 +1925,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                       value={addTxDesc}
                       onChange={e => setAddTxDesc(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && handleAddQuickTx()}
-                      autoFocus
                     />
                   </div>
 
@@ -1917,14 +1932,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                   <div className="field">
                     <span className="field-label">{tr("SỐ TIỀN", "AMOUNT")}</span>
                     <MoneyInput value={addTxAmount} onChange={setAddTxAmount} />
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8 }}>
-                      {[10000, 20000, 50000, 100000].map(amt => (
-                        <button key={amt} className="btn btn-secondary" style={{ height: 34, fontSize: 13 }}
-                          onClick={() => setAddTxAmount(v => (v || 0) + amt)}>
-                          +{fmtShort(amt)}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   {/* DANH MỤC */}
@@ -2173,14 +2180,6 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                   <div className="field">
                     <span className="field-label">{tr("SỐ TIỀN", "AMOUNT")}</span>
                     <MoneyInput value={incAmount} onChange={setIncAmount} />
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8 }}>
-                      {[10000, 20000, 50000, 100000].map(amt => (
-                        <button key={amt} className="btn btn-secondary" style={{ height: 34, fontSize: 13 }}
-                          onClick={() => setIncAmount(v => (v || 0) + amt)}>
-                          +{fmtShort(amt)}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   {/* NGÀY */}
@@ -2447,9 +2446,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               <div className="card-title">{tr("Chi tiêu theo danh mục", "Spending by category")}</div>
               <div className="card-subtitle">{fmt(expense)} · {expenseCount} {tr("giao dịch", "transactions")}</div>
             </div>
-            <button className="card-action" onClick={() => setBudgetModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: 3, color: "var(--text)" }}>
-              {tr("Ngân sách", "Budget")} <Icons.chevRight size={12} />
-            </button>
+
           </div>
           {catRows.length === 0 ? (
             <Empty icon="inbox" title={tr("Chưa có chi tiêu", "No spending yet")} text={tr("Thêm giao dịch để xem phân tích", "Add transactions to see analysis")} />
@@ -2463,7 +2460,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                 onSelect={togglePinnedCat}
               />
               <div className="cat-list">
-                {catRows.map(c => (
+                {catRows.map((c, idx) => (
                   <div
                     className={"cat-row" + (activeCat == null ? "" : activeCat === c.id ? " is-active" : " is-dimmed")}
                     key={c.id}
@@ -2482,10 +2479,14 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                       }
                     }}
                   >
-                    <span className="cat-chip" aria-hidden="true">{c.emoji}</span>
                     <div className="cat-name-text">{c.name}</div>
-                    <div className="cat-pct">{c.pct.toFixed(0)}%</div>
-                    <div className="cat-amount num">{fmt(c.amount)}</div>
+                    <div className="cat-progress-track" aria-hidden="true">
+                      <div className="cat-progress-fill" style={{ width: `${c.pct}%`, background: "var(--cat-color)" }} />
+                    </div>
+                    <div className="cat-pct" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+                      <span style={{ fontSize: 11.5, color: "var(--text-3)", fontWeight: 500 }}>{fmtShort(c.amount)}</span>
+                      <span style={{ width: 32, fontWeight: 600, fontSize: 13, textAlign: "right" }}>{c.pct.toFixed(0)}%</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2542,7 +2543,7 @@ window.Overview = Overview;
 
 const TX_WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const TX_WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const TX_AMOUNT_STEPS = [10000, 20000, 50000, 100000];
+const TX_AMOUNT_STEPS = [5000, 10000, 30000, 50000, 100000];
 
 const txLocalIso = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -2875,7 +2876,7 @@ function SortDropdown({ value, onChange }) {
   );
 }
 
-function Transactions({ transactions, allTransactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveCategories, monthLabel }) {
+function Transactions({ transactions, allTransactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveCategories, monthLabel, onMonthChange }) {
   const t = useT();
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
@@ -2883,6 +2884,8 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [cat, setCat] = useState("Ăn uống");
   const [search, setSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortMode, setSortMode] = useState("date-desc");
   const [justAdded, setJustAdded] = useState(false);
@@ -2894,8 +2897,18 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
   const firstExpenseCat = Object.keys(CATEGORIES)[0] || cat;
   const incomeCat = "Thu nhập";
 
-  const incomeList = transactions.filter(t => t.type === "income");
-  const expenseList = transactions.filter(t => t.type === "expense");
+  const sourceTxs = (fromDate || toDate) ? allTransactions : transactions;
+  const filteredSourceTxs = useMemo(() => {
+    if (!fromDate && !toDate) return sourceTxs;
+    return sourceTxs.filter(t => {
+      if (fromDate && t.date < fromDate) return false;
+      if (toDate && t.date > toDate) return false;
+      return true;
+    });
+  }, [sourceTxs, fromDate, toDate]);
+
+  const incomeList = filteredSourceTxs.filter(t => t.type === "income");
+  const expenseList = filteredSourceTxs.filter(t => t.type === "expense");
   const list = mode === "income" ? incomeList : expenseList;
   const categoryCounts = useMemo(() => {
     const counts = {};
@@ -3091,16 +3104,27 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
 
   return (
     <div className="page tx-page fade-in">
-      <PageHeader greet={`${monthLabel} · ${transactions.length} ${t("giao dịch", "transactions")}`} />
+      <div className="codex-timeline-header" style={{ marginTop: 12, marginBottom: 12 }}>
+        {t("GIAO DỊCH", "TRANSACTIONS")}
+      </div>
 
       <div className="tx-layout">
         {/* ===== LEFT: form + summary ===== */}
         <aside className="tx-aside">
           <div ref={formRef} className="card tx-form-card stagger stagger-1" style={{ scrollMarginTop: 80 }}>
             <div className="card-header" style={{ marginBottom: 14 }}>
-              <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                 <div className="card-title">{editingTx ? t("Sửa giao dịch", "Edit transaction") : t("Thêm giao dịch", "Add transaction")}</div>
-                <div className="card-subtitle">{editingTx ? t("Cập nhật lại thông tin giao dịch", "Update the transaction details") : t("Ghi lại ngay để không quên", "Log it now so you don't forget")}</div>
+                
+                <div className="hero-month-picker">
+                    <button onClick={() => onMonthChange && onMonthChange(1)} aria-label={t("Tháng trước", "Previous month")}>
+                      <Icons.chevLeft size={13} />
+                    </button>
+                    <span className="hero-month-label">{monthLabel}</span>
+                    <button onClick={() => onMonthChange && onMonthChange(-1)} aria-label={t("Tháng sau", "Next month")}>
+                      <Icons.chevRight size={13} />
+                    </button>
+                  </div>
               </div>
               {editingTx && (
                 <button className="btn btn-secondary tx-cancel-edit" onClick={cancelEdit}>
@@ -3109,22 +3133,15 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
               )}
             </div>
 
-            <div className="tx-tabs" style={{ marginBottom: 14, width: "100%" }}>
-              <button
-                className={"tx-tab" + (mode === "income" ? " active income" : "")}
-                onClick={() => setMode("income")}
-                style={{ flex: 1, justifyContent: "center" }}
-              >
-                <Icons.arrowDownLeft size={13} /> {t("Thu nhập", "Income")}
-              </button>
-              <button
-                className={"tx-tab" + (mode === "expense" ? " active expense" : "")}
-                onClick={() => setMode("expense")}
-                style={{ flex: 1, justifyContent: "center" }}
-              >
-                <Icons.arrowUpRight size={13} /> {t("Chi tiêu", "Expense")}
-              </button>
-            </div>
+            <TabBar
+              tabs={[
+                { id: "income", label: t("Thu nhập", "Income"), icon: Icons.arrowDownLeft, cls: "income", btnStyle: { flex: 1, justifyContent: "center" } },
+                { id: "expense", label: t("Chi tiêu", "Expense"), icon: Icons.arrowUpRight, cls: "expense", btnStyle: { flex: 1, justifyContent: "center" } }
+              ]}
+              active={mode}
+              onChange={setMode}
+              style={{ marginBottom: 14, width: "100%" }}
+            />
 
             <div className="tx-form-vertical">
               <div className="quick-templates">
@@ -3162,23 +3179,12 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
               <div className="field tx-amount-field">
                 <span className="field-label">{t("Số tiền", "Amount")}</span>
                 <MoneyInput value={amount} onChange={setAmount} />
-                <div className="amount-quick-row">
-                  {TX_AMOUNT_STEPS.map(step => (
-                    <button
-                      key={step}
-                      className="amount-quick-chip num"
-                      onClick={() => setAmount(a => a + step)}
-                    >
-                      +{fmtShort(step)}
-                    </button>
-                  ))}
-                </div>
               </div>
               {mode === "expense" && (
                 <div className="field">
                   <div className="field-label-row">
                     <span className="field-label">{t("Danh mục", "Category")}</span>
-                    <button className="quick-template-tool" onClick={() => setShowCatModal(true)}>
+                    <button className="quick-template-tool" style={{ flex: "0 0 auto" }} onClick={() => setShowCatModal(true)}>
                       <Icons.pencil size={12} /> {t("Sửa", "Edit")}
                     </button>
                   </div>
@@ -3215,13 +3221,29 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
 
         {/* ===== RIGHT: list ===== */}
         <div className="tx-main">
-          <div className="search-bar stagger stagger-2">
+          <div className="codex-timeline-header" style={{ marginTop: 18, marginBottom: 0 }}>
+            {t("LỊCH SỬ GIAO DỊCH", "TRANSACTION HISTORY")}
+          </div>
+          <div className="search-bar stagger stagger-2" style={{ marginBottom: 14 }}>
             <Icons.search size={15} style={{ color: "var(--text-3)" }} />
             <input
               placeholder={t(`Tìm ${mode === "income" ? "thu nhập" : "chi tiêu"}, danh mục...`, `Search ${mode === "income" ? "income" : "expenses"}, category...`)}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            
+            <div className="date-range-filter-inline">
+              <span className="date-label">{t("Từ", "From")}</span>
+              <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="date-input" />
+              <span className="date-label">{t("đến", "To")}</span>
+              <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="date-input" />
+              {(fromDate || toDate) && (
+                <button className="date-clear-btn" onClick={() => { setFromDate(""); setToDate(""); }}>
+                  <Icons.x size={13} />
+                </button>
+              )}
+            </div>
+
             <SortDropdown value={sortMode} onChange={setSortMode} />
             {hasListFilters && (
               <button className="tx-clear-filter" onClick={clearListFilters} title={t("Xóa lọc", "Clear filters")}>
@@ -3388,86 +3410,94 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
 
   return (
     <div className="page fade-in">
-      <PageHeader greet={t("Sổ nợ vay với bạn bè & dịch vụ", "Debt ledger with friends & services")} />
+      <div className="codex-timeline-header" style={{ marginBottom: 14 }}>
+        {t("SỔ GHI NỢ", "DEBT LEDGER")}
+      </div>
 
       {/* === Hero stats === */}
-      <div className="stat-grid">
-        <div className="stat">
-          <div className="stat-label">
-            <Icons.arrowUpRight size={13} /> {t("Bạn đang nợ", "You owe")}
+      <div className="card" style={{ marginBottom: 18, padding: "16px 20px" }}>
+        <div className="debt-stats-grid">
+          <div className="debt-stat-item">
+            <div className="debt-stat-label">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-orange)" }}></div>
+              {t("Bạn đang nợ", "You owe")}
+            </div>
+            <div className="num debt-stat-value">{fmt(openOwe).replace(/\s*VND/i, "")}</div>
+            <div className="debt-stat-sub">{oweCount} {t("khoản cần trả", "to pay")}</div>
           </div>
-          <div className="stat-value num">{fmt(openOwe)}</div>
-          <div className="stat-sub">{oweCount} {t("khoản cần trả", "to pay")}</div>
-        </div>
+          
+          <div className="debt-stat-divider"></div>
+          
+          <div className="debt-stat-item">
+            <div className="debt-stat-label">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-green)" }}></div>
+              {t("Người khác nợ", "Owed to you")}
+            </div>
+            <div className="num debt-stat-value">{fmt(openOwed).replace(/\s*VND/i, "")}</div>
+            <div className="debt-stat-sub">{owedCount} {t("khoản chờ thu", "to collect")}</div>
+          </div>
 
-        <div className="stat">
-          <div className="stat-label">
-            <Icons.arrowDownLeft size={13} /> {t("Người khác nợ bạn", "Owed to you")}
-          </div>
-          <div className="stat-value num">{fmt(openOwed)}</div>
-          <div className="stat-sub">{owedCount} {t("khoản chờ thu", "to collect")}</div>
-        </div>
+          <div className="debt-stat-divider"></div>
 
-        <div className="stat">
-          <div className="stat-label">
-            <Icons.check size={13} /> {t("Đã xong", "Settled")}
+          <div className="debt-stat-item">
+            <div className="debt-stat-label">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--text-3)" }}></div>
+              {t("Đã xong", "Settled")}
+            </div>
+            <div className="num debt-stat-value">{paidCount}</div>
+            <div className="debt-stat-sub">{t("khoản nợ", "debts")}</div>
           </div>
-          <div className="stat-value num">{paidCount}</div>
-          <div className="stat-sub">{t("khoản trong tháng", "this month")}</div>
         </div>
       </div>
 
       {/* === Add form === */}
-      <div className="card" style={{ marginBottom: 18 }}>
-        <div className="card-header">
-          <div>
-            <div className="card-title">{t("Ghi nhận khoản nợ mới", "Record a new debt")}</div>
-            <div className="card-subtitle">{t("Theo dõi ai nợ ai để không quên", "Track who owes whom so you don't forget")}</div>
-          </div>
+      <div className="card" style={{ marginBottom: 18, padding: "16px 20px" }}>
+        <div style={{ marginBottom: 14, fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+          {t("Ghi nhận khoản nợ mới", "Record a new debt")}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
-          <div className="field">
-            <span className="field-label">{t("Tên người", "Person")}</span>
-            <input className="input" type="text" placeholder={t("VD: Nam, Hân, Shopee...", "e.g. Nam, Han, Shopee...")}
-              value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div className="field">
-            <span className="field-label">{t("Số tiền", "Amount")}</span>
-            <MoneyInput value={amt} onChange={setAmt} />
-          </div>
-          <div className="field">
+        <div className="field" style={{ marginBottom: 14 }}>
+          <span className="field-label">{t("Tên người", "Person")}</span>
+          <input className="input" type="text" placeholder={t("VD: Nam, Hân...", "e.g. Nam, Han...")}
+            value={name} onChange={e => setName(e.target.value)} />
+        </div>
+        <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
+          <div className="field" style={{ flex: 1 }}>
             <span className="field-label">{t("Loại", "Type")}</span>
             <select className="select" value={type} onChange={e => setType(e.target.value)}>
               <option value="owe">{t("Mình nợ họ", "I owe them")}</option>
               <option value="lend">{t("Họ nợ mình", "They owe me")}</option>
             </select>
           </div>
-          <div className="field">
-            <span className="field-label">{t("Ghi chú", "Note")}</span>
-            <input className="input" type="text" placeholder={t("VD: Tiền ăn hôm qua", "e.g. Yesterday's meal")}
-              value={note} onChange={e => setNote(e.target.value)} />
+          <div className="field" style={{ flex: 1 }}>
+            <span className="field-label">{t("Số tiền", "Amount")}</span>
+            <MoneyInput value={amt} onChange={setAmt} />
           </div>
-          <button className="btn" style={{ height: 41 }} onClick={handleAdd}>
-            <Icons.plus size={15} /> {t("Thêm", "Add")}
-          </button>
         </div>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <span className="field-label">{t("Ghi chú", "Note")}</span>
+          <input className="input" type="text" placeholder={t("Không bắt buộc", "Optional")}
+            value={note} onChange={e => setNote(e.target.value)} />
+        </div>
+        <button className="btn" style={{ height: 38, width: "100%" }} onClick={handleAdd}>
+          <Icons.plus size={14} /> {t("Thêm", "Add")}
+        </button>
       </div>
 
-      {/* === Filter tabs === */}
-      <div className="tx-tabs" style={{ marginBottom: 14 }}>
-        <button className={"tx-tab" + (filter === "all"  ? " active" : "")} onClick={() => setFilter("all")}>
-          {t("Tất cả", "All")} ({debts.length})
-        </button>
-        <button className={"tx-tab" + (filter === "owe"  ? " active" : "")} onClick={() => setFilter("owe")}>
-          {t("Mình nợ", "I owe")} ({oweCount})
-        </button>
-        <button className={"tx-tab" + (filter === "owed" ? " active" : "")} onClick={() => setFilter("owed")}>
-          {t("Họ nợ mình", "Owed to me")} ({owedCount})
-        </button>
-        <button className={"tx-tab" + (filter === "paid" ? " active" : "")} onClick={() => setFilter("paid")}>
-          {t("Đã xong", "Settled")} ({paidCount})
-        </button>
+      <div className="codex-timeline-header" style={{ marginTop: 32, marginBottom: 14 }}>
+        {t("LỊCH SỬ GHI NỢ", "DEBT HISTORY")}
       </div>
+      {/* === Filter tabs === */}
+      <TabBar
+        tabs={[
+          { id: "all", label: t("Tất cả", "All"), count: debts.length },
+          { id: "owe", label: t("Mình nợ", "I owe"), count: oweCount },
+          { id: "owed", label: t("Họ nợ mình", "Owed to me"), count: owedCount },
+          { id: "paid", label: t("Đã xong", "Settled"), count: paidCount }
+        ]}
+        active={filter}
+        onChange={setFilter}
+        style={{ marginBottom: 14 }}
+      />
 
       {/* === List === */}
       <div className="card" style={{ padding: 14 }}>
@@ -3545,14 +3575,7 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
         )}
       </div>
 
-      {/* Insight */}
-      {openOwe > openOwed && openOwe > 0 && (
-        <div style={{ marginTop: 18 }}>
-          <Insight tone="orange" icon="alertTri" title={t("Bạn đang nợ nhiều hơn người khác nợ bạn", "You owe more than others owe you")}>
-            {t(<>Khoản nợ ròng <b>{fmt(openOwe - openOwed)}</b>. Cân nhắc dành dụm để trả sớm nhé.</>, <>Net debt <b>{fmt(openOwe - openOwed)}</b>. Consider setting money aside to pay it off soon.</>)}
-          </Insight>
-        </div>
-      )}
+
     </div>
   );
 }
@@ -3584,8 +3607,6 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
       .filter(t => t.type === "expense" && t.cat === b.cat)
       .reduce((s, t) => s + t.amount, 0);
     const pct = b.cap > 0 ? (actual / b.cap) * 100 : 0;
-    const benchmark = CAT_BENCHMARKS[b.cat] || Math.round(b.cap * 0.9);
-    const benchPct = b.cap > 0 ? (benchmark / b.cap) * 100 : 0;
     let level = "ok";
     if (pct >= 100) level = "danger";
     else if (pct >= 80) level = "warn";
@@ -3595,12 +3616,9 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
       actual,
       remaining: b.cap - actual,
       pct,
-      benchPct,
       level,
       averageDaily: Math.round(actual / averageDayCount),
       averageWeekly: Math.round(actual / (averageDayCount / 7)),
-      vsBench: actual - benchmark,
-      benchmark,
     };
   });
 
@@ -3634,59 +3652,66 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
 
   return (
     <div className="page fade-in">
-      <PageHeader greet={t("Đặt giới hạn — sống trong khả năng", "Set limits — live within your means")}>
-        <button className="btn" onClick={() => { handleCancel(); formRef.current?.scrollIntoView({ behavior: "smooth" }); }}>
-          <Icons.plus size={15} /> {t("Tạo ngân sách", "Create budget")}
-        </button>
-      </PageHeader>
+      <div className="codex-timeline-header" style={{ marginTop: 12, marginBottom: 16 }}>
+        {t("NGÂN SÁCH", "BUDGET")}
+      </div>
 
       {/* === Summary stats === */}
-      <div className="budget-stats">
-        <div className="stat">
-          <div className="stat-label"><Icons.wallet size={13} /> {t("Tổng ngân sách", "Total budget")}</div>
-          <div className="stat-value num">{fmt(totalCap)}</div>
-          <div className="stat-sub">{rows.length} {t("danh mục", "categories")}</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label" style={{ color: "var(--c-red)" }}>
-            <Icons.arrowUpRight size={13} /> {t("Đã chi", "Spent")}
+      <div className="card" style={{ marginBottom: 18, padding: "16px 20px" }}>
+        <div className="debt-stats-grid">
+          <div className="debt-stat-item">
+            <div className="debt-stat-label">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--text-3)" }}></div>
+              {t("Tổng ngân sách", "Total budget")}
+            </div>
+            <div className="num debt-stat-value">{fmt(totalCap).replace(/\s*VND/i, "")}</div>
+            <div className="debt-stat-sub">{rows.length} {t("danh mục", "categories")}</div>
           </div>
-          <div className="stat-value num">{fmt(totalSpent)}</div>
-          <div className="stat-sub">
-            <span className="num">{totalCap > 0 ? ((totalSpent / totalCap) * 100).toFixed(0) : 0}%</span> {t("ngân sách", "of budget")}
+          
+          <div className="debt-stat-divider"></div>
+          
+          <div className="debt-stat-item">
+            <div className="debt-stat-label">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-red)" }}></div>
+              {t("Đã chi", "Spent")}
+            </div>
+            <div className="num debt-stat-value">{fmt(totalSpent).replace(/\s*VND/i, "")}</div>
+            <div className="debt-stat-sub">
+              <span className="num">{totalCap > 0 ? ((totalSpent / totalCap) * 100).toFixed(0) : 0}%</span> {t("ngân sách", "of budget")}
+            </div>
           </div>
-        </div>
-        <div className="stat">
-          <div className="stat-label" style={{ color: totalCap - totalSpent >= 0 ? "var(--c-green)" : "var(--c-red)" }}>
-            <Icons.flag size={13} /> {t("Còn lại", "Remaining")}
+
+          <div className="debt-stat-divider"></div>
+
+          <div className="debt-stat-item">
+            <div className="debt-stat-label">
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: totalCap - totalSpent >= 0 ? "var(--c-green)" : "var(--c-red)" }}></div>
+              {t("Còn lại", "Remaining")}
+            </div>
+            <div className="num debt-stat-value" style={{ color: totalCap - totalSpent >= 0 ? "var(--text)" : "var(--c-red)" }}>
+              {fmt(Math.abs(totalCap - totalSpent)).replace(/\s*VND/i, "")}
+            </div>
+            <div className="debt-stat-sub">{totalCap - totalSpent >= 0 ? t("chưa chi", "unspent") : t("vượt mức", "over budget")}</div>
           </div>
-          <div className="stat-value num" style={{ color: totalCap - totalSpent >= 0 ? "inherit" : "var(--c-red)" }}>
-            {fmt(Math.abs(totalCap - totalSpent))}
-          </div>
-          <div className="stat-sub">{totalCap - totalSpent >= 0 ? t("chưa chi", "unspent") : t("vượt mức", "over budget")}</div>
         </div>
       </div>
 
       {/* === Add/Edit form === */}
-      <div ref={formRef} className="card" style={{ marginBottom: 18, scrollMarginTop: 80 }}>
-        <div className="card-header">
-          <div>
-            <div className="card-title">
-              {editingCat ? t("Sửa hạn mức", "Edit limit") : t("Thêm / Cập nhật hạn mức", "Add / update limit")}
-            </div>
-            <div className="card-subtitle">
-              {editingCat
-                ? t(`Đang sửa: ${CATEGORIES[editingCat]?.emoji} ${editingCat}`, `Editing: ${CATEGORIES[editingCat]?.emoji} ${editingCat}`)
-                : t("Đặt mức chi tối đa hàng tháng cho từng danh mục", "Set a monthly spending cap for each category")}
-            </div>
+      <div ref={formRef} className="card" style={{ marginBottom: 18, scrollMarginTop: 80, padding: "16px 20px", position: "relative" }}>
+        <div style={{ marginBottom: 14, fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+          {editingCat ? t("Sửa hạn mức", "Edit limit") : t("Thêm / Cập nhật hạn mức", "Add / update limit")}
+          <div style={{ fontSize: 12, fontWeight: 400, color: "var(--text-4)", marginTop: 4 }}>
+            {editingCat
+              ? t(`Đang sửa: ${CATEGORIES[editingCat]?.emoji} ${CATEGORIES[editingCat]?.name}`, `Editing: ${CATEGORIES[editingCat]?.emoji} ${CATEGORIES[editingCat]?.name}`)
+              : t("Đặt mức chi tối đa hàng tháng cho từng danh mục", "Set a monthly spending cap for each category")}
           </div>
-          {editingCat && (
-            <button className="btn btn-secondary" onClick={handleCancel}>
-              <Icons.x size={14} /> {t("Hủy", "Cancel")}
-            </button>
-          )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+        {editingCat && (
+          <button className="btn btn-secondary" style={{ position: "absolute", top: 16, right: 20, height: 28, padding: "0 10px", fontSize: 12 }} onClick={handleCancel}>
+            <Icons.x size={12} /> {t("Hủy", "Cancel")}
+          </button>
+        )}
+        <div className="budget-form-grid">
           <div className="field">
             <span className="field-label">{t("Danh mục", "Category")}</span>
             <select className="select" value={editCat} onChange={e => setEditCat(e.target.value)}>
@@ -3699,18 +3724,15 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
             <span className="field-label">{t("Hạn mức / tháng", "Limit / month")}</span>
             <MoneyInput value={editAmt} onChange={setEditAmt} />
           </div>
-          <button className="btn" style={{ height: 41 }} onClick={handleSave}>
-            <Icons.check size={15} /> {editingCat ? t("Lưu thay đổi", "Save changes") : t("Lưu ngân sách", "Save budget")}
+          <button className="btn" style={{ height: 38 }} onClick={handleSave}>
+            <Icons.check size={14} /> {editingCat ? t("Lưu", "Save") : t("Thêm", "Add")}
           </button>
         </div>
       </div>
 
-      {/* === List header === */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600 }}>{t("Ngân sách tháng này", "This month's budget")}</h2>
-        <span style={{ fontSize: 12, color: "var(--text-3)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <Icons.users size={12} /> {t("Có so sánh với SV cùng nhóm", "Compared with peer students")}
-        </span>
+            {/* === List header === */}
+      <div className="codex-timeline-header" style={{ marginTop: 32, marginBottom: 16 }}>
+        {t("DANH SÁCH NGÂN SÁCH", "BUDGET LIST")}
       </div>
 
       {rows.length === 0 ? (
@@ -3759,18 +3781,22 @@ function Budget({ budgets, transactions, onSaveBudget, onDeleteBudget, viewMonth
                 </div>
               </div>
 
-              <div className="budget-track">
-                <div className={"budget-fill " + r.level} style={{ width: Math.min(100, r.pct) + "%" }} />
-                <div style={{
-                  position: "absolute", top: -4, bottom: -4,
-                  left: `calc(${Math.min(100, r.benchPct)}% - 1px)`,
-                  width: 2, background: "var(--text-2)", borderRadius: 2, pointerEvents: "none",
-                }} title={t(`Trung bình SV cùng nhóm: ${fmt(r.benchmark)}`, `Peer student average: ${fmt(r.benchmark)}`)} />
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+                <div className="budget-track" style={{ flex: 1 }}>
+                  <div className={"budget-fill " + r.level} style={{ width: Math.min(100, r.pct) + "%" }} />
+                  <div style={{
+                    position: "absolute", top: -4, bottom: -4,
+                    left: `calc(${Math.min(100, r.benchPct)}% - 1px)`,
+                    width: 2, background: "var(--text-2)", borderRadius: 2, pointerEvents: "none",
+                  }} title={t(`Trung bình SV cùng nhóm: ${fmt(r.benchmark)}`, `Peer student average: ${fmt(r.benchmark)}`)} />
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-3)", whiteSpace: "nowrap" }}>
+                  <span className="num">{r.pct.toFixed(0)}%</span> {t("đã dùng", "used")}
+                </div>
               </div>
 
-              <div className="budget-foot">
-                <span><span className="num">{r.pct.toFixed(0)}%</span> {t("đã dùng", "used")}</span>
-                <span className="budget-benchmark lower"
+              <div className="budget-foot" style={{ marginTop: 8 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--text-3)" }}
                   title={t(`Trung bình đã chi: ${fmt(r.averageDaily)}/ngày, ${fmt(r.averageWeekly)}/tuần`, `Average spent: ${fmt(r.averageDaily)}/day, ${fmt(r.averageWeekly)}/week`)}>
                   <Icons.calendar size={11} />
                   {t("TB", "Avg")}{" "}
@@ -3880,6 +3906,79 @@ function summarizeUserDoc(data) {
     goalSaved: goals.reduce((s, g) => s + (Number(g.current) || 0), 0),
     txCount: txns.length,
   };
+}
+
+function Settings({ theme, onTheme, lang, onLang, authUser, userLabel, userInitial, isOwner, onNavigate }) {
+  const t = useT();
+  return (
+    <div className="page settings-page slide-up">
+      <div className="codex-timeline-header" style={{ marginTop: 12, marginBottom: 16 }}>
+        {t("CÀI ĐẶT", "SETTINGS")}
+      </div>
+      <div className="settings-content">
+        <div className="card">
+          <div className="card-header"><div className="card-title">{t("Tài khoản", "Account")}</div></div>
+          <div className="account-settings-user" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6, marginBottom: 16 }}>
+            <div className="toolbar-avatar" style={{ width: 48, height: 48 }}>
+              {authUser?.photoURL ? <img src={authUser.photoURL} alt="" /> : <span style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%', background: 'var(--surface-2)', borderRadius: '50%' }}>{userInitial}</span>}
+            </div>
+            <div>
+              <strong style={{ display: 'block', fontSize: 16 }}>{userLabel}</strong>
+              <span style={{ color: 'var(--text-3)' }}>{authUser?.email || ""}</span>
+            </div>
+          </div>
+          {isOwner && (
+            <button type="button" className="btn btn-secondary" style={{ width: '100%', marginBottom: 12 }} onClick={() => onNavigate("admin")}>
+              <Icons.users size={15} style={{ marginRight: 8 }} />
+              {t("Quản trị (Admin)", "Admin")}
+            </button>
+          )}
+          <button type="button" className="btn btn-primary" style={{ width: '100%', background: 'var(--c-green)', color: '#0b100e', fontWeight: 600, border: 'none' }} onClick={() => firebase.auth().signOut()}>
+            {t("Đăng xuất", "Log out")}
+          </button>
+        </div>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header"><div className="card-title">{t("Giao diện", "Appearance")}</div></div>
+          
+          <div className="settings-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <button className={"settings-opt-btn" + (theme !== "codex" ? " active" : "")} onClick={() => onTheme(theme === "codex" ? "dark" : theme)}>
+              Apple
+            </button>
+            <button className={"settings-opt-btn" + (theme === "codex" ? " active" : "")} onClick={() => onTheme("codex")}>
+              <Icons.squareGrid size={13} style={{ marginRight: 6 }} /> Codex
+            </button>
+          </div>
+          
+          {theme !== "codex" && (
+            <div className="settings-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10 }}>
+              <button className={"settings-opt-btn" + (theme === "light" ? " active" : "")} onClick={() => onTheme("light")}>
+                <Icons.sun size={13} style={{ marginRight: 6 }} /> {t("Sáng", "Light")}
+              </button>
+              <button className={"settings-opt-btn" + (theme === "dark" ? " active" : "")} onClick={() => onTheme("dark")}>
+                <Icons.moon size={13} style={{ marginRight: 6 }} /> {t("Tối", "Dark")}
+              </button>
+              <button className={"settings-opt-btn" + (theme === "glass" ? " active" : "")} onClick={() => onTheme("glass")}>
+                <Icons.sparkle size={13} style={{ marginRight: 6 }} /> Liquid
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header"><div className="card-title">{t("Ngôn ngữ", "Language")}</div></div>
+          <div className="settings-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <button className={"settings-opt-btn" + (lang === "vi" ? " active" : "")} onClick={() => onLang("vi")}>
+              {t("Tiếng Việt", "Vietnamese")}
+            </button>
+            <button className={"settings-opt-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")}>
+              {t("Tiếng Anh", "English")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AdminPanel() {
@@ -4393,10 +4492,9 @@ function App() {
   const [theme, setTheme]       = useState(() => localStorage.getItem("hieu-theme") || "light");
   const [lang, setLang]         = useState(() => localStorage.getItem("hieu-lang") || "vi");
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const accountMenuRef = useRef(null);
+  // account menu state removed
   // Bumped whenever the shared CATEGORIES map is rebuilt so all pages re-render
-  const [, setCatsVersion] = useState(0);
+  const [catsVersion, setCatsVersion] = useState(0);
 
   // Compute viewed month
   const now = new Date();
@@ -4410,22 +4508,20 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("hieu-theme", theme);
-  }, [theme]);
+    if (CATEGORIES["Ăn uống"]) {
+      const newColor = theme === "codex" ? "#41ff8b" : "#FF9500";
+      if (CATEGORIES["Ăn uống"].color !== newColor) {
+        CATEGORIES["Ăn uống"].color = newColor;
+        setCatsVersion(v => v + 1);
+      }
+    }
+  }, [theme, catsVersion]);
 
   useEffect(() => {
     localStorage.setItem("hieu-lang", lang);
   }, [lang]);
 
-  useEffect(() => {
-    if (!accountMenuOpen) return;
-    const handler = (e) => {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
-        setAccountMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [accountMenuOpen]);
+
 
   useEffect(() => {
     getFirebaseApp();
@@ -4741,7 +4837,7 @@ function App() {
   const userInitial = (userLabel.trim()[0] || "U").toUpperCase();
 
   const isOwner = isOwnerUser(authUser);
-  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget, notes: Notes };
+  const PageComponents = { overview: Overview, transactions: Transactions, debts: Debts, budget: Budget, notes: Notes, settings: Settings };
   if (isOwner) PageComponents.admin = AdminPanel;
   const PageEl = PageComponents[page] || Overview;
   const pageProps = {
@@ -4777,86 +4873,17 @@ function App() {
     onTheme:             setTheme,
     lang,
     onLang:              setLang,
+    catsVersion,
+    authUser,
+    userLabel,
+    userInitial,
+    isOwner,
   };
 
   return (
     <LangContext.Provider value={lang}>
     <div className="app">
       <main className="main">
-        <div className={"auth-session" + (accountMenuOpen ? " is-menu-open" : "")} ref={accountMenuRef}>
-          <div className="auth-session-user" title={authUser.email || userLabel}>
-            {authUser.photoURL
-              ? <img src={authUser.photoURL} alt="" />
-              : <span>{userInitial}</span>}
-            <strong>{userLabel}</strong>
-          </div>
-          <div className="account-settings-wrap">
-            <button
-              type="button"
-              className={"account-settings-btn" + (accountMenuOpen ? " active" : "")}
-              onClick={() => setAccountMenuOpen(o => !o)}
-              aria-label={t("Cài đặt tài khoản", "Account settings")}
-              title={t("Cài đặt", "Settings")}
-            >
-              <Icons.gear size={16} />
-            </button>
-            {accountMenuOpen && (
-              <div className="account-settings-menu">
-                <div className="settings-section-label">{t("Giao diện", "Appearance")}</div>
-                <div className="settings-row">
-                  <button
-                    className={"settings-opt-btn" + (theme === "light" ? " active" : "")}
-                    onClick={() => setTheme("light")}
-                  >
-                    <Icons.sun size={13} /> {t("Sáng", "Light")}
-                  </button>
-                  <button
-                    className={"settings-opt-btn" + (theme === "dark" ? " active" : "")}
-                    onClick={() => setTheme("dark")}
-                  >
-                    <Icons.moon size={13} /> {t("Tối", "Dark")}
-                  </button>
-                  <button
-                    className={"settings-opt-btn" + (theme === "glass" ? " active" : "")}
-                    onClick={() => setTheme("glass")}
-                  >
-                    <Icons.sparkle size={13} /> Liquid
-                  </button>
-                </div>
-                <div className="settings-divider" />
-                <div className="settings-section-label">{t("Ngôn ngữ", "Language")}</div>
-                <div className="settings-row">
-                  <button
-                    className={"settings-opt-btn" + (lang === "vi" ? " active" : "")}
-                    onClick={() => setLang("vi")}
-                  >
-                    VN Tiếng Việt
-                  </button>
-                  <button
-                    className={"settings-opt-btn" + (lang === "en" ? " active" : "")}
-                    onClick={() => setLang("en")}
-                  >
-                    US English
-                  </button>
-                </div>
-                <div className="settings-divider" />
-                <div className="settings-section-label">{t("Tài khoản", "Account")}</div>
-                <div className="account-settings-user">
-                  <strong>{userLabel}</strong>
-                  <span>{authUser.email || ""}</span>
-                </div>
-                <div className="settings-divider" />
-                <button
-                  type="button"
-                  className="account-logout-btn"
-                  onClick={() => firebase.auth().signOut()}
-                >
-                  {t("Đăng xuất", "Log out")}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
         {dataSource !== "remote" && (
           <div className="data-warning" role="alert">
             <Icons.bell size={15} />
@@ -4873,35 +4900,36 @@ function App() {
             </span>
           </div>
         )}
-        <Toolbar
-          activePage={page}
-          month={monthLabel}
-          onMonthChange={(d) => setMonthOffset(m => Math.max(0, m + d))}
-          closingBalance={monthlyBalance.closingBalance}
-          viewMonth={viewMonth}
-          viewYear={viewYear}
-          theme={theme}
-          onTheme={setTheme}
-          lang={lang}
-          onLang={setLang}
-        />
+        {(page === "overview" || page === "transactions") && (
+          <Toolbar
+            activePage={page}
+            month={monthLabel}
+            onMonthChange={(d) => setMonthOffset(m => Math.max(0, m + d))}
+            closingBalance={monthlyBalance.closingBalance}
+            viewMonth={viewMonth}
+            viewYear={viewYear}
+            theme={theme}
+            onTheme={setTheme}
+            lang={lang}
+            onLang={setLang}
+          />
+        )}
         <PageEl key={page} {...pageProps} />
       </main>
-      <BottomNav activePage={page} onChange={setPage} debts={debts} lang={lang} showAdmin={isOwner} />
+      <BottomNav activePage={page} onChange={setPage} debts={debts} lang={lang} />
     </div>
     </LangContext.Provider>
   );
 }
 
-function BottomNav({ activePage, onChange, debts = [], lang = "vi", showAdmin = false }) {
+function BottomNav({ activePage, onChange, debts = [], lang = "vi" }) {
   const openDebtCount = debts.filter(d => !d.settled).length;
   const items = [
     { id: "overview",     label: lang === "en" ? "Overview"     : "Tổng quan", icon: "squareGrid" },
     { id: "transactions", label: lang === "en" ? "Transactions" : "Giao dịch", icon: "arrowLeftRight" },
-    { id: "debts",        label: lang === "en" ? "Debts"        : "Nợ vay",    icon: "creditCard", badge: openDebtCount > 0 ? openDebtCount : null },
+    { id: "debts",        label: lang === "en" ? "Debts"        : "Nợ vay",    icon: "creditCard" },
     { id: "budget",       label: lang === "en" ? "Budget"       : "Ngân sách", icon: "wallet" },
-    { id: "notes",        label: "Note",                                        icon: "pencil" },
-    ...(showAdmin ? [{ id: "admin", label: "Admin", icon: "users" }] : []),
+    { id: "settings",     label: lang === "en" ? "Settings"     : "Cài đặt",   icon: "gear" },
   ];
   return (
     <nav className="bottom-nav" aria-label="Page navigation">
@@ -4928,6 +4956,8 @@ function BottomNav({ activePage, onChange, debts = [], lang = "vi", showAdmin = 
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+
 
 </script>
 </body>
