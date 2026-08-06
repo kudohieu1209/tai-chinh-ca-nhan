@@ -1829,6 +1829,14 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .debt-stat-sub { font-size: 12px; color: var(--text-4); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .debt-stat-divider { width: 1px; background: var(--border); }
 
+@media (max-width: 480px) {
+  .debt-stats-grid { gap: 6px; }
+  .debt-stat-label { font-size: 11px; gap: 4px; letter-spacing: 0.04em; white-space: normal; line-height: 1.2; }
+  .debt-stat-label > div { width: 6px !important; height: 6px !important; flex-shrink: 0; }
+  .debt-stat-value { font-size: 16px; }
+  .debt-stat-sub { font-size: 10px; white-space: normal; line-height: 1.2; }
+}
+
 .debt-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr auto;
