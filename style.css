@@ -1823,10 +1823,10 @@ button.hero-balance-nav:hover .hero-nav-chevron {
 .debt-card-sub   { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
 
 .debt-stats-grid { display: flex; gap: 20px; }
-.debt-stat-item { flex: 1; }
-.debt-stat-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-.debt-stat-value { font-size: 24px; font-weight: 700; color: var(--text); margin-top: 2px; }
-.debt-stat-sub { font-size: 12px; color: var(--text-4); margin-top: 4px; }
+.debt-stat-item { flex: 1; min-width: 0; }
+.debt-stat-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.debt-stat-value { font-size: clamp(16px, 4.5vw, 24px); font-weight: 700; color: var(--text); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.debt-stat-sub { font-size: 12px; color: var(--text-4); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .debt-stat-divider { width: 1px; background: var(--border); }
 
 .debt-form-grid {
