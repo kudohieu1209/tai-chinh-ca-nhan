@@ -1,0 +1,21 @@
+{
+  "name": "fintrack",
+  "private": true,
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "@babel/parser": "^8.0.4",
+    "@capacitor-firebase/app": "^6.3.1",
+    "@capacitor-firebase/authentication": "^6.3.1",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "translate-google": "^1.5.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
+    "@capacitor/assets": "^3.0.5"
+  }
+}

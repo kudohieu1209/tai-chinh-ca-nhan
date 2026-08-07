@@ -1,7 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
-package.json
 
 # Build output
 www/
@@ -37,6 +35,9 @@ desktop.ini
 
 # Command Code
 .commandcode/
+
+# Claude Code
+.claude/
 
 # Editor / IDE config
 .vscode/
