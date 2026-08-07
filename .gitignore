@@ -31,3 +31,9 @@ desktop.ini
 # Logs / temp
 *.log
 *.tmp
+
+# Command Code
+.commandcode/
+
+# Editor / IDE config
+.vscode/

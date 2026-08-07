@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FinTrack</string>
+    <string name="title_activity_main">FinTrack</string>
+    <string name="package_name">com.kudoh.fintrack</string>
+    <string name="custom_url_scheme">com.kudoh.fintrack</string>
+    <string name="server_client_id">742826409088-de7hmsuu3cs2jf5d3beqemv37fc21r2h.apps.googleusercontent.com</string>
+</resources>

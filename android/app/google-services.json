@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "742826409088",
+    "project_id": "taichinhhiewu",
+    "storage_bucket": "taichinhhiewu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742826409088:android:0889bc72ffa7cf1ac4fa65",
+        "android_client_info": {
+          "package_name": "com.kudoh.fintrack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "742826409088-og73qljmkrr3tqd37feap0h2v2c7f24c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kudoh.fintrack",
+            "certificate_hash": "55396372ed639d579e3b3ed878633b87e2c303e7"
+          }
+        },
+        {
+          "client_id": "742826409088-de7hmsuu3cs2jf5d3beqemv37fc21r2h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEzA7cnUXNvIdFW2oDqMbfAfownbZ_t7w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "742826409088-de7hmsuu3cs2jf5d3beqemv37fc21r2h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
