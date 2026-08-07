@@ -3,8 +3,11 @@ node_modules/
 package-lock.json
 package.json
 
-# Temporary / legacy app artifacts
-legacy/
+# Build output
+www/
+
+# Scripts / one-off tools
+scripts/
 
 # Firebase / secrets — NEVER commit (defense in depth; admin/ also ignores these)
 serviceAccountKey.json

@@ -4,59 +4,58 @@
 
 ## Chạy local
 
-Mở trực tiếp `index.html` trong trình duyệt. App hiện dùng React + Babel + Firebase CDN nên không cần build tool.
+Mở trực tiếp `index.html` trong trình duyệt. App dùng React + Babel + Firebase CDN nên không cần build tool.
 
 Các file cần nằm ở root để app chạy trực tiếp:
 
-- `index.html`: bản chạy trực tiếp, chứa JSX đã gộp inline.
+- `index.html`: toàn bộ app, JSX inline trong `<script type="text/babel">`.
 - `style.css`: toàn bộ giao diện.
 - `data.js`: dữ liệu seed/cấu hình phụ.
-- `avatar.jpg` (tùy chọn): ảnh cá nhân hiển thị trong sidebar, không commit lên git — thiếu file này chỉ vỡ ảnh, không ảnh hưởng chức năng.
 
 ## Cấu trúc thư mục
 
 ```text
 FinTrack/
-  index.html
-  style.css
-  data.js
-  avatar.jpg        (local, không commit)
-
-  src/
-    app.jsx
-    budget.jsx
-    charts.jsx
-    components.jsx
-    debts.jsx
-    icons.jsx
-    notes.jsx
-    overview.jsx
-    transactions.jsx
-
-  admin/             # CLI quản lý tài khoản người dùng (Firebase Auth), xem admin/README.md
-    users.mjs
-
-  docs/
-    APPLE_DESIGN_STYLE.md
-    CLAUDE.md
-    FIREBASE_AUTH_SETUP.md
-    FIRESTORE_RULES.md
-
-  sync.py
+├── index.html              # App chính (monolithic, JSX inline)
+├── style.css               # Toàn bộ CSS
+├── data.js                 # Categories, formatters, helpers
+├── build.js                # Script copy file ra www/ cho Capacitor
+├── capacitor.config.json   # Cấu hình Capacitor (webDir: "www")
+│
+├── android/                # Android Capacitor platform
+│   └── app/
+│       ├── google-services.json
+│       └── src/main/       # Java source, manifest, resources
+│
+├── assets/                 # Icon/splash nguồn cho @capacitor/assets
+│
+├── admin/                  # CLI quản lý tài khoản người dùng Firebase Auth
+│   └── users.mjs
+│
+├── docs/                   # Tài liệu
+│   ├── CLAUDE.md
+│   ├── APPLE_DESIGN_STYLE.md
+│   ├── FIREBASE_AUTH_SETUP.md
+│   └── FIRESTORE_RULES.md
+│
+└── scripts/                # Script một lần (gitignored)
+    └── add_zh.js           # Inject bản dịch tiếng Trung vào index.html
 ```
 
-## Quy ước phát triển
+## Build cho Android
 
-`src/*.jsx` là bản source tách theo module để dễ đọc và chỉnh sửa. Vì app vẫn ưu tiên chạy trực tiếp bằng `index.html`, khi sửa JSX cần đồng bộ thay đổi vào block inline tương ứng trong `index.html`.
-
-Để đồng bộ tự động, chạy:
+App dùng Capacitor để build APK/AAB:
 
 ```bash
-python sync.py
+npm run build           # Copy index.html, style.css, data.js vào www/
+npx cap sync            # Đồng bộ web assets vào android/
+npx cap open android    # Mở Android Studio để build
 ```
 
-Script này ghép toàn bộ `src/*.jsx` (theo thứ tự phụ thuộc) rồi ghi đè vào khối `<script type="text/babel">` trong `index.html`. Lưu ý: đây là one-way (`src/` → `index.html`), nên đừng sửa trực tiếp trong khối inline của `index.html` — lần chạy sync tiếp theo sẽ ghi đè.
+Pipeline build hiện tại là `build.js` (copy file thuần). Nếu app tiếp tục lớn lên, bước nâng cấp hợp lý tiếp theo là chuyển sang bundler thật (Vite/esbuild).
 
 ## Ghi chú
 
-Pipeline build hiện tại chỉ là `sync.py` (ghép văn bản thuần, không lint/test). Nếu app tiếp tục lớn lên, bước nâng cấp hợp lý tiếp theo là chuyển sang bundler thật (Vite/esbuild) để có build, kiểm tra kiểu và tách file đúng nghĩa.
+- App từng có kiến trúc modular `src/*.jsx` + `sync.py`, đã chuyển sang monolithic `index.html` để đơn giản hóa.
+- Không commit `www/`, `scripts/`, `legacy/` — đã có trong `.gitignore`.
+- `google-services.json` chỉ cần ở `android/app/`, không cần ở root.
