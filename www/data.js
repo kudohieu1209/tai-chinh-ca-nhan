@@ -2,18 +2,18 @@
 // All amounts in VND. No mock transaction data; real data lives in Firestore.
 
 const DEFAULT_CATEGORIES = {
-  'Ăn uống': { name: 'Ăn uống', emoji: '🍜', color: '#FF9500' },
-  'Đi lại': { name: 'Đi lại', emoji: '🛵', color: '#00C7BE' },
+  'Ăn uống':  { name: 'Ăn uống',  emoji: '🍜', color: '#FF9500' },
+  'Đi lại':   { name: 'Đi lại',   emoji: '🛵', color: '#00C7BE' },
   'Thuê trọ': { name: 'Thuê trọ', emoji: '🏠', color: '#A2845E' },
-  'Mua sắm': { name: 'Mua sắm', emoji: '🛍️', color: '#FFCC00' },
-  'AI': { name: 'AI', emoji: '✨', color: '#D97757' },
+  'Mua sắm':  { name: 'Mua sắm',  emoji: '🛍️', color: '#FFCC00' },
+  'AI':         { name: 'AI',         emoji: '✨', color: '#D97757' },
   'Giải trí': { name: 'Giải trí', emoji: '🎮', color: '#FF2D55' },
   'Sức khỏe': { name: 'Sức khỏe', emoji: '💊', color: '#30B0C7' },
-  'Học tập': { name: 'Học tập', emoji: '📚', color: '#5AC8FA' },
-  'Du lịch': { name: 'Du lịch', emoji: '✈️', color: '#5856D6' },
-  'Cầu lông': { name: 'Cầu lông', emoji: '🏸', color: '#AF52DE' },
-  'Trả nợ': { name: 'Trả nợ', emoji: '💳', color: '#0A84FF' },
-  'Khác': { name: 'Khác', emoji: '📦', color: '#8E8E93' },
+  'Học tập':  { name: 'Học tập',  emoji: '📚', color: '#5AC8FA' },
+  'Du lịch':  { name: 'Du lịch',  emoji: '✈️', color: '#5856D6' },
+  'Cầu lông':   { name: 'Cầu lông',   emoji: '🏸', color: '#AF52DE' },
+  'Trả nợ':     { name: 'Trả nợ',     emoji: '💳', color: '#0A84FF' },
+  'Khác':       { name: 'Khác',       emoji: '📦', color: '#8E8E93' },
 };
 
 // Working category map — every page reads this global at render time.
@@ -34,7 +34,7 @@ const setCategories = (list) => {
     ? list
     : Object.values(DEFAULT_CATEGORIES);
   Object.keys(CATEGORIES).forEach(k => { delete CATEGORIES[k]; });
-
+  
   entries = entries.map(c => {
     const name = String(c.name || '').trim();
     if (!name) return null;
@@ -60,7 +60,7 @@ const setCategories = (list) => {
   entries.forEach(c => {
     CATEGORIES[c.name] = c;
   });
-
+  
   SYSTEM_CATEGORIES.forEach(name => {
     if (!CATEGORIES[name]) CATEGORIES[name] = { ...DEFAULT_CATEGORIES[name] };
   });
@@ -69,27 +69,27 @@ const setCategories = (list) => {
 // Green (#34C759) and red (#FF3B30) are reserved as semantic colours app-wide
 // (green = money owed to you, red = money you owe), so they're kept out of the
 // category palette to avoid a spending slice reading as a direction.
-const CAT_PALETTE = ['#FF9500', '#00C7BE', '#A2845E', '#FFCC00', '#FF2D55', '#30B0C7', '#5AC8FA', '#5856D6', '#AF52DE', '#0A84FF', '#BF5AF2', '#D97757', '#8E8E93'];
+const CAT_PALETTE = ['#FF9500','#00C7BE','#A2845E','#FFCC00','#FF2D55','#30B0C7','#5AC8FA','#5856D6','#AF52DE','#0A84FF','#BF5AF2','#D97757','#8E8E93'];
 
 // Anonymous peer benchmarks (Vietnamese students, same income tier)
 const CAT_BENCHMARKS = {
-  'Ăn uống': 900000,
-  'Đi lại': 180000,
+  'Ăn uống':   900000,
+  'Đi lại':    180000,
   'Thuê trọ': 1800000,
-  'Mua sắm': 250000,
-  'Giải trí': 300000,
-  'Sức khỏe': 100000,
-  'Học tập': 300000,
-  'Du lịch': 500000,
-  'Cầu lông': 80000,
-  'Trả nợ': 200000,
-  'Khác': 150000,
+  'Mua sắm':   250000,
+  'Giải trí':  300000,
+  'Sức khỏe':  100000,
+  'Học tập':   300000,
+  'Du lịch':   500000,
+  'Cầu lông':   80000,
+  'Trả nợ':    200000,
+  'Khác':      150000,
 };
 
 // No green/red here: those are reserved as semantic colours in the debt card
 // (green = money owed to you, red = money you owe). Lender slice colours must
 // stay categorical so a slice never reads as a direction.
-const DEBT_PALETTE = ['#FF9500', '#5856D6', '#007AFF', '#AF52DE', '#FFCC00', '#00C7BE', '#A2845E', '#5AC8FA', '#BF5AF2', '#FF6FB5'];
+const DEBT_PALETTE = ['#FF9500','#5856D6','#007AFF','#AF52DE','#FFCC00','#00C7BE','#A2845E','#5AC8FA','#BF5AF2','#FF6FB5'];
 const debtColor = (id) => {
   const n = String(id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return DEBT_PALETTE[Math.abs(n) % DEBT_PALETTE.length];

@@ -4,23 +4,49 @@
 
 ## Chạy local
 
-Mở trực tiếp `index.html` trong trình duyệt. App dùng React + Babel + Firebase CDN nên không cần build tool.
+Sau khi build, mở trực tiếp `index.html` trong trình duyệt. App dùng React + Babel + Firebase CDN nên không cần server.
 
-Các file cần nằm ở root để app chạy trực tiếp:
+```bash
+npm run build    # Ghép src/ → index.html, copy ra www/
+```
 
-- `index.html`: toàn bộ app, JSX inline trong `<script type="text/babel">`.
-- `style.css`: toàn bộ giao diện.
-- `data.js`: dữ liệu seed/cấu hình phụ.
+Các file cần ở root để app chạy:
+
+- `index.html`: build output từ `index.template.html` + `src/`, JSX inline
+- `style.css`: toàn bộ giao diện
+- `data.js`: categories, formatters, helpers
+
+## Phát triển
+
+Sửa code trong `src/` (JSX module hóa theo từng page/component), sau đó chạy `npm run build` để ghép lại thành `index.html`.
+
+```text
+src/
+├── zh.js              # Chinese dictionary (zhDict)
+├── icons.jsx          # SVG icons
+├── charts.jsx         # FlowChart, SixMonthBars, CategoryDonut, DebtDonut...
+├── components.jsx     # useT, useCountup, Toolbar, Modal, TabBar, Sidebar...
+├── overview.jsx       # Overview page + GoalForm
+├── transactions.jsx   # Transactions page + CategoryManager, QuickTemplates
+├── debts.jsx          # Debts page
+├── budget.jsx         # Budget page
+├── notes.jsx          # Notes page
+├── settings.jsx       # Settings, AdminPanel, data/auth helpers
+└── app.jsx            # App shell, AuthGate, BottomNav, ReactDOM.render
+```
 
 ## Cấu trúc thư mục
 
 ```text
 FinTrack/
-├── index.html              # App chính (monolithic, JSX inline)
+├── index.template.html     # HTML shell với placeholder {{JSX}}
+├── index.html              # BUILD OUTPUT (gitignored)
 ├── style.css               # Toàn bộ CSS
 ├── data.js                 # Categories, formatters, helpers
-├── build.js                # Script copy file ra www/ cho Capacitor
+├── build.js                # Ghép src/ → index.html + copy ra www/
 ├── capacitor.config.json   # Cấu hình Capacitor (webDir: "www")
+│
+├── src/                    # Source JSX (git tracked)
 │
 ├── android/                # Android Capacitor platform
 │   └── app/
@@ -30,32 +56,22 @@ FinTrack/
 ├── assets/                 # Icon/splash nguồn cho @capacitor/assets
 │
 ├── admin/                  # CLI quản lý tài khoản người dùng Firebase Auth
-│   └── users.mjs
 │
 ├── docs/                   # Tài liệu
-│   ├── CLAUDE.md
-│   ├── APPLE_DESIGN_STYLE.md
-│   ├── FIREBASE_AUTH_SETUP.md
-│   └── FIRESTORE_RULES.md
 │
 └── scripts/                # Script một lần (gitignored)
-    └── add_zh.js           # Inject bản dịch tiếng Trung vào index.html
 ```
 
 ## Build cho Android
 
-App dùng Capacitor để build APK/AAB:
-
 ```bash
-npm run build           # Copy index.html, style.css, data.js vào www/
+npm run build           # Ghép src/ → index.html, copy ra www/
 npx cap sync            # Đồng bộ web assets vào android/
 npx cap open android    # Mở Android Studio để build
 ```
 
-Pipeline build hiện tại là `build.js` (copy file thuần). Nếu app tiếp tục lớn lên, bước nâng cấp hợp lý tiếp theo là chuyển sang bundler thật (Vite/esbuild).
-
 ## Ghi chú
 
-- App từng có kiến trúc modular `src/*.jsx` + `sync.py`, đã chuyển sang monolithic `index.html` để đơn giản hóa.
-- Không commit `www/`, `scripts/`, `legacy/` — đã có trong `.gitignore`.
-- `google-services.json` chỉ cần ở `android/app/`, không cần ở root.
+- Không commit `index.html`, `www/`, `scripts/` — đã có trong `.gitignore`.
+- `google-services.json` chỉ cần ở `android/app/`.
+- `index.html` được tạo từ `index.template.html` + `src/*.jsx` + `src/zh.js`.

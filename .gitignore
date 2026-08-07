@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 www/
+index.html
 
 # Scripts / one-off tools
 scripts/
