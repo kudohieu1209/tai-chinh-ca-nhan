@@ -150,7 +150,7 @@ function GoalRow({ goal, onEdit, onDelete }) {
   );
 }
 
-function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", onSaveNotes, viewMonth, viewYear, monthLabel, onMonthChange, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveBudget, onSaveGoal, onDeleteGoal, theme, onTheme, lang, onLang, catsVersion }) {
+function Overview({ transactions, allTransactions, debts, budgets = [], goals, notes = "", quickTemplates = [], onSaveNotes, onSaveQuickTemplates, viewMonth, viewYear, monthLabel, onMonthChange, openingBalance = 0, periodBalance, closingBalance, onNavigate, onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveBudget, onSaveGoal, onDeleteGoal, theme, onTheme, lang, onLang, catsVersion }) {
   const tr = useCallback((vi, en) => {
     if (lang === "en") return en;
     if (lang === "zh") return zhDict[en] || en;
@@ -161,12 +161,12 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [pinnedCat, setPinnedCat] = useState(null);
   const [hoverDebt, setHoverDebt] = useState(null);
   const [debtView, setDebtView] = useState("owe");
+  const [chartView, setChartView] = useState("day");
   const [editTx, setEditTx] = useState(null);
   const [editDesc, setEditDesc] = useState("");
   const [editAmount, setEditAmount] = useState(0);
   const [editCat, setEditCat] = useState("");
   const [editDate, setEditDate] = useState("");
-  const [chartView, setChartView] = useState("day");
   const [noteOpen, setNoteOpen] = useState(false);
   const [debtModalOpen, setDebtModalOpen] = useState(false);
   const [noteText, setNoteText] = useState(notes);
@@ -174,11 +174,13 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [addTxType, setAddTxType] = useState("expense");
   const [addTxDesc, setAddTxDesc] = useState("");
   const [addTxAmount, setAddTxAmount] = useState(0);
+  const [addTxError, setAddTxError] = useState("");
   const [addTxCat, setAddTxCat] = useState(() => Object.keys(CATEGORIES)[0] || "Ăn uống");
   const [addTxDate, setAddTxDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showIncome, setShowIncome] = useState(false);
   const [incDesc, setIncDesc] = useState("");
   const [incAmount, setIncAmount] = useState(0);
+  const [incError, setIncError] = useState("");
   const [incDate, setIncDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [incomeTab, setIncomeTab] = useState("add");
   const [expenseTab, setExpenseTab] = useState("add");
@@ -187,30 +189,73 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   const [addingBudget, setAddingBudget] = useState(false);
   const [newBudgetCat, setNewBudgetCat] = useState("");
   const [newBudgetCap, setNewBudgetCap] = useState(0);
-  const [quickTemplates, setQuickTemplates] = useState(() => {
-    try {
-      const raw = localStorage.getItem("fintrack-quick-templates-v1");
-      return raw ? JSON.parse(raw) : [
-        { desc: "Ăn trưa", amount: 35000, cat: "Ăn uống" },
-        { desc: "Nước", amount: 10000, cat: "Ăn uống" },
-        { desc: "Bánh mỳ", amount: 15000, cat: "Ăn uống" },
-      ];
-    } catch { return []; }
-  });
+  const monthPickerAnchorRef = useRef(null);
+  const [monthPickerFloating, setMonthPickerFloating] = useState(false);
   const [editingTemplates, setEditingTemplates] = useState(false);
   const [newTplDesc, setNewTplDesc] = useState("");
   const [newTplAmount, setNewTplAmount] = useState(0);
   const activeCat = hoverCat ?? pinnedCat;
   const togglePinnedCat = (id) => setPinnedCat(p => (p === id ? null : id));
   const saveQuickTemplates = (tpls) => {
-    setQuickTemplates(tpls);
-    try { localStorage.setItem("fintrack-quick-templates-v1", JSON.stringify(tpls)); } catch (_) {}
+    onSaveQuickTemplates && onSaveQuickTemplates(tpls);
   };
+  // Older saved templates predate the `type` field, so keep treating them as
+  // expense templates. Deriving both lists here also keeps opening either
+  // quick-add modal from referencing an undeclared variable.
+  const expenseTemplates = useMemo(
+    () => quickTemplates.filter(tpl => tpl.type !== "income"),
+    [quickTemplates]
+  );
+  const incomeTemplates = useMemo(
+    () => quickTemplates.filter(tpl => tpl.type === "income"),
+    [quickTemplates]
+  );
 
   useEffect(() => {
     setHoverCat(null);
     setPinnedCat(null);
   }, [viewMonth, viewYear]);
+
+  useEffect(() => {
+    const anchor = monthPickerAnchorRef.current;
+    if (!anchor) return;
+
+    const phoneQuery = window.matchMedia("(max-width: 520px)");
+    const scrollRoot = anchor.closest(".main");
+    let frame = 0;
+    const updateFloatingState = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const anchorRect = anchor.getBoundingClientRect();
+        const rootTop = scrollRoot ? scrollRoot.getBoundingClientRect().top : 0;
+        setMonthPickerFloating(phoneQuery.matches && anchorRect.bottom <= rootTop + 8);
+      });
+    };
+
+    const observer = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(([entry]) => {
+          const rootTop = entry.rootBounds?.top ?? 0;
+          setMonthPickerFloating(
+            phoneQuery.matches && !entry.isIntersecting && entry.boundingClientRect.bottom <= rootTop + 8
+          );
+        }, { root: scrollRoot || null, threshold: 0 })
+      : null;
+
+    observer?.observe(anchor);
+    updateFloatingState();
+    scrollRoot?.addEventListener("scroll", updateFloatingState, { passive: true });
+    window.addEventListener("resize", updateFloatingState);
+    if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", updateFloatingState);
+    else phoneQuery.addListener?.(updateFloatingState);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      scrollRoot?.removeEventListener("scroll", updateFloatingState);
+      window.removeEventListener("resize", updateFloatingState);
+      if (phoneQuery.removeEventListener) phoneQuery.removeEventListener("change", updateFloatingState);
+      else phoneQuery.removeListener?.(updateFloatingState);
+    };
+  }, []);
 
   const income = useMemo(() =>
     transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
@@ -387,7 +432,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   ].filter(Boolean);
 
   const handleAddQuickTx = () => {
-    if (!addTxDesc.trim() || addTxAmount <= 0) return;
+    if (!addTxDesc.trim() || addTxAmount <= 0) {
+      setAddTxError(tr("Hãy nhập mô tả và số tiền hợp lệ.", "Please enter a description and a valid amount."));
+      return;
+    }
+    setAddTxError("");
     if (onAddTransaction) {
       onAddTransaction({
         type: addTxType,
@@ -421,7 +470,11 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
   );
 
   const handleAddIncome = () => {
-    if (!incDesc.trim() || incAmount <= 0) return;
+    if (!incDesc.trim() || incAmount <= 0) {
+      setIncError(tr("Hãy nhập mô tả và số tiền hợp lệ.", "Please enter a description and a valid amount."));
+      return;
+    }
+    setIncError("");
     if (onAddTransaction) {
       onAddTransaction({
         type: "income",
@@ -529,26 +582,36 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
 
   return (
     <div className="page overview-page">
-      {onMonthChange && (
-        <div className="overview-sticky-bar">
-          <div className="hero-month-picker">
-            <button onClick={() => onMonthChange(1)} aria-label={tr("Tháng trước", "Previous month")}><Icons.chevLeft size={13} /></button>
-            <span className="hero-month-label">{monthLabel}</span>
-            <button onClick={() => onMonthChange(-1)} aria-label={tr("Tháng sau", "Next month")}><Icons.chevRight size={13} /></button>
-          </div>
-        </div>
+      {onMonthChange && monthPickerFloating && ReactDOM.createPortal(
+        <div className="hero-month-picker overview-month-picker-liquid overview-floating-month-picker" aria-label={tr("Điều hướng tháng", "Month navigation")}>
+          <button onClick={() => onMonthChange(1)} aria-label={tr("Tháng trước", "Previous month")}><Icons.chevLeft size={13} /></button>
+          <span className="hero-month-label">{monthLabel.replace(", ", ",\u2007")}</span>
+          <button onClick={() => onMonthChange(-1)} aria-label={tr("Tháng sau", "Next month")}><Icons.chevRight size={13} /></button>
+        </div>,
+        document.body
       )}
       <div className="overview-hero">
         <section className="hero-balance stagger stagger-1" aria-label={balanceLabel}>
           <div className="hero-bg" aria-hidden="true" />
           <div className="hero-balance-head">
             <button className="hero-balance-nav" onClick={() => onNavigate && onNavigate("transactions")} aria-label={tr("Đến giao dịch", "Go to transactions")}>
-              <div className="hero-balance-label"><Icons.wallet size={13} /> {balanceLabel}</div>
-              <Icons.chevRight size={14} className="hero-nav-chevron" />
+              <div className="card-title" style={{ color: "var(--text)" }}>{balanceLabel}</div>
+              <Icons.chevRight size={14} className="hero-nav-chevron" style={{ marginLeft: 2 }} />
             </button>
+            {onMonthChange && (
+              <div
+                ref={monthPickerAnchorRef}
+                className={"hero-month-picker overview-month-picker-liquid overview-inline-month-picker" + (monthPickerFloating ? " is-floating-source" : "")}
+                aria-hidden={monthPickerFloating}
+              >
+                <button tabIndex={monthPickerFloating ? -1 : 0} onClick={() => onMonthChange(1)} aria-label={tr("Tháng trước", "Previous month")}><Icons.chevLeft size={13} /></button>
+                <span className="hero-month-label">{monthLabel.replace(", ", ",\u2007")}</span>
+                <button tabIndex={monthPickerFloating ? -1 : 0} onClick={() => onMonthChange(-1)} aria-label={tr("Tháng sau", "Next month")}><Icons.chevRight size={13} /></button>
+              </div>
+            )}
           </div>
           <div className="hero-balance-main">
-            <div className="hero-balance-value num">{fmt(closingBalanceAnim)}</div>
+            <div className={"hero-balance-value num" + (fmt(Number(closingBalance) || 0).length >= 15 ? " is-compact" : "")}>{fmt(closingBalanceAnim)}</div>
             <button
               className="hero-note-btn"
               onClick={() => { setNoteText(notes); setNoteOpen(true); }}
@@ -561,29 +624,29 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
           <div className="hero-chips">
             <div className="hero-chip">
               <span className="hero-chip-label"><Icons.wallet size={12} /> {tr("Dư đầu tháng", "Opening balance")}</span>
-              <span className="hero-chip-value num">{fmt(openingBalanceAnim)}</span>
+              <span className="hero-chip-value overview-opening-amount num">{fmt(openingBalanceAnim)}</span>
 
             </div>
             <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
-                 onClick={() => { setIncDate(new Date().toISOString().slice(0, 10)); setShowIncome(true); }}
-                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setIncDate(new Date().toISOString().slice(0, 10)), setShowIncome(true))}>
+                 onClick={() => { setIncDate(new Date().toISOString().slice(0, 10)); setIncError(""); setShowIncome(true); }}
+                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setIncDate(new Date().toISOString().slice(0, 10)), setIncError(""), setShowIncome(true))}>
               <span className="hero-chip-label">
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-green)", display: "inline-block", marginRight: 4 }} /> {tr("Thu tháng này", "Income")}
                 <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
               </span>
-              <span className="hero-chip-value num">{fmt(incomeAnim)}</span>
+              <span className="hero-chip-value overview-summary-amount num">{fmt(incomeAnim)}</span>
               <span className="hero-chip-sub">
                 {incomeCount} {tr("giao dịch", "txns")} · {incomeCount > 0 ? fmtShort(income / incomeCount) : "0"}{tr("/lần", "/ea")}
               </span>
             </div>
             <div className="hero-chip" role="button" tabIndex={0} style={{ cursor: "pointer" }}
-                 onClick={() => { setAddTxType("expense"); setAddTxDate(new Date().toISOString().slice(0, 10)); setShowAddTx(true); }}
-                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setAddTxType("expense"), setShowAddTx(true))}>
+                 onClick={() => { setAddTxType("expense"); setAddTxDate(new Date().toISOString().slice(0, 10)); setAddTxError(""); setShowAddTx(true); }}
+                 onKeyDown={e => (e.key === "Enter" || e.key === " ") && (setAddTxType("expense"), setAddTxError(""), setShowAddTx(true))}>
               <span className="hero-chip-label">
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-red)", display: "inline-block", marginRight: 4 }} /> {tr("Chi tháng này", "Spending")}
                 <Icons.chevRight size={11} style={{ marginLeft: 3, opacity: 0.55 }} />
               </span>
-              <span className="hero-chip-value num">{fmt(expenseAnim)}</span>
+              <span className="hero-chip-value overview-summary-amount num">{fmt(expenseAnim)}</span>
               <span className="hero-chip-sub">
                 {expenseCount} {tr("giao dịch", "txns")} · {expenseCount > 0 ? fmtShort(expense / expenseCount) : "0"}{tr("/lần", "/ea")}
               </span>
@@ -605,17 +668,16 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
         </section>
 
         <div className="card overview-debt-card overview-hero-debt stagger stagger-3">
-          <div className="card-header">
+          <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div className="card-title">{tr("Nợ & Cho Vay", "Debts & Loans")}</div>
-
           </div>
-          <div className="hero-chips overview-debt-chips" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }} role="tablist" aria-label={tr("Chiều nợ", "Debt direction")}>
+          <div className="hero-chips overview-debt-chips" style={{ marginTop: 0, gridTemplateColumns: "1fr 1fr" }} role="tablist" aria-label={tr("Chiều nợ", "Debt direction")}>
             <button
               type="button"
               role="tab"
               aria-selected={activeDebtView === "owe"}
               className={"hero-chip debt-toggle-chip" + (activeDebtView === "owe" ? " is-active" : "")}
-              style={{ border: "1px solid var(--border)" }}
+              style={{ border: "1px solid var(--border)", boxShadow: activeDebtView === "owe" ? "inset 0 0 0 1.5px var(--c-red)" : "none" }}
               onClick={() => setDebtView("owe")}
             >
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowUpRight size={12} style={{ marginRight: 2 }} /> {tr("Bạn đang nợ", "You owe")}</span>
@@ -627,7 +689,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
               role="tab"
               aria-selected={activeDebtView === "lend"}
               className={"hero-chip debt-toggle-chip" + (activeDebtView === "lend" ? " is-active" : "")}
-              style={{ border: "1px solid var(--border)" }}
+              style={{ border: "1px solid var(--border)", boxShadow: activeDebtView === "lend" ? "inset 0 0 0 1.5px var(--c-green)" : "none" }}
               onClick={() => setDebtView("lend")}
             >
               <span className="hero-chip-label" style={{ color: "var(--text)" }}><Icons.arrowDownLeft size={12} style={{ marginRight: 2 }} /> {tr("Người khác nợ bạn", "Owed to you")}</span>
@@ -644,7 +706,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                 centerCount={debtAccountCount}
                 activeId={hoverDebt}
                 onHover={setHoverDebt}
-                onSelect={() => setDebtModalOpen(true)}
+                onSelect={() => {}}
               />
               <div className="cat-list debt-legend">
                 {debtRows.slice(0, 6).map(d => (
@@ -653,37 +715,24 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                     key={d.id}
                     role="button"
                     tabIndex={0}
-                    style={{ cursor: "pointer" }}
+                    style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderRadius: "var(--r-sm)", transition: "background 0.2s" }}
                     onMouseEnter={() => setHoverDebt(d.id)}
                     onMouseLeave={() => setHoverDebt(null)}
-                    onFocus={() => setHoverDebt(d.id)}
-                    onBlur={() => setHoverDebt(null)}
-                    onClick={() => setDebtModalOpen(true)}
-                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDebtModalOpen(true); } }}
                   >
-                    <span className="debt-legend-dot" style={{ background: d.color, opacity: d.shade != null ? d.shade : 1 }} aria-hidden="true" />
-                    <span className="debt-legend-name">
-                      <span className="debt-legend-name-text">{d.name}</span>
-                      {d.count > 1 && <span className="debt-legend-count">{d.count} {tr("khoản", "items")}</span>}
-                    </span>
-                    <span className="debt-legend-pct">{d.pct.toFixed(0)}%</span>
-                    <span className="debt-legend-amount num" style={{ color: debtAmountColor }}>
-                      {debtAmountSign}{fmtShort(d.amount)}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: d.color }}></div>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)" }}>{d.name}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-4)" }}>{Math.round(d.pct)}%</span>
+                      <span className="num" style={{ fontSize: 13, fontWeight: 600, color: d.color }}>{debtAmountSign}{Math.round(d.amount/1000)}K</span>
+                    </div>
                   </div>
                 ))}
-                {debtRows.length > 6 && (
-                  <button className="debt-legend-more" onClick={() => setDebtModalOpen(true)}>
-                    +{debtRows.length - 6} {activeDebtView === "lend" ? tr("người khác", "others") : tr("chủ nợ khác", "other creditors")}
-                  </button>
-                )}
               </div>
             </div>
           ) : (
-            <div className="debt-donut-empty">
-              <Icons.check size={26} />
-              <span>{activeDebtView === "lend" ? tr("Chưa có ai nợ bạn", "No one owes you yet") : tr("Bạn không nợ ai cả", "You don't owe anyone")}</span>
-            </div>
+            <Empty icon="check" title={tr("Không có khoản nợ nào", "No debts")} text={tr("Tuyệt vời! Bạn đã thanh toán hết.", "Great! Everything is settled.")} />
           )}
         </div>
         {noteOpen && (
@@ -749,7 +798,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
         {showAddTx && (
           <Modal
             title={tr("Thêm giao dịch", "Add transaction")}
-            onClose={() => { setShowAddTx(false); setEditingTemplates(false); setExpenseTab("add"); setEditTx(null); }}
+            onClose={() => { setShowAddTx(false); setEditingTemplates(false); setExpenseTab("add"); setEditTx(null); setAddTxError(""); }}
             width={440}
             sidePanel={editTxPanel}
           >
@@ -807,12 +856,12 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                     </div>
                     {editingTemplates ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {quickTemplates.map((tpl, i) => (
+                        {expenseTemplates.map((tpl, i) => (
                           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--surface-2)", border: "0.5px solid var(--border)", borderRadius: "var(--r-md)" }}>
                             <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>
                               {tpl.desc} · <span className="num">{fmtShort(tpl.amount)}</span>
                             </span>
-                            <button className="goal-action-btn danger" title={tr("Xóa", "Delete")} onClick={() => saveQuickTemplates(quickTemplates.filter((_, j) => j !== i))}>
+                            <button className="goal-action-btn danger" title={tr("Xóa", "Delete")} onClick={() => saveQuickTemplates(quickTemplates.filter(t => t !== tpl))}>
                               <Icons.trash size={12} />
                             </button>
                           </div>
@@ -827,7 +876,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                             style={{ flex: 2 }}
                             onKeyDown={e => {
                               if (e.key === "Enter" && newTplDesc.trim() && newTplAmount > 0) {
-                                saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount, cat: addTxCat }]);
+                                saveQuickTemplates([...quickTemplates, { id: Date.now(), type: "expense", desc: newTplDesc.trim(), amount: newTplAmount, cat: addTxCat }]);
                                 setNewTplDesc(""); setNewTplAmount(0);
                               }
                             }}
@@ -841,7 +890,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                             disabled={!newTplDesc.trim() || newTplAmount <= 0}
                             onClick={() => {
                               if (!newTplDesc.trim() || newTplAmount <= 0) return;
-                              saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount, cat: addTxCat }]);
+                              saveQuickTemplates([...quickTemplates, { id: Date.now(), type: "expense", desc: newTplDesc.trim(), amount: newTplAmount, cat: addTxCat }]);
                               setNewTplDesc(""); setNewTplAmount(0);
                             }}
                           >
@@ -851,9 +900,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                       </div>
                     ) : (
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {quickTemplates.length === 0 ? (
+                        {expenseTemplates.length === 0 ? (
                           <span style={{ fontSize: 13, color: "var(--text-3)" }}>{tr("Nhấn Sửa để thêm mẫu nhanh.", "Tap Edit to add quick templates.")}</span>
-                        ) : quickTemplates.map((tpl, i) => (
+                        ) : expenseTemplates.map((tpl, i) => (
                           <button
                             key={i}
                             onClick={() => { setAddTxDesc(tpl.desc); setAddTxAmount(tpl.amount); if (tpl.cat && CATEGORIES[tpl.cat]) setAddTxCat(tpl.cat); }}
@@ -878,7 +927,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                       type="text"
                       placeholder={tr("VD: Cơm tấm, Grab, sách…", "e.g. Lunch, Grab, books…")}
                       value={addTxDesc}
-                      onChange={e => setAddTxDesc(e.target.value)}
+                      onChange={e => { setAddTxError(""); setAddTxDesc(e.target.value); }}
                       onKeyDown={e => e.key === "Enter" && handleAddQuickTx()}
                     />
                   </div>
@@ -925,10 +974,10 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                   </div>
 
                   {/* Submit */}
+                  {addTxError && <div className="modal-error" style={{ margin: 0 }}>{addTxError}</div>}
                   <button
                     className="btn"
                     onClick={handleAddQuickTx}
-                    disabled={!addTxDesc.trim() || addTxAmount <= 0}
                     style={{ height: 50, fontSize: 16, fontWeight: 700, opacity: (!addTxDesc.trim() || addTxAmount <= 0) ? 0.5 : 1 }}
                   >
                     <Icons.plus size={16} /> {tr("Thêm giao dịch", "Add transaction")}
@@ -996,7 +1045,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
         {showIncome && (
           <Modal
             title={tr("Thêm giao dịch", "Add transaction")}
-            onClose={() => { setShowIncome(false); setIncomeTab("add"); setEditingTemplates(false); setEditTx(null); }}
+            onClose={() => { setShowIncome(false); setIncomeTab("add"); setEditingTemplates(false); setEditTx(null); setIncError(""); }}
             width={440}
             sidePanel={editTxPanel}
           >
@@ -1054,12 +1103,12 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                     </div>
                     {editingTemplates ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {quickTemplates.map((tpl, i) => (
+                        {incomeTemplates.map((tpl, i) => (
                           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--surface-2)", border: "0.5px solid var(--border)", borderRadius: "var(--r-md)" }}>
                             <span style={{ flex: 1, fontSize: 13, color: "var(--text)" }}>
                               {tpl.desc} · <span className="num">{fmtShort(tpl.amount)}</span>
                             </span>
-                            <button className="goal-action-btn danger" title={tr("Xóa", "Delete")} onClick={() => saveQuickTemplates(quickTemplates.filter((_, j) => j !== i))}>
+                            <button className="goal-action-btn danger" title={tr("Xóa", "Delete")} onClick={() => saveQuickTemplates(quickTemplates.filter(t => t !== tpl))}>
                               <Icons.trash size={12} />
                             </button>
                           </div>
@@ -1074,7 +1123,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                             style={{ flex: 2 }}
                             onKeyDown={e => {
                               if (e.key === "Enter" && newTplDesc.trim() && newTplAmount > 0) {
-                                saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount }]);
+                                saveQuickTemplates([...quickTemplates, { id: Date.now(), type: "income", desc: newTplDesc.trim(), amount: newTplAmount }]);
                                 setNewTplDesc(""); setNewTplAmount(0);
                               }
                             }}
@@ -1088,7 +1137,7 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                             disabled={!newTplDesc.trim() || newTplAmount <= 0}
                             onClick={() => {
                               if (!newTplDesc.trim() || newTplAmount <= 0) return;
-                              saveQuickTemplates([...quickTemplates, { desc: newTplDesc.trim(), amount: newTplAmount }]);
+                              saveQuickTemplates([...quickTemplates, { id: Date.now(), type: "income", desc: newTplDesc.trim(), amount: newTplAmount }]);
                               setNewTplDesc(""); setNewTplAmount(0);
                             }}
                           >
@@ -1098,9 +1147,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                       </div>
                     ) : (
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {quickTemplates.length === 0 ? (
+                        {incomeTemplates.length === 0 ? (
                           <span style={{ fontSize: 13, color: "var(--text-3)" }}>{tr("Nhấn Sửa để thêm mẫu nhanh.", "Tap Edit to add quick templates.")}</span>
-                        ) : quickTemplates.map((tpl, i) => (
+                        ) : incomeTemplates.map((tpl, i) => (
                           <button
                             key={i}
                             onClick={() => { setIncDesc(tpl.desc); setIncAmount(tpl.amount); }}
@@ -1125,9 +1174,9 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                       type="text"
                       placeholder={tr("VD: Lương, mẹ chuyển…", "e.g. Salary, transfer…")}
                       value={incDesc}
-                      onChange={e => setIncDesc(e.target.value)}
+                      onChange={e => { setIncError(""); setIncDesc(e.target.value); }}
                       onKeyDown={e => e.key === "Enter" && handleAddIncome()}
-                      autoFocus
+                      autoFocus={typeof window === "undefined" || !window.matchMedia("(max-width: 520px)").matches}
                     />
                   </div>
 
@@ -1149,10 +1198,10 @@ function Overview({ transactions, allTransactions, debts, budgets = [], goals, n
                   </div>
 
                   {/* Submit */}
+                  {incError && <div className="modal-error" style={{ margin: 0 }}>{incError}</div>}
                   <button
                     className="btn"
                     onClick={handleAddIncome}
-                    disabled={!incDesc.trim() || incAmount <= 0}
                     style={{ height: 50, fontSize: 16, fontWeight: 700, opacity: (!incDesc.trim() || incAmount <= 0) ? 0.5 : 1 }}
                   >
                     <Icons.plus size={16} /> {tr("Thêm giao dịch", "Add transaction")}

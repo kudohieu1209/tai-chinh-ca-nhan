@@ -227,10 +227,26 @@ function blankData() {
   };
 }
 
+const BACKUP_SNAPSHOT_KEY = "fintrack-local-backup-snapshot";
+
 function readLocalData(user, { allowLegacy = false } = {}) {
   try {
     const raw = localStorage.getItem(localDataKey(user));
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.transactions) && parsed.transactions.length > 0) {
+        return parsed;
+      }
+      // If primary local is empty, check snapshot backup
+      const snapRaw = localStorage.getItem(`${BACKUP_SNAPSHOT_KEY}:${user?.uid || "anon"}`);
+      if (snapRaw) {
+        const snapParsed = JSON.parse(snapRaw);
+        if (snapParsed && Array.isArray(snapParsed.transactions) && snapParsed.transactions.length > 0) {
+          return snapParsed;
+        }
+      }
+      return parsed;
+    }
 
     if (allowLegacy) {
       const legacyRaw = localStorage.getItem(LOCAL_DATA_KEY);
@@ -245,6 +261,18 @@ function readLocalData(user, { allowLegacy = false } = {}) {
 
 function saveLocalData(data, user) {
   try {
+    const rawPrev = localStorage.getItem(localDataKey(user));
+    if (rawPrev) {
+      try {
+        const prev = JSON.parse(rawPrev);
+        const prevCount = Array.isArray(prev?.transactions) ? prev.transactions.length : 0;
+        const curCount = Array.isArray(data?.transactions) ? data.transactions.length : 0;
+        // Keep previous state as snapshot if current save has fewer transactions
+        if (prevCount > 0 && curCount < prevCount) {
+          localStorage.setItem(`${BACKUP_SNAPSHOT_KEY}:${user?.uid || "anon"}`, rawPrev);
+        }
+      } catch (_) {}
+    }
     localStorage.setItem(localDataKey(user), JSON.stringify(data));
     if (isOwnerUser(user)) {
       localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
@@ -430,8 +458,41 @@ function App() {
     const unsub = window._fsDoc.onSnapshot(async snap => {
       if (snap.exists) {
         setDataSource("remote");
-        const { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements } = hydrate(snap.data());
-        if (changed || missingSettlementTxs.length || openDebtSettlements.length) {
+        const remoteData = snap.data() || {};
+        let needCloudHeal = false;
+
+        // Auto-heal protection: if local backup has transactions missing from cloud, merge them
+        const local = readLocalData(authUser, { allowLegacy: isOwnerUser(authUser) });
+        const localTxns = Array.isArray(local?.transactions) ? local.transactions : [];
+        const remoteTxns = Array.isArray(remoteData.transactions) ? remoteData.transactions : [];
+
+        if (localTxns.length > 0) {
+          const remoteIds = new Set(remoteTxns.map(t => String(t.id)));
+          const localExtra = localTxns.filter(t => t.id && !remoteIds.has(String(t.id)));
+          if (localExtra.length > 0) {
+            console.warn(`[FinTrack AutoHeal] Found ${localExtra.length} transactions in local backup not in cloud. Merging...`);
+            remoteData.transactions = [...remoteTxns, ...localExtra];
+            needCloudHeal = true;
+          }
+        }
+
+        // Owner legacy recovery: if owner account ever has 0 transactions, check fintrack/hiewu
+        if (isOwnerUser(authUser) && (!remoteData.transactions || remoteData.transactions.length === 0)) {
+          const legacySnap = await db.collection("fintrack").doc("hiewu").get().catch(() => null);
+          if (legacySnap?.exists && Array.isArray(legacySnap.data()?.transactions) && legacySnap.data().transactions.length > 0) {
+            console.warn("[FinTrack AutoHeal] Restoring owner legacy transactions from fintrack/hiewu...");
+            const legData = legacySnap.data();
+            remoteData.transactions = legData.transactions || [];
+            remoteData.debts = legData.debts || remoteData.debts || [];
+            remoteData.budgets = legData.budgets || remoteData.budgets || [];
+            remoteData.categories = legData.categories || remoteData.categories;
+            remoteData.notes = legData.notes || remoteData.notes || "";
+            needCloudHeal = true;
+          }
+        }
+
+        const { txns, dbts, bdgs, gls, nts, changed, missingSettlementTxs, openDebtSettlements } = hydrate(remoteData);
+        if (needCloudHeal || changed || missingSettlementTxs.length || openDebtSettlements.length) {
           window._fsDoc.set({ transactions: txns, debts: dbts, budgets: bdgs, goals: gls, notes: nts }, { merge: true });
         }
       } else {
@@ -445,6 +506,17 @@ function App() {
             })
           : null;
         const local = readLocalData(authUser, { allowLegacy: canMigrateLegacy });
+
+        // If owner and NEITHER legacy nor local is available (e.g. temporary offline/permission issue on new device),
+        // DO NOT write a permanent "blank" document to Firestore!
+        if (canMigrateLegacy && !legacySnap?.exists && (!local || !local.transactions || local.transactions.length === 0)) {
+          console.warn("[FinTrack] Postponing empty document creation for owner because legacy source could not be verified.");
+          const fallback = blankData();
+          setDataSource("local");
+          hydrate(fallback, { persistLocal: false });
+          return;
+        }
+
         const fallback = legacySnap?.exists ? legacySnap.data() : local || blankData();
         setDataSource(legacySnap?.exists ? "remote" : local ? "local" : "remote");
         const { txns, dbts, bdgs, gls, nts } = hydrate(fallback, { persistLocal: legacySnap?.exists || !!local });
@@ -731,6 +803,7 @@ function App() {
     userLabel,
     userInitial,
     isOwner,
+    isAdmin:             isOwner,
   };
 
   return (

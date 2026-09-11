@@ -16,6 +16,10 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
   const [editAmt, setEditAmt] = useState(0);
   const [editType, setEditType] = useState("owe");
   const [editNote, setEditNote] = useState("");
+  const [addErrors, setAddErrors] = useState({});
+  const [editErrors, setEditErrors] = useState({});
+  const [shakeAdd, setShakeAdd] = useState(null);
+  const [shakeEdit, setShakeEdit] = useState(null);
 
   const filtered = useMemo(() => {
     if (filter === "all")    return debts;
@@ -32,9 +36,19 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
   const owedCount = debts.filter(d => d.type === "lend" && !d.settled).length;
 
   const handleAdd = () => {
-    if (!name.trim() || amt <= 0) return;
+    const errors = {};
+    if (!name.trim()) errors.name = t("Hãy nhập tên người.", "Please enter a person's name.");
+    if (amt <= 0) errors.amt = t("Hãy nhập số tiền hợp lệ.", "Please enter a valid amount.");
+    if (Object.keys(errors).length > 0) {
+      setAddErrors(errors);
+      const first = Object.keys(errors)[0];
+      setShakeAdd(first);
+      setTimeout(() => setShakeAdd(null), 500);
+      return;
+    }
     onAddDebt({ name: name.trim(), amount: amt, type, note: note.trim(), settled: false });
     setName(""); setAmt(0); setNote("");
+    setAddErrors({});
   };
 
   const startEdit = (debt) => {
@@ -43,6 +57,7 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
     setEditAmt(debt.amount || 0);
     setEditType(debt.type || "owe");
     setEditNote(debt.note || "");
+    setEditErrors({});
   };
 
   const cancelEdit = () => {
@@ -51,10 +66,21 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
     setEditAmt(0);
     setEditType("owe");
     setEditNote("");
+    setEditErrors({});
   };
 
   const saveEdit = () => {
-    if (!editingDebt || !editName.trim() || editAmt <= 0) return;
+    if (!editingDebt) return;
+    const errors = {};
+    if (!editName.trim()) errors.name = t("Hãy nhập tên người.", "Please enter a person's name.");
+    if (editAmt <= 0) errors.amt = t("Hãy nhập số tiền hợp lệ.", "Please enter a valid amount.");
+    if (Object.keys(errors).length > 0) {
+      setEditErrors(errors);
+      const first = Object.keys(errors)[0];
+      setShakeEdit(first);
+      setTimeout(() => setShakeEdit(null), 500);
+      return;
+    }
     onUpdateDebt && onUpdateDebt(editingDebt.id, {
       name: editName.trim(),
       amount: editAmt,
@@ -111,10 +137,12 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
         <div style={{ marginBottom: 14, fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
           {t("Ghi nhận khoản nợ mới", "Record a new debt")}
         </div>
-        <div className="field" style={{ marginBottom: 14 }}>
+        <div className={"field" + (addErrors.name ? " field-error" : "") + (shakeAdd === "name" ? " field-shake" : "")} style={{ marginBottom: 14 }}>
           <span className="field-label">{t("Tên người", "Person")}</span>
           <input className="input" type="text" placeholder={t("VD: Nam, Hân...", "e.g. Nam, Han...")}
-            value={name} onChange={e => setName(e.target.value)} />
+            value={name}
+            onChange={e => { if (addErrors.name) setAddErrors(f => ({ ...f, name: undefined })); setName(e.target.value); }} />
+          {addErrors.name && <span className="field-error-msg">{addErrors.name}</span>}
         </div>
         <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
           <div className="field" style={{ flex: 1 }}>
@@ -124,9 +152,10 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
               <option value="lend">{t("Họ nợ mình", "They owe me")}</option>
             </select>
           </div>
-          <div className="field" style={{ flex: 1 }}>
+          <div className={"field" + (addErrors.amt ? " field-error" : "") + (shakeAdd === "amt" ? " field-shake" : "")} style={{ flex: 1 }}>
             <span className="field-label">{t("Số tiền", "Amount")}</span>
-            <MoneyInput value={amt} onChange={setAmt} />
+            <MoneyInput value={amt} onChange={v => { setAmt(v); if (addErrors.amt) setAddErrors(f => ({ ...f, amt: undefined })); }} />
+            {addErrors.amt && <span className="field-error-msg">{addErrors.amt}</span>}
           </div>
         </div>
         <div className="field" style={{ marginBottom: 14 }}>
@@ -169,9 +198,15 @@ function Debts({ debts, onAddDebt, onUpdateDebt, onDeleteDebt, onSettleDebt, onR
               if (isEditing) {
                 return (
                   <div className="debt-edit-item" key={d.id}>
-                    <div className="debt-edit-grid">
-                      <input className="input" type="text" value={editName} onChange={e => setEditName(e.target.value)} />
-                      <MoneyInput value={editAmt} onChange={setEditAmt} />
+                    <div className={"debt-edit-grid" + (editErrors.name || editErrors.amt ? " has-error" : "")}>
+                      <div className={"debt-edit-cell" + (editErrors.name ? " field-error" : "") + (shakeEdit === "name" ? " field-shake" : "")}>
+                        <input className="input" type="text" value={editName} onChange={e => { if (editErrors.name) setEditErrors(f => ({ ...f, name: undefined })); setEditName(e.target.value); }} />
+                        {editErrors.name && <span className="field-error-msg">{editErrors.name}</span>}
+                      </div>
+                      <div className={"debt-edit-cell" + (editErrors.amt ? " field-error" : "") + (shakeEdit === "amt" ? " field-shake" : "")}>
+                        <MoneyInput value={editAmt} onChange={v => { setEditAmt(v); if (editErrors.amt) setEditErrors(f => ({ ...f, amt: undefined })); }} />
+                        {editErrors.amt && <span className="field-error-msg">{editErrors.amt}</span>}
+                      </div>
                       <select className="select" value={editType} onChange={e => setEditType(e.target.value)}>
                         <option value="owe">{t("Mình nợ họ", "I owe them")}</option>
                         <option value="lend">{t("Họ nợ mình", "They owe me")}</option>

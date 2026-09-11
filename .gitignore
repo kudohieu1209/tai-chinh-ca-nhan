@@ -42,3 +42,10 @@ desktop.ini
 
 # Editor / IDE config
 .vscode/
+ui-ux-pro-max-skill/
+
+admin.cmd
+admin.ps1
+admin/node
+android/.idea/
+icon.png

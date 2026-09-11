@@ -169,9 +169,12 @@ function CategoryManagerModal({ usageCounts, onSave, onClose }) {
 }
 
 // ====== QuickTemplateModal — edit quick-entry templates in a dialog ======
-function QuickTemplateModal({ templates, normalize, onSave, onClose }) {
+function QuickTemplateModal({ templates, normalize, onSave, onClose, typeFilter = null }) {
   const t = useT();
-  const [rows, setRows] = useState(() => templates.map(tpl => ({ ...tpl })));
+  const [rows, setRows] = useState(() => templates
+    .filter(tpl => !typeFilter || tpl.type === typeFilter)
+    .map(tpl => ({ ...tpl }))
+  );
   const pendingFocusId = useRef(null);
 
   useEffect(() => {
@@ -202,12 +205,24 @@ function QuickTemplateModal({ templates, normalize, onSave, onClose }) {
   const addRow = () => {
     const id = `tpl-${Date.now()}`;
     pendingFocusId.current = id;
-    setRows(rs => [...rs, { id, label: "", type: "expense", desc: "", amount: 10000, cat: Object.keys(CATEGORIES)[0] || "Khác" }]);
+    const type = typeFilter || "expense";
+    setRows(rs => [...rs, {
+      id,
+      label: "",
+      type,
+      desc: "",
+      amount: 10000,
+      cat: type === "income" ? "Thu nhập" : (Object.keys(CATEGORIES)[0] || "Khác"),
+    }]);
   };
   const removeRow = (id) => setRows(rs => rs.filter(r => r.id !== id));
 
   const handleSave = () => {
-    onSave(rows.map((tpl, i) => normalize(tpl, i)));
+    const normalizedRows = rows.map((tpl, i) => normalize(tpl, i));
+    onSave(typeFilter
+      ? [...templates.filter(tpl => tpl.type !== typeFilter), ...normalizedRows]
+      : normalizedRows
+    );
     onClose();
   };
 
@@ -247,6 +262,7 @@ function QuickTemplateModal({ templates, normalize, onSave, onClose }) {
               <select
                 className="select quick-template-type"
                 value={tpl.type}
+                disabled={Boolean(typeFilter)}
                 onChange={e => updateRow(tpl.id, { type: e.target.value })}
               >
                 <option value="expense">{t("Chi", "Expense")}</option>
@@ -310,6 +326,11 @@ function SortDropdown({ value, onChange }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return undefined;
+    return registerFintrackBackLayer(() => setOpen(false));
+  }, [open]);
+
   const menu = open && ReactDOM.createPortal(
     <div
       className="sort-dropdown-menu"
@@ -339,8 +360,9 @@ function SortDropdown({ value, onChange }) {
   );
 }
 
-function Transactions({ transactions, allTransactions = [], onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveCategories, monthLabel, onMonthChange }) {
+function Transactions({ transactions, allTransactions = [], quickTemplates = [], onSaveQuickTemplates, onAddTransaction, onUpdateTransaction, onDeleteTransaction, onSaveCategories, monthLabel, onMonthChange }) {
   const t = useT();
+  const isPhoneViewport = typeof window !== "undefined" && window.matchMedia("(max-width: 520px)").matches;
   const [mode, setMode] = useState("expense");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
@@ -353,6 +375,8 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
   const [sortMode, setSortMode] = useState("date-desc");
   const [justAdded, setJustAdded] = useState(false);
   const [btnSuccess, setBtnSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [shakeField, setShakeField] = useState(null);
   const [editingTx, setEditingTx] = useState(null);
   const [showCatModal, setShowCatModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -433,7 +457,6 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
   const hasListFilters = Boolean(search.trim()) ||
     (mode === "expense" && categoryFilter !== "all") ||
     sortMode !== "date-desc";
-  const quickTemplateStorageKey = "fintrack-quick-templates-v1";
 
   const catUsageCounts = useMemo(() => {
     const counts = {};
@@ -449,19 +472,6 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
     if (!CATEGORIES[cat]) setCat(Object.keys(CATEGORIES)[0] || "Khác");
     if (categoryFilter !== "all" && !CATEGORIES[categoryFilter]) setCategoryFilter("all");
   });
-
-  const defaultQuickTemplates = useMemo(() => {
-    const cats = Object.keys(CATEGORIES);
-    return [
-      { id: "lunch", label: "Ăn trưa", type: "expense", desc: "Ăn trưa", amount: 35000, cat: cats[0] || firstExpenseCat },
-      { id: "water", label: "Nước", type: "expense", desc: "Nước uống", amount: 10000, cat: cats[0] || firstExpenseCat },
-      { id: "grab", label: "Grab", type: "expense", desc: "Grab", amount: 25000, cat: cats[1] || firstExpenseCat },
-      { id: "badminton", label: "Cầu lông", type: "expense", desc: "Cầu lông", amount: 80000, cat: cats[8] || firstExpenseCat },
-      { id: "mom-transfer", label: "Mẹ chuyển", type: "income", desc: "Mẹ chuyển", amount: 1000000, cat: incomeCat },
-    ];
-  }, [firstExpenseCat, incomeCat]);
-  const [savedQuickTemplates, setSavedQuickTemplates] = useState(null);
-  const quickTemplates = savedQuickTemplates || defaultQuickTemplates;
 
   const normalizeQuickTemplate = (tpl, idx = 0, options = {}) => {
     const { allowEmptyLabel = false } = options;
@@ -479,25 +489,6 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
   };
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(quickTemplateStorageKey);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (Array.isArray(parsed)) {
-        setSavedQuickTemplates(parsed.map(normalizeQuickTemplate));
-      }
-    } catch (_) {
-      setSavedQuickTemplates(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!savedQuickTemplates) return;
-    try {
-      localStorage.setItem(quickTemplateStorageKey, JSON.stringify(savedQuickTemplates));
-    } catch (_) {}
-  }, [savedQuickTemplates]);
-
-  useEffect(() => {
     if (mode === "income" && categoryFilter !== "all") {
       setCategoryFilter("all");
     }
@@ -508,6 +499,8 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
     setAmount(0);
     setDate(new Date().toISOString().slice(0, 10));
     setEditingTx(null);
+    setFieldErrors({});
+    setShakeField(null);
   };
 
   const applyTemplate = (tpl) => {
@@ -532,7 +525,18 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
   const cancelEdit = () => clearDraft();
 
   const handleSubmit = () => {
-    if (!desc.trim() || amount <= 0) return;
+    const errors = {};
+    if (!desc.trim()) errors.desc = t("Hãy nhập mô tả.", "Please enter a description.");
+    if (amount <= 0) errors.amount = t("Hãy nhập số tiền hợp lệ.", "Please enter a valid amount.");
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const first = Object.keys(errors)[0];
+      setShakeField(first);
+      setTimeout(() => setShakeField(null), 500);
+      return;
+    }
+    setFieldErrors({});
+    setShakeField(null);
     if (editingTx) {
       onUpdateTransaction && onUpdateTransaction(editingTx.id, {
         type: mode,
@@ -576,19 +580,7 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
         <aside className="tx-aside">
           <div ref={formRef} className="card tx-form-card stagger stagger-1" style={{ scrollMarginTop: 80 }}>
             <div className="card-header" style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                <div className="card-title">{editingTx ? t("Sửa giao dịch", "Edit transaction") : t("Thêm giao dịch", "Add transaction")}</div>
-                
-                <div className="hero-month-picker">
-                    <button onClick={() => onMonthChange && onMonthChange(1)} aria-label={t("Tháng trước", "Previous month")}>
-                      <Icons.chevLeft size={13} />
-                    </button>
-                    <span className="hero-month-label">{monthLabel}</span>
-                    <button onClick={() => onMonthChange && onMonthChange(-1)} aria-label={t("Tháng sau", "Next month")}>
-                      <Icons.chevRight size={13} />
-                    </button>
-                  </div>
-              </div>
+              <div className="card-title">{editingTx ? t("Sửa giao dịch", "Edit transaction") : t("Thêm giao dịch", "Add transaction")}</div>
               {editingTx && (
                 <button className="btn btn-secondary tx-cancel-edit" onClick={cancelEdit}>
                   <Icons.x size={14} /> {t("Hủy", "Cancel")}
@@ -617,7 +609,7 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
                   </div>
                 </div>
                 <div className="quick-template-list">
-                  {quickTemplates.map(tpl => (
+                  {quickTemplates.filter(tpl => tpl.type === mode).map(tpl => (
                     <button
                       key={tpl.id}
                       className={"quick-template-btn " + tpl.type}
@@ -629,19 +621,10 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
                   ))}
                 </div>
               </div>
-              <div className="field">
-                <span className="field-label">{t("Mô tả", "Description")}</span>
-                <input
-                  className="input" type="text"
-                  placeholder={mode === "income" ? t("VD: Lương, mẹ chuyển...", "e.g. Salary, transfer...") : t("VD: Cơm tấm, Grab, sách...", "e.g. Lunch, Grab, books...")}
-                  value={desc}
-                  onChange={e => setDesc(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                />
-              </div>
-              <div className="field tx-amount-field">
+              <div className={"field tx-amount-field" + (fieldErrors.amount ? " field-error" : "") + (shakeField === "amount" ? " field-shake" : "")}>
                 <span className="field-label">{t("Số tiền", "Amount")}</span>
-                <MoneyInput value={amount} onChange={setAmount} />
+                <MoneyInput value={amount} onChange={v => { setAmount(v); if (fieldErrors.amount) setFieldErrors(f => ({ ...f, amount: undefined })); }} />
+                {fieldErrors.amount && <span className="field-error-msg">{fieldErrors.amount}</span>}
               </div>
               {mode === "expense" && (
                 <div className="field">
@@ -669,6 +652,17 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
               <div className="field">
                 <span className="field-label">{t("Ngày", "Date")}</span>
                 <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
+              </div>
+              <div className={"field" + (fieldErrors.desc ? " field-error" : "") + (shakeField === "desc" ? " field-shake" : "")}>
+                <span className="field-label">{t("Mô tả", "Description")}</span>
+                <input
+                  className="input" type="text"
+                  placeholder={mode === "income" ? t("VD: Lương, mẹ chuyển...", "e.g. Salary, transfer...") : t("VD: Cơm tấm, Grab, sách...", "e.g. Lunch, Grab, books...")}
+                  value={desc}
+                  onChange={e => { if (fieldErrors.desc) setFieldErrors(f => ({ ...f, desc: undefined })); setDesc(e.target.value); }}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                />
+                {fieldErrors.desc && <span className="field-error-msg">{fieldErrors.desc}</span>}
               </div>
               <button
                 className={"btn tx-submit-btn" + (btnSuccess ? " btn-success" : "")}
@@ -707,12 +701,24 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
               )}
             </div>
 
-            <SortDropdown value={sortMode} onChange={setSortMode} />
-            {hasListFilters && (
-              <button className="tx-clear-filter" onClick={clearListFilters} title={t("Xóa lọc", "Clear filters")}>
-                <Icons.x size={13} />
-              </button>
-            )}
+            <div className="tx-period-controls">
+              <div className="hero-month-picker tx-month-picker">
+                <button onClick={() => onMonthChange && onMonthChange(1)} aria-label={t("Tháng trước", "Previous month")}>
+                  <Icons.chevLeft size={13} />
+                </button>
+                <span className="hero-month-label">{monthLabel}</span>
+                <button onClick={() => onMonthChange && onMonthChange(-1)} aria-label={t("Tháng sau", "Next month")}>
+                  <Icons.chevRight size={13} />
+                </button>
+              </div>
+
+              <SortDropdown value={sortMode} onChange={setSortMode} />
+              {hasListFilters && (
+                <button className="tx-clear-filter" onClick={clearListFilters} title={t("Xóa lọc", "Clear filters")}>
+                  <Icons.x size={13} />
+                </button>
+              )}
+            </div>
             <span className="search-meta">{filtered.length} / {list.length}</span>
           </div>
 
@@ -795,8 +801,9 @@ function Transactions({ transactions, allTransactions = [], onAddTransaction, on
         <QuickTemplateModal
           templates={quickTemplates}
           normalize={normalizeQuickTemplate}
-          onSave={setSavedQuickTemplates}
+          onSave={onSaveQuickTemplates}
           onClose={() => setShowTemplateModal(false)}
+          typeFilter={isPhoneViewport ? mode : null}
         />
       )}
     </div>

@@ -241,6 +241,48 @@ async function cmdClearRole(auth, target) {
   info(`Cleared role on ${user.email || user.uid}.`);
 }
 
+async function cmdSyncLegacy(auth, target) {
+  const user = await resolveUser(auth, target || OWNER_EMAIL);
+  const db = getFirestore();
+  const legacySnap = await db.collection("fintrack").doc("hiewu").get();
+  if (!legacySnap.exists) {
+    fail('Legacy document "fintrack/hiewu" does not exist.');
+  }
+  const legacyData = legacySnap.data();
+  const userDocRef = db.collection(USERS_COLLECTION).doc(user.uid);
+  const userSnap = await userDocRef.get();
+  const currentData = userSnap.exists ? userSnap.data() : {};
+
+  const quickTemplates =
+    Array.isArray(currentData.quickTemplates) && currentData.quickTemplates.length
+      ? currentData.quickTemplates
+      : Array.isArray(legacyData.quickTemplates)
+      ? legacyData.quickTemplates
+      : [];
+
+  const restored = {
+    categories: legacyData.categories || currentData.categories || [],
+    transactions: legacyData.transactions || [],
+    debts: legacyData.debts || [],
+    budgets: legacyData.budgets || [],
+    goals: legacyData.goals || [],
+    notes: legacyData.notes || "",
+    quickTemplates,
+    ownerUid: user.uid,
+    ownerEmail: user.email || "",
+    migratedFrom: "fintrack/hiewu",
+    migratedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  await userDocRef.set(restored, { merge: true });
+  info(`Successfully synced legacy data (fintrack/hiewu) to ${user.email} (${user.uid}).`);
+  console.log(
+    `    Synced: ${restored.transactions.length} transactions, ${restored.debts.length} debts, ` +
+      `${restored.budgets.length} budgets, ${restored.categories.length} categories.`
+  );
+}
+
 // --- arg parsing & dispatch --------------------------------------------------
 
 function printHelp() {
@@ -258,6 +300,7 @@ function printHelp() {
     reset   <uid|email>          Generate a password-reset link to send the user
     set-role <uid|email> <role>  Set a custom role claim (e.g. admin)
     clear-role <uid|email>       Remove the custom role claim
+    sync-legacy [uid|email]      Sync legacy shared data (fintrack/hiewu) into user document
 
   Flags:
     --force        Allow acting on the owner account (${OWNER_EMAIL})
@@ -304,6 +347,8 @@ async function main() {
       return cmdSetRole(auth, target, extra);
     case "clear-role":
       return cmdClearRole(auth, target);
+    case "sync-legacy":
+      return cmdSyncLegacy(auth, target);
     default:
       fail(`Unknown command "${command}". Run "node users.mjs help" for usage.`);
   }

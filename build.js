@@ -3,13 +3,12 @@ const path = require('path');
 
 const wwwDir = path.join(__dirname, 'www');
 
-// Xóa thư mục www cũ nếu có
-if (fs.existsSync(wwwDir)) {
-  fs.rmSync(wwwDir, { recursive: true, force: true });
+// Keep the output directory in place when Windows has a file handle open
+// (for example from a local preview server). The generated files below are
+// overwritten deterministically, so a full recursive delete is unnecessary.
+if (!fs.existsSync(wwwDir)) {
+  fs.mkdirSync(wwwDir, { recursive: true });
 }
-
-// Tạo lại thư mục www
-fs.mkdirSync(wwwDir);
 
 // Đọc các file src theo thứ tự
 const srcFiles = [
@@ -56,6 +55,21 @@ for (const file of filesToCopy) {
   if (fs.existsSync(srcPath)) {
     fs.copyFileSync(srcPath, destPath);
   }
+}
+
+// The vanilla HTML app does not have a bundler to import Capacitor core.
+// Ship the bridge explicitly so native plugins can be called from JSX.
+const capacitorBridge = path.join(__dirname, 'node_modules', '@capacitor', 'core', 'dist', 'capacitor.js');
+if (fs.existsSync(capacitorBridge)) {
+  fs.copyFileSync(capacitorBridge, path.join(__dirname, 'capacitor.js'));
+  fs.copyFileSync(capacitorBridge, path.join(wwwDir, 'capacitor.js'));
+}
+// Copy app icon for favicon/brand mark (ưu tiên icon trong suốt đã cắt nền, fallback icon gốc)
+const transparentSrc = path.join(__dirname, 'assets', 'icon_transparent.png');
+const iconSrc = path.join(__dirname, 'assets', 'icon.png');
+const faviconSrc = fs.existsSync(transparentSrc) ? transparentSrc : iconSrc;
+if (fs.existsSync(faviconSrc)) {
+  fs.copyFileSync(faviconSrc, path.join(wwwDir, 'icon.png'));
 }
 console.log('Copied to www/');
 console.log('Build hoàn tất!');

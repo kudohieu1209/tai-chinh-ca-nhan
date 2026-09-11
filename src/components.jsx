@@ -7,6 +7,26 @@
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 const LangContext = React.createContext("vi");
+
+// Native Android Back should dismiss the top-most transient UI layer before
+// navigating away from the current app section. Modals and menus register
+// themselves here while they are open.
+const fintrackBackLayers = [];
+function registerFintrackBackLayer(onBack) {
+  const entry = { id: Symbol("fintrack-back-layer"), onBack };
+  fintrackBackLayers.push(entry);
+  return () => {
+    const index = fintrackBackLayers.findIndex(item => item.id === entry.id);
+    if (index >= 0) fintrackBackLayers.splice(index, 1);
+  };
+}
+function closeTopFintrackBackLayer() {
+  const entry = fintrackBackLayers[fintrackBackLayers.length - 1];
+  if (!entry) return false;
+  entry.onBack();
+  return true;
+}
+
 function useT() {
   const lang = React.useContext(LangContext);
   const t = useCallback((vi, en) => {
@@ -281,11 +301,14 @@ function MoneyInput({ value, onChange, placeholder = "0" }) {
 // (fill-mode: forwards), which would otherwise trap position:fixed inside the page.
 function Modal({ title, subtitle, onClose, children, footer, headerExtra, sidePanel, width = 560 }) {
   const t = useT();
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+  useEffect(() => registerFintrackBackLayer(() => onCloseRef.current()), []);
 
   return ReactDOM.createPortal(
     <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -350,7 +373,7 @@ function TabBar({ tabs, active, onChange, style, className }) {
   );
 }
 
-function Sidebar({ activePage, onChange, debts = [], theme, onTheme, lang, onLang }) {
+function Sidebar({ activePage, onChange, debts = [], lang, authUser, userLabel, userInitial }) {
   const openDebtCount = debts.filter(d => !d.settled).length;
   const items = [
     { id: "overview",     label: lang === "en" ? "Overview" : "Tổng quan",      icon: Icons.squareGrid },
@@ -358,27 +381,22 @@ function Sidebar({ activePage, onChange, debts = [], theme, onTheme, lang, onLan
     { id: "debts",        label: lang === "en" ? "Debts" : "Nợ vay",            icon: Icons.creditCard,    badge: openDebtCount > 0 ? openDebtCount : null },
     { id: "budget",       label: lang === "en" ? "Budget" : "Ngân sách",        icon: Icons.wallet },
     { id: "notes",        label: "Note",                                        icon: Icons.pencil },
+    { id: "settings",     label: lang === "en" ? "Settings" : "Cài đặt",        icon: Icons.gear },
   ];
-  const activeIndex = items.findIndex(item => item.id === activePage);
 
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
         <div className="sidebar-brand-mark">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="28" height="28">
-            <rect width="100" height="100" rx="22" fill="#007AFF" />
-            <text x="50" y="68" font-family="-apple-system,sans-serif" font-size="60" font-weight="700" fill="white" text-anchor="middle">đ</text>
-          </svg>
+          <img src="icon.png" alt="FinTrack" style={{ width: '100%', height: '100%', borderRadius: 'inherit', display: 'block' }} />
         </div>
         <div className="sidebar-brand-text">
           <span className="sidebar-brand-name">FinTrack</span>
-          <span className="sidebar-brand-sub">Tài chính của Hiếu</span>
         </div>
       </div>
 
       <div className="sidebar-section-label">{lang === "en" ? "Menu" : "Danh mục"}</div>
       <nav className="nav-list" aria-label="Sidebar navigation">
-        <div className="nav-pill" style={activeIndex !== -1 ? { top: activeIndex * 40 } : { display: "none" }} />
         {items.map(item => {
           const Icon = item.icon;
           const active = activePage === item.id;
@@ -400,27 +418,16 @@ function Sidebar({ activePage, onChange, debts = [], theme, onTheme, lang, onLan
       <div className="sidebar-footer">
         <div className="sidebar-user">
           <div className="sidebar-avatar">
-            <img src="avatar.jpg" alt="User avatar" />
+            {authUser?.photoURL ? (
+              <img src={authUser.photoURL} alt="" />
+            ) : (
+              <span style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%', borderRadius: '50%' }}>{userInitial}</span>
+            )}
           </div>
           <div className="sidebar-user-meta">
-            <span className="sidebar-user-name">Hieu Nguyen</span>
-            <span className="sidebar-user-role">{lang === "en" ? "Student" : "Sinh viên"}</span>
+            <span className="sidebar-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userLabel}</span>
+            <span className="sidebar-user-role" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{authUser?.email || ""}</span>
           </div>
-        </div>
-
-        <div className="theme-toggle">
-          <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")}>
-            <Icons.sun size={12} /> {lang === "en" ? "Light" : "Sáng"}
-          </button>
-          <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")}>
-            <Icons.moon size={12} /> {lang === "en" ? "Dark" : "Tối"}
-          </button>
-          <button className={theme === "glass" ? "active" : ""} onClick={() => onTheme("glass")}>
-            <Icons.sparkle size={12} /> Liquid
-          </button>
-          <button className={theme === "codex" ? "active" : ""} onClick={() => onTheme("codex")}>
-            <Icons.squareGrid size={12} /> Codex
-          </button>
         </div>
       </div>
     </aside>

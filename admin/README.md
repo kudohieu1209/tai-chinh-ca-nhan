@@ -29,10 +29,42 @@ Xong. File này đã nằm trong `.gitignore` nên sẽ không bị đẩy lên 
 
 ## 3. Cách dùng
 
-Chạy trong thư mục `admin/`:
+### Cách nhanh nhất (khuyên dùng) — chạy từ thư mục gốc
+
+Có sẵn wrapper `admin.ps1` (PowerShell) và `admin.cmd` (cmd) ở **thư mục gốc** của project.
+Bạn **không cần `cd admin`**, chỉ cần mở terminal ngay tại `D:\Vibe Coding\FinTrack` rồi chạy:
+
+```powershell
+# PowerShell
+.\admin list
+.\admin get someone@example.com
+.\admin delete someone@example.com --with-data
+```
+
+```bat
+:: cmd
+admin list
+admin get someone@example.com
+admin delete someone@example.com --with-data
+```
+
+> ⚠️ **Lưu ý PowerShell:** nếu gặp lỗi "running scripts is disabled", chạy một lần:
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> ```
+> (chỉ có hiệu lực cho cửa sổ hiện tại, không đổi cài đặt máy).
+
+### Cách chạy trực tiếp trong `admin/`
+
+```powershell
+# PowerShell
+cd admin
+node users.mjs list
+```
 
 ```bash
-node users.mjs <lệnh> [tham số] [cờ]
+# bash / git-bash
+cd admin && node users.mjs list
 ```
 
 | Lệnh | Tác dụng |
@@ -52,15 +84,20 @@ node users.mjs <lệnh> [tham số] [cờ]
 
 ### Ví dụ
 
-```bash
-node users.mjs list
-node users.mjs get someone@example.com
-node users.mjs disable someone@example.com
-node users.mjs enable someone@example.com
-node users.mjs reset someone@example.com
-node users.mjs set-role someone@example.com admin
-node users.mjs delete someone@example.com --with-data
+```powershell
+# PowerShell (từ thư mục gốc)
+.\admin list
+.\admin get someone@example.com
+.\admin disable someone@example.com
+.\admin enable someone@example.com
+.\admin reset someone@example.com
+.\admin set-role someone@example.com admin
+.\admin delete someone@example.com --with-data
 ```
+
+> 💡 **Không dùng `&&` trong PowerShell:** PowerShell (nhất là bản 5.1 trên Windows)
+> không hỗ trợ `&&`. Nếu copy lệnh dạng `cd admin && node ...`, hãy tách thành 2 dòng
+> (`cd admin` rồi `node ...`) hoặc dùng wrapper `.\admin` ở trên.
 
 ---
 
