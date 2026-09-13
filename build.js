@@ -2,12 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 const wwwDir = path.join(__dirname, 'www');
+const publicDir = path.join(__dirname, 'public');
 
-// Keep the output directory in place when Windows has a file handle open
-// (for example from a local preview server). The generated files below are
-// overwritten deterministically, so a full recursive delete is unnecessary.
-if (!fs.existsSync(wwwDir)) {
-  fs.mkdirSync(wwwDir, { recursive: true });
+const targetDirs = [wwwDir, publicDir];
+for (const dir of targetDirs) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 }
 
 // Đọc các file src theo thứ tự
@@ -47,13 +48,15 @@ const html = template.replace('<!-- {{JSX}} -->', jsx);
 fs.writeFileSync(path.join(__dirname, 'index.html'), html, 'utf8');
 console.log('Generated index.html');
 
-// Copy ra www/
+// Copy ra www/ và public/
 const filesToCopy = ['index.html', 'style.css', 'data.js'];
-for (const file of filesToCopy) {
-  const srcPath = path.join(__dirname, file);
-  const destPath = path.join(wwwDir, file);
-  if (fs.existsSync(srcPath)) {
-    fs.copyFileSync(srcPath, destPath);
+for (const dir of targetDirs) {
+  for (const file of filesToCopy) {
+    const srcPath = path.join(__dirname, file);
+    const destPath = path.join(dir, file);
+    if (fs.existsSync(srcPath)) {
+      fs.copyFileSync(srcPath, destPath);
+    }
   }
 }
 
@@ -62,14 +65,19 @@ for (const file of filesToCopy) {
 const capacitorBridge = path.join(__dirname, 'node_modules', '@capacitor', 'core', 'dist', 'capacitor.js');
 if (fs.existsSync(capacitorBridge)) {
   fs.copyFileSync(capacitorBridge, path.join(__dirname, 'capacitor.js'));
-  fs.copyFileSync(capacitorBridge, path.join(wwwDir, 'capacitor.js'));
+  for (const dir of targetDirs) {
+    fs.copyFileSync(capacitorBridge, path.join(dir, 'capacitor.js'));
+  }
 }
 // Copy app icon for favicon/brand mark (ưu tiên icon trong suốt đã cắt nền, fallback icon gốc)
 const transparentSrc = path.join(__dirname, 'assets', 'icon_transparent.png');
 const iconSrc = path.join(__dirname, 'assets', 'icon.png');
 const faviconSrc = fs.existsSync(transparentSrc) ? transparentSrc : iconSrc;
 if (fs.existsSync(faviconSrc)) {
-  fs.copyFileSync(faviconSrc, path.join(wwwDir, 'icon.png'));
+  for (const dir of targetDirs) {
+    fs.copyFileSync(faviconSrc, path.join(dir, 'icon.png'));
+  }
 }
-console.log('Copied to www/');
+console.log('Copied to www/ and public/');
 console.log('Build hoàn tất!');
+
