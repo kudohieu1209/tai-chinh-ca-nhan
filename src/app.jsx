@@ -828,6 +828,18 @@ function App() {
   return (
     <LangContext.Provider value={lang}>
     <div className="app">
+      <Sidebar
+        activePage={page}
+        onChange={setPage}
+        debts={debts}
+        lang={lang}
+        authUser={authUser}
+        userLabel={userLabel}
+        userInitial={userInitial}
+        theme={theme}
+        onTheme={setTheme}
+        isAdmin={isOwner}
+      />
       <main className="main">
         {dataSource !== "remote" && (
           <div className="data-warning" role="alert">

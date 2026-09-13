@@ -397,7 +397,7 @@ function TabBar({ tabs, active, onChange, style, className }) {
   );
 }
 
-function Sidebar({ activePage, onChange, debts = [], lang, authUser, userLabel, userInitial }) {
+function Sidebar({ activePage, onChange, debts = [], lang, authUser, userLabel, userInitial, theme, onTheme, isAdmin }) {
   const openDebtCount = debts.filter(d => !d.settled).length;
   const items = [
     { id: "overview",     label: lang === "en" ? "Overview" : "Tổng quan",      icon: Icons.squareGrid },
@@ -407,12 +407,15 @@ function Sidebar({ activePage, onChange, debts = [], lang, authUser, userLabel, 
     { id: "notes",        label: "Note",                                        icon: Icons.pencil },
     { id: "settings",     label: lang === "en" ? "Settings" : "Cài đặt",        icon: Icons.gear },
   ];
+  if (isAdmin) {
+    items.push({ id: "admin", label: lang === "en" ? "Admin" : "Quản trị", icon: Icons.gear });
+  }
 
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
         <div className="sidebar-brand-mark">
-          <img src="icon.png" alt="FinTrack" style={{ width: '100%', height: '100%', borderRadius: 'inherit', display: 'block' }} />
+          <img src="icon.png" alt="FinTrack" style={{ width: "100%", height: "100%", borderRadius: "inherit", display: "block" }} />
         </div>
         <div className="sidebar-brand-text">
           <span className="sidebar-brand-name">FinTrack</span>
@@ -440,17 +443,27 @@ function Sidebar({ activePage, onChange, debts = [], lang, authUser, userLabel, 
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-user">
+        {onTheme && (
+          <div className="theme-toggle" style={{ marginBottom: 6 }}>
+            <button className={theme === "light" ? "active" : ""} onClick={() => onTheme("light")} title="Light mode" type="button">
+              <Icons.sun size={12} /> {lang === "en" ? "Light" : "Sáng"}
+            </button>
+            <button className={theme === "dark" ? "active" : ""} onClick={() => onTheme("dark")} title="Dark mode" type="button">
+              <Icons.moon size={12} /> {lang === "en" ? "Dark" : "Tối"}
+            </button>
+          </div>
+        )}
+        <div className="sidebar-user" onClick={() => onChange("settings")} title={lang === "en" ? "Settings" : "Cài đặt"} style={{ cursor: "pointer" }}>
           <div className="sidebar-avatar">
             {authUser?.photoURL ? (
               <img src={authUser.photoURL} alt="" />
             ) : (
-              <span style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%', borderRadius: '50%' }}>{userInitial}</span>
+              <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", borderRadius: "50%" }}>{userInitial}</span>
             )}
           </div>
           <div className="sidebar-user-meta">
-            <span className="sidebar-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userLabel}</span>
-            <span className="sidebar-user-role" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{authUser?.email || ""}</span>
+            <span className="sidebar-user-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userLabel}</span>
+            <span className="sidebar-user-role" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{authUser?.email || ""}</span>
           </div>
         </div>
       </div>
