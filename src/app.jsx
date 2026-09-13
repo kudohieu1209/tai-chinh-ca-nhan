@@ -114,10 +114,29 @@ function AuthGate({ theme, onTheme, lang, onLang }) {
     setBusy(true);
     setError("");
     try {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      await firebase.auth().signInWithPopup(provider);
+      const nativeAuth = getNativeAuth();
+      if (nativeAuth) {
+        try {
+          await nativeAuth.signOut();
+        } catch (_) {}
+        const res = await nativeAuth.signInWithGoogle();
+        const idToken = res?.credential?.idToken;
+        if (!idToken) {
+          throw new Error("Không nhận được token xác thực từ Google.");
+        }
+        const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+        await firebase.auth().signInWithCredential(credential);
+      } else {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        await firebase.auth().signInWithPopup(provider);
+      }
     } catch (err) {
+      const msg = String(err?.message || "").toLowerCase();
+      const code = String(err?.code || "");
+      if (code === "12501" || msg.includes("cancel") || msg.includes("popup-closed")) {
+        return;
+      }
       setError(authErrorMessage(err, t));
     } finally {
       setBusy(false);

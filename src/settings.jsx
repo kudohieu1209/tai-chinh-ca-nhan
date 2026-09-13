@@ -46,7 +46,7 @@ function Settings({ theme, onTheme, lang, onLang, authUser, userLabel, userIniti
               {t("Quản trị (Admin)", "Admin")}
             </button>
           )}
-          <button type="button" className="btn btn-danger" style={{ width: '100%' }} onClick={() => firebase.auth().signOut()}>
+          <button type="button" className="btn btn-danger" style={{ width: '100%' }} onClick={() => appSignOut()}>
             {t("Đăng xuất", "Log out")}
           </button>
         </div>

@@ -27,6 +27,30 @@ function closeTopFintrackBackLayer() {
   return true;
 }
 
+function getNativeAuth() {
+  if (window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform()) {
+    try {
+      return window.Capacitor.registerPlugin("FirebaseAuthentication");
+    } catch (e) {
+      console.warn("FirebaseAuthentication plugin registration failed:", e);
+    }
+  }
+  return null;
+}
+
+async function appSignOut() {
+  const nativeAuth = getNativeAuth();
+  if (nativeAuth) {
+    try {
+      await nativeAuth.signOut();
+    } catch (e) {
+      console.warn("Native sign out error:", e);
+    }
+  }
+  return firebase.auth().signOut();
+}
+
+
 function useT() {
   const lang = React.useContext(LangContext);
   const t = useCallback((vi, en) => {
